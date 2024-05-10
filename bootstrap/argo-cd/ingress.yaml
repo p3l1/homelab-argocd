@@ -10,24 +10,24 @@ metadata:
     alb.ingress.kubernetes.io/scheme: internet-facing
   name: argocd
 spec:
-rules:
-- host: argocd.intern.herzo.gs
-  http:
-  paths:
-  - path: /
-    backend:
-    service:
-        name: argogrpc
-        port:
-        number: 443
-    pathType: Prefix
-  - path: /
-    backend:
-    service:
-        name: argocd-server
-        port:
-        number: 443
-    pathType: Prefix
+  rules:
+    - host: argocd.intern.herzo.gs
+      http:
+      paths:
+      - path: /
+        backend:
+        service:
+            name: argogrpc
+            port:
+            number: 443
+        pathType: Prefix
+      - path: /
+        backend:
+        service:
+            name: argocd-server
+            port:
+            number: 443
+        pathType: Prefix
 tls:
 - hosts:
     - argocd.intern.herzo.gs
