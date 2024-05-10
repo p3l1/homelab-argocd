@@ -11,23 +11,24 @@ metadata:
   name: argocd
 spec:
 rules:
-- host: argocd.intern.herzo.gs
+- host: 
+    name: argocd.intern.herzo.gs
     http:
     paths:
     - path: /
-        backend:
-        service:
-            name: argogrpc
-            port:
-            number: 443
-        pathType: Prefix
+      backend:
+      service:
+          name: argogrpc
+          port:
+          number: 443
+      pathType: Prefix
     - path: /
-        backend:
-        service:
-            name: argocd-server
-            port:
-            number: 443
-        pathType: Prefix
+      backend:
+      service:
+          name: argocd-server
+          port:
+          number: 443
+      pathType: Prefix
 tls:
 - hosts:
     - argocd.intern.herzo.gs
