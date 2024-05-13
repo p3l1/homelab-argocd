@@ -3,7 +3,7 @@
   "userGivenName": "longhorn",
   "destNamespace": "longhorn-system",
   "destServer": "https://kubernetes.default.svc",
-  "srcPath": "apps/longhorn",
+  "srcPath": "apps/longhorn/homelab",
   "srcRepoURL": "https://github.com/p3l1/homelab-argocd.git",
   "srcTargetRevision": "HEAD",
   "labels": null,
