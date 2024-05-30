@@ -1,0 +1,13 @@
+{
+  "appName": "cert-manager-crds",
+  "userGivenName": "cert-manager-crds",
+  "destNamespace": "default",
+  "destServer": "https://kubernetes.default.svc",
+  "srcPath": "cert-manager-crds",
+  "srcRepoURL": "https://github.com/p3l1/homelab-cert-manager.git",
+  "srcTargetRevision": "",
+  "labels": null,
+  "annotations": null,
+  "exclude": "",
+  "include": ""
+}
