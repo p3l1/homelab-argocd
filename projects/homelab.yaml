@@ -63,7 +63,10 @@ spec:
               jsonnet: {}
               recurse: true
             repoURL: ""
-  syncPolicy: {}
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
   template:
     metadata:
       labels:
