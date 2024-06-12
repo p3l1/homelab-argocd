@@ -1,0 +1,11 @@
+{
+  "appName": "authentik",
+  "userGivenName": "authentik",
+  "destNamespace": "default",
+  "destServer": "https://kubernetes.default.svc",
+  "srcPath": "apps/authentik/overlays/homelab",
+  "srcRepoURL": "https://github.com/p3l1/homelab-argocd.git",
+  "srcTargetRevision": "",
+  "labels": null,
+  "annotations": null
+}
