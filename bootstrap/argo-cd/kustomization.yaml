@@ -16,3 +16,4 @@ namespace: argocd
 resources:
 - https://github.com/argoproj-labs/argocd-autopilot/manifests/ha
 - ./ingress.yaml
+- ./certificate.yaml

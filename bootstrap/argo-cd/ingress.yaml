@@ -43,6 +43,5 @@ spec:
       port: http
       scheme: h2c
   tls:
-    - secretName: argocd-tls
-      hosts:
-        - argocd.p3l1.de
+    certResolver: letsencrypt-live
+    secretName: argocd-certificate
