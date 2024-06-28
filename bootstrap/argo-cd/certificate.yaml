@@ -10,3 +10,4 @@ spec:
     - argocd.p3l1.de
   issuerRef:
     name: letsencrypt-live
+    kind: ClusterIssuer
