@@ -43,5 +43,4 @@ spec:
       port: http
       scheme: h2c
   tls:
-    certResolver: letsencrypt-live
-    secretName: argocd-certificate
+    secretName: argocd-server-tls
