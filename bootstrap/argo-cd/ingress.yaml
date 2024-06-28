@@ -3,6 +3,7 @@ apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
 metadata:
   name: argocd-http
+  namespace: argocd
 spec:
   entryPoints:
     - web
@@ -21,6 +22,7 @@ apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
 metadata:
   name: argocd-https
+  namespace: argocd
 spec:
   entryPoints:
     - websecure
@@ -42,5 +44,4 @@ spec:
       name: argocd-server
       port: http
       scheme: h2c
-  tls:
-    secretName: argocd-server-tls
+  tls: {}
