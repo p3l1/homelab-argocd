@@ -44,4 +44,5 @@ spec:
       name: argocd-server
       port: http
       scheme: h2c
-  tls: {}
+  tls:
+    secretName: argocd-server-tls
