@@ -3,7 +3,7 @@
   "userGivenName": "whoami",
   "destNamespace": "whoami",
   "destServer": "https://kubernetes.default.svc",
-  "srcPath": "",
+  "srcPath": "kustomization.yaml",
   "srcRepoURL": "https://github.com/p3l1/homelab-whoami",
   "srcTargetRevision": "",
   "labels": null,
