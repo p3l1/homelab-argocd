@@ -1,0 +1,11 @@
+{
+  "appName": "newt",
+  "userGivenName": "newt",
+  "destNamespace": "default",
+  "destServer": "https://kubernetes.default.svc",
+  "srcPath": "apps/cloudflared/overlays/homelab",
+  "srcRepoURL": "https://github.com/p3l1/homelab-argocd.git",
+  "srcTargetRevision": "",
+  "labels": null,
+  "annotations": null
+}
