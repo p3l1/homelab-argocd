@@ -5,7 +5,7 @@
   "destServer": "https://kubernetes.default.svc",
   "srcPath": "base",
   "srcRepoURL": "https://github.com/p3l1/homelab-whoami",
-  "srcTargetRevision": "restructure",
+  "srcTargetRevision": "main",
   "labels": null,
   "annotations": null
 }
