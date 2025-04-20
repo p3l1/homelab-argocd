@@ -5,7 +5,7 @@
   "destServer": "https://kubernetes.default.svc",
   "srcPath": "apps/newt/overlays/homelab",
   "srcRepoURL": "https://github.com/p3l1/homelab-argocd.git",
-  "srcTargetRevision": "",
+  "srcTargetRevision": "main",
   "labels": null,
   "annotations": null
 }
