@@ -1,10 +1,10 @@
 {
   "appName": "whoami",
   "userGivenName": "whoami",
-  "destNamespace": "default",
+  "destNamespace": "whoami",
   "destServer": "https://kubernetes.default.svc",
-  "srcPath": "apps/whoami/overlays/homelab",
-  "srcRepoURL": "https://github.com/p3l1/homelab-argocd.git",
+  "srcPath": "/",
+  "srcRepoURL": "https://github.com/p3l1/homelab-whoami",
   "srcTargetRevision": "",
   "labels": null,
   "annotations": null
