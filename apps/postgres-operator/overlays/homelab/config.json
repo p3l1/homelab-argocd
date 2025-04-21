@@ -1,0 +1,11 @@
+{
+  "appName": "postgres-operator",
+  "userGivenName": "postgres-operator",
+  "destNamespace": "argocd",
+  "destServer": "https://kubernetes.default.svc",
+  "srcPath": "base",
+  "srcRepoURL": "https://github.com/p3l1/homelab-postgres-operator.git",
+  "srcTargetRevision": "main",
+  "labels": null,
+  "annotations": null
+}
