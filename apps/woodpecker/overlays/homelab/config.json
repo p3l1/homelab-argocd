@@ -1,7 +1,7 @@
 {
   "appName": "woodpecker",
   "userGivenName": "woodpecker",
-  "destNamespace": "woodpecker",
+  "destNamespace": "argocd",
   "destServer": "https://kubernetes.default.svc",
   "srcPath": "base",
   "srcRepoURL": "https://github.com/p3l1/homelab-woodpecker.git",
