@@ -211,11 +211,23 @@ Start selbsttätig aus.
 ### Abnahme
 
 ```bash
-ansible-playbook playbooks/site.yml
+./scripts/cluster-status.sh
 ```
 
-Der zweite Lauf muss `changed=0` melden. Tut er das nicht, ist eine Aufgabe
-nicht idempotent und gehört korrigiert.
+Erwartet werden sechs Nodes im Zustand `Ready`, davon drei als
+`control-plane,etcd`, ein kube-vip-DaemonSet mit 3/3 und eine antwortende
+VIP.
+
+Ein erneuter Lauf von `site.yml` meldet für `node_base` durchgehend
+`changed=0`. Die Rollen der Collection sind dagegen **nicht** idempotent:
+`Run K3s install script` und `Enable and start K3s service` (mit
+`state: restarted`) laufen bei jedem Durchgang und starten k3s dabei neu.
+Auf einem laufenden Cluster bedeutet das eine kurze Unterbrechung — für
+reine Node-Pflege daher besser gezielt:
+
+```bash
+ansible-playbook playbooks/bootstrap.yml   # nur node_base, ohne k3s anzufassen
+```
 
 ```bash
 export KUBECONFIG=~/.kube/config
