@@ -47,9 +47,19 @@ SHA256-Summe und verlangt eine ausdrückliche Bestätigung des Ziel-Device —
 **der Schreibvorgang löscht die SSD vollständig**. Anschließend legt es die
 `custom.toml` mit Hostname, Benutzer, SSH-Schlüssel und Locale ab.
 
-Fehlt `~/.ssh/homelab_nodes_ed25519`, wird der Schlüssel beim ersten Lauf
-angelegt. Die Anmeldung erfolgt ausschließlich darüber; Passwort-Anmeldung
-ist abgeschaltet.
+Hinterlegt werden alle öffentlichen Schlüssel aus `ansible/files/ssh/` —
+derzeit der YubiKey (GPG-Authentication-Subkey) und ein lokaler Schlüssel als
+Rückfallweg. Die Rolle `node_base` pflegt später dieselbe Liste, Quelle ist
+also beide Male dasselbe Verzeichnis. Passwort-Anmeldung ist abgeschaltet.
+
+Ändern sich die Schlüssel, muss eine bereits geflashte SSD nicht neu
+beschrieben werden:
+
+```bash
+./scripts/flash-node.sh --config-only kube-01 /dev/disk4
+```
+
+Das schreibt nur die `custom.toml` neu und lässt das Abbild unberührt.
 
 Das richtige Gerät findest du mit `diskutil list` — interne Datenträger lehnt
 das Skript ab.

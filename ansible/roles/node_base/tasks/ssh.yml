@@ -1,9 +1,12 @@
 ---
-- name: Install authorized key
+- name: Install authorized keys
   ansible.posix.authorized_key:
     user: "{{ ansible_user }}"
-    key: "{{ lookup('file', node_ssh_public_key_file) }}"
+    key: "{{ lookup('file', playbook_dir + '/../' + key_item) }}"
     state: present
+  loop: "{{ node_ssh_public_key_files }}"
+  loop_control:
+    loop_var: key_item
 
 - name: Harden sshd
   ansible.builtin.lineinfile:
