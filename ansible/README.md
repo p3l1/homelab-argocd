@@ -28,6 +28,7 @@ in [`../docs/superpowers/specs/2026-09-05-cluster-rebuild-design.md`](../docs/su
 | `identify-nodes.sh` | Modell, MAC und Seriennummer frisch gestarteter Pis |
 | `bootstrap-node.sh` | Erstkontakt für einen, mehrere oder `all` Nodes; wählt Inventory und Flags selbst (`--dry-run` zeigt nur, was liefe) |
 | `led.sh` | Rack-LED eines Nodes schalten, um ihn im Rack zu finden |
+| `cluster-status.sh` | Nodes, Pods, kube-vip und API-VIP auf einen Blick |
 
 ## Rollen
 
