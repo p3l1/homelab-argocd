@@ -20,6 +20,14 @@ in [`../docs/superpowers/specs/2026-09-05-cluster-rebuild-design.md`](../docs/su
 | `inventory/hosts.yml` | Regulärer Betrieb, Nodes unter ihren festen Adressen |
 | `inventory/bootstrap.yml` | Erstkontakt, solange die Nodes noch am DHCP hängen |
 
+## Skripte
+
+| Skript | Zweck |
+|---|---|
+| `flash-node.sh` | SSD beschreiben, prüfen und Erstkonfiguration ablegen |
+| `identify-nodes.sh` | Modell, MAC und Seriennummer frisch gestarteter Pis |
+| `bootstrap-node.sh` | Erstkontakt mit dem richtigen Inventory und den nötigen Flags |
+
 ## Rollen
 
 | Rolle | Zweck |

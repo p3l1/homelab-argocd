@@ -112,7 +112,17 @@ Die Belegung am USW Flex 2.5G 8 PoE:
 ### Erstkontakt
 
 ```bash
-ansible-playbook -i inventory/bootstrap.yml playbooks/bootstrap.yml --ask-pass
+./scripts/bootstrap-node.sh kube-04
+```
+
+Der Wrapper wählt `inventory/bootstrap.yml` und setzt `--ask-pass` und
+`--ask-become-pass`. Von Hand geht es genauso, das `-i` ist dabei aber
+entscheidend — ohne greift das reguläre Inventory und der Lauf zielt auf die
+Adresse, die der Node noch gar nicht hat:
+
+```bash
+ansible-playbook -i inventory/bootstrap.yml playbooks/bootstrap.yml \
+  --limit kube-04 --ask-pass --ask-become-pass
 ```
 
 Das Playbook meldet sich als `pi` mit Passwort an, setzt Hostname und
