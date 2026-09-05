@@ -1,30 +1,33 @@
 ---
 # Erstkontakt mit einem frisch geflashten Node.
 #
-# macOS kann die ext4-Rootpartition nicht schreiben, eine feste Adresse laesst
-# sich also nicht mitflashen. Der Node startet per DHCP und meldet sich per
-# mDNS als <hostname>.local. Dieses Playbook verbindet sich darueber und
-# schreibt die Adresse aus dem Inventory fest.
+# Verbindet sich ueber die Adresse aus dem Inventory. Der Node muss also
+# bereits darunter erreichbar sein - per DHCP-Reservierung im Router. Hat er
+# uebergangsweise eine andere Adresse, laesst sie sich mitgeben:
+#
+#   ansible-playbook playbooks/bootstrap.yml --limit kube-01 \
+#     -e ansible_host=10.35.99.57
+#
+# Danach schreibt node_base die Adresse per NetworkManager fest, sodass der
+# Node nicht mehr vom DHCP abhaengt.
 #
 #   ansible-playbook playbooks/bootstrap.yml --limit kube-01
 - name: Bootstrap freshly flashed nodes
   hosts: k3s_cluster
   gather_facts: true
   become: true
-  vars:
-    ansible_host: "{{ inventory_hostname }}.local"
 
   pre_tasks:
-    - name: Verify the node answers over mDNS
+    - name: Verify the node answers
       ansible.builtin.ping:
 
     - name: Verify this is the intended node
       ansible.builtin.assert:
         that: ansible_facts['hostname'] in [inventory_hostname, 'raspberrypi']
         fail_msg: >-
-          {{ inventory_hostname }}.local antwortet als
-          '{{ ansible_facts['hostname'] }}'. Vermutlich beantwortet ein anderer
-          Node die Anfrage - bitte pruefen, bevor etwas ueberschrieben wird.
+          {{ ansible_host }} antwortet als '{{ ansible_facts['hostname'] }}',
+          erwartet wurde {{ inventory_hostname }}. Bitte pruefen, bevor etwas
+          ueberschrieben wird.
 
   roles:
     - role: node_base

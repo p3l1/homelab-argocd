@@ -8,7 +8,7 @@ in [`../docs/superpowers/specs/2026-09-05-cluster-rebuild-design.md`](../docs/su
 
 | Playbook | Zweck |
 |---|---|
-| `bootstrap.yml` | Erstkontakt über mDNS, setzt die feste Adresse |
+| `bootstrap.yml` | Erstkontakt über die Inventory-Adresse, setzt sie fest |
 | `site.yml` | Vollständige Konvergenz: Nodes, kube-vip, k3s |
 | `upgrade.yml` | Hebt k3s auf die Version aus `group_vars` |
 | `reset.yml` | Entfernt k3s wieder |

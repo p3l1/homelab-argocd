@@ -80,9 +80,20 @@ SSD in den Pi, einschalten, etwa eine Minute warten. Dann:
 ansible-playbook playbooks/bootstrap.yml --limit kube-01
 ```
 
-Der Node startet per DHCP und meldet sich über mDNS als `kube-01.local`; über
-diesen Namen verbindet sich das Playbook und schreibt die feste Adresse per
-NetworkManager fest. Der Node startet dabei einmal neu.
+Das Playbook verbindet sich über die Adresse aus dem Inventory. Der Node muss
+darunter also bereits erreichbar sein — **der Router braucht eine
+DHCP-Reservierung auf die MAC-Adresse jedes Pi**, passend zum Adressplan oben.
+
+Hängt ein Node übergangsweise an einer anderen Adresse, lässt sie sich für
+den Lauf mitgeben:
+
+```bash
+ansible-playbook playbooks/bootstrap.yml --limit kube-01 -e ansible_host=10.35.99.57
+```
+
+Anschließend schreibt `node_base` die Adresse per NetworkManager fest, sodass
+der Node nicht mehr vom DHCP abhängt. Ändert sich die Adresse dabei, startet
+er einmal neu; stimmt sie schon, passiert nichts.
 
 Vor jeder Änderung prüft das Playbook, ob der antwortende Host wirklich der
 gemeinte ist — so lässt sich nicht versehentlich ein laufender Node

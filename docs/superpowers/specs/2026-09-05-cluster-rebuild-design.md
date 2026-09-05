@@ -80,10 +80,13 @@ Locale und Zeitzone.
 
 macOS kann die ext4-Root-Partition nicht schreiben, nur die FAT32-Boot-
 Partition. Eine statische Adresse lässt sich deshalb nicht mitflashen. Der
-Node startet per DHCP und ist über mDNS als `<hostname>.local` erreichbar
-(avahi gehört zum Lieferumfang von Raspberry Pi OS Lite). `bootstrap.yml`
-verbindet sich über diesen Namen und schreibt die feste Adresse per `nmcli`.
-Ab dann läuft alles über die Adresse aus dem Inventory.
+Node startet per DHCP und erhält seine Adresse aus einer Reservierung im
+Router; `bootstrap.yml` verbindet sich darüber und schreibt sie per `nmcli`
+fest, sodass der Node danach nicht mehr vom DHCP abhängt.
+
+Der Weg über mDNS (`<hostname>.local`) wäre ohne Reservierungen möglich,
+verlangt aber, dass Namensauflösung im gesamten Netz zuverlässig funktioniert;
+die Reservierung ist die verlässlichere Grundlage.
 
 Das Skript ist wiederholbar: Ein erneuter Lauf über dieselbe SSD stellt den
 Auslieferungszustand wieder her.

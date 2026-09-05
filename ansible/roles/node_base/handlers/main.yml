@@ -4,8 +4,8 @@
     name: ssh
     state: restarted
 
-# Der Adresswechsel trennt die Verbindung. Nach dem Neustart ist der Node
-# ueber seine feste Adresse und weiterhin ueber mDNS erreichbar.
+# Der Adresswechsel trennt die Verbindung. Nach dem Neustart antwortet der
+# Node unter der Adresse aus dem Inventory.
 - name: Reboot for network change
   ansible.builtin.reboot:
     reboot_timeout: 300

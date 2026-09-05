@@ -1,7 +1,8 @@
 ---
 # Raspberry Pi OS nutzt seit Bookworm NetworkManager. Das Profil wird nur
 # beschrieben, nicht aktiviert: ein Adresswechsel reisst die laufende
-# SSH-Sitzung ab. Den Wechsel vollzieht der Reboot-Handler.
+# SSH-Sitzung ab. Den Wechsel vollzieht der Reboot-Handler. Bleibt die
+# Adresse gleich, meldet der Task nichts und der Handler laeuft nicht.
 - name: Configure static address profile
   community.general.nmcli:
     conn_name: "{{ node_network_conn_name }}"
