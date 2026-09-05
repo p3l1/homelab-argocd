@@ -1,0 +1,11 @@
+---
+node_base_packages:
+  # Longhorn-Voraussetzungen
+  - open-iscsi
+  - nfs-common
+  - util-linux
+  # Betriebswerkzeug
+  - curl
+  - git
+  - htop
+  - jq

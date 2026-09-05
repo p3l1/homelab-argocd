@@ -1,0 +1,23 @@
+---
+- name: Install authorized key
+  ansible.posix.authorized_key:
+    user: "{{ ansible_user }}"
+    key: "{{ lookup('file', node_ssh_public_key_file) }}"
+    state: present
+
+- name: Harden sshd
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "{{ ssh_item.regexp }}"
+    line: "{{ ssh_item.line }}"
+    validate: /usr/sbin/sshd -t -f %s
+  loop:
+    - regexp: '^#?PasswordAuthentication\s'
+      line: 'PasswordAuthentication no'
+    - regexp: '^#?PermitRootLogin\s'
+      line: 'PermitRootLogin prohibit-password'
+    - regexp: '^#?ChallengeResponseAuthentication\s'
+      line: 'ChallengeResponseAuthentication no'
+  loop_control:
+    loop_var: ssh_item
+  notify: Restart ssh

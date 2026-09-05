@@ -1,0 +1,4 @@
+creation_rules:
+  - path_regex: ansible/.*\.sops\.ya?ml$
+    encrypted_regex: ^(token)$
+    pgp: 7954EC02CDDF896536DFDCDE056C6FDDF9E15CF2

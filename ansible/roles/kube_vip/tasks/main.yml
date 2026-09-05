@@ -1,0 +1,19 @@
+---
+# kube-vip laeuft als DaemonSet im Cluster, die VIP existiert also noch nicht,
+# wenn der zweite Server ueber sie beitreten will. k3s rollt beim Start alles
+# aus dem manifests-Verzeichnis aus - das Manifest muss deshalb vorher liegen.
+- name: Ensure k3s manifest directory exists
+  ansible.builtin.file:
+    path: "{{ kube_vip_manifest_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy kube-vip manifest
+  ansible.builtin.template:
+    src: kube-vip.yaml.j2
+    dest: "{{ kube_vip_manifest_dir }}/kube-vip.yaml"
+    owner: root
+    group: root
+    mode: "0600"

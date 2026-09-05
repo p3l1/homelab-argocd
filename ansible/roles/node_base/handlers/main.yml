@@ -1,0 +1,11 @@
+---
+- name: Restart ssh
+  ansible.builtin.systemd:
+    name: ssh
+    state: restarted
+
+# Der Adresswechsel trennt die Verbindung. Nach dem Neustart ist der Node
+# ueber seine feste Adresse und weiterhin ueber mDNS erreichbar.
+- name: Reboot for network change
+  ansible.builtin.reboot:
+    reboot_timeout: 300

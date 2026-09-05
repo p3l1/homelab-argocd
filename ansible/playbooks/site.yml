@@ -1,0 +1,43 @@
+---
+# Vollstaendige Konvergenz des Clusters. Setzt voraus, dass die Nodes unter
+# ihren festen Adressen erreichbar sind (siehe bootstrap.yml).
+#
+#   ansible-playbook playbooks/site.yml
+- name: Configure nodes
+  hosts: k3s_cluster
+  gather_facts: true
+  become: true
+  roles:
+    - role: node_base
+
+- name: Prepare cluster
+  hosts: k3s_cluster
+  gather_facts: true
+  become: true
+  roles:
+    - role: k3s.orchestration.prereq
+    - role: k3s.orchestration.raspberrypi
+
+# Muss vor k3s_server laufen: k3s rollt beim Start alles aus dem
+# manifests-Verzeichnis aus, und die VIP muss stehen, bevor der zweite
+# Server ueber sie beitritt.
+- name: Stage kube-vip manifest
+  hosts: server
+  gather_facts: false
+  become: true
+  roles:
+    - role: kube_vip
+
+- name: Install k3s servers
+  hosts: server
+  gather_facts: false
+  become: true
+  roles:
+    - role: k3s.orchestration.k3s_server
+
+- name: Install k3s agents
+  hosts: agent
+  gather_facts: false
+  become: true
+  roles:
+    - role: k3s.orchestration.k3s_agent

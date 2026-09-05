@@ -1,0 +1,30 @@
+---
+# Erstkontakt mit einem frisch geflashten Node.
+#
+# macOS kann die ext4-Rootpartition nicht schreiben, eine feste Adresse laesst
+# sich also nicht mitflashen. Der Node startet per DHCP und meldet sich per
+# mDNS als <hostname>.local. Dieses Playbook verbindet sich darueber und
+# schreibt die Adresse aus dem Inventory fest.
+#
+#   ansible-playbook playbooks/bootstrap.yml --limit kube-01
+- name: Bootstrap freshly flashed nodes
+  hosts: k3s_cluster
+  gather_facts: true
+  become: true
+  vars:
+    ansible_host: "{{ inventory_hostname }}.local"
+
+  pre_tasks:
+    - name: Verify the node answers over mDNS
+      ansible.builtin.ping:
+
+    - name: Verify this is the intended node
+      ansible.builtin.assert:
+        that: ansible_facts['hostname'] in [inventory_hostname, 'raspberrypi']
+        fail_msg: >-
+          {{ inventory_hostname }}.local antwortet als
+          '{{ ansible_facts['hostname'] }}'. Vermutlich beantwortet ein anderer
+          Node die Anfrage - bitte pruefen, bevor etwas ueberschrieben wird.
+
+  roles:
+    - role: node_base

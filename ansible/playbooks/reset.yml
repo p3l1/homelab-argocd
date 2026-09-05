@@ -1,0 +1,7 @@
+---
+# Entfernt k3s wieder von den Nodes. Loescht keine Longhorn-Daten unter
+# /var/lib/longhorn - das muss bewusst geschehen.
+#
+#   ansible-playbook playbooks/reset.yml
+- name: Reset k3s
+  ansible.builtin.import_playbook: k3s.orchestration.reset

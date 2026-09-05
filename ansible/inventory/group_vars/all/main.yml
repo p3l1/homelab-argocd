@@ -1,0 +1,40 @@
+---
+# --- Zugang ---------------------------------------------------------------
+ansible_user: philipp
+ansible_become: true
+node_ssh_public_key_file: "{{ lookup('env', 'HOME') }}/.ssh/homelab_nodes_ed25519.pub"
+
+# --- Netz -----------------------------------------------------------------
+node_network_prefix: 24
+node_network_gateway: 10.35.99.1
+node_network_dns:
+  - 10.35.99.1
+  - 1.1.1.1
+node_timezone: Europe/Berlin
+node_locale: de_DE.UTF-8
+
+# --- k3s ------------------------------------------------------------------
+k3s_version: v1.36.4+k3s1
+api_endpoint: 10.35.99.110      # kube-vip, siehe Rolle kube_vip
+api_port: 6443
+cluster_context: homelab
+user_kubectl: true
+
+# servicelb weicht MetalLB, local-storage weicht Longhorn.
+server_config_yaml: |
+  disable:
+    - servicelb
+    - local-storage
+  disable-cloud-controller: true
+  write-kubeconfig-mode: "0644"
+  node-taint:
+    - "CriticalAddonsOnly=true:NoExecute"
+
+# --- kube-vip -------------------------------------------------------------
+kube_vip_address: "{{ api_endpoint }}"
+kube_vip_version: v1.2.3
+kube_vip_interface: eth0
+
+# --- NetworkManager -------------------------------------------------------
+node_network_interface: eth0
+node_network_conn_name: homelab-static

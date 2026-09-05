@@ -9,3 +9,11 @@ steps:
     commands:
       - apk add yamllint
       - yamllint .
+
+  - name: Ansible Lint
+    image: alpine:latest
+    commands:
+      - apk add --no-cache ansible-lint git
+      - cd ansible
+      - yamllint .
+      - ansible-lint

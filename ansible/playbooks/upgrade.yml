@@ -1,0 +1,7 @@
+---
+# Hebt k3s auf die Version aus group_vars. Nacheinander, damit das
+# etcd-Quorum erhalten bleibt.
+#
+#   ansible-playbook playbooks/upgrade.yml
+- name: Upgrade k3s
+  ansible.builtin.import_playbook: k3s.orchestration.upgrade

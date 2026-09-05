@@ -1,0 +1,9 @@
+---
+exclude_paths:
+  - .collections/
+  # Von SOPS erzeugt, Formatierung nicht beeinflussbar.
+  - inventory/group_vars/all/secrets.sops.yml
+skip_list:
+  # Die Collection setzt Variablen ohne Rollen-Praefix; unsere Rollen folgen
+  # dem, damit Inventory und Collection dieselben Namen verwenden.
+  - var-naming[no-role-prefix]

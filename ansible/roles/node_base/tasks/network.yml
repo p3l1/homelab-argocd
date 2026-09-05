@@ -1,0 +1,27 @@
+---
+# Raspberry Pi OS nutzt seit Bookworm NetworkManager. Das Profil wird nur
+# beschrieben, nicht aktiviert: ein Adresswechsel reisst die laufende
+# SSH-Sitzung ab. Den Wechsel vollzieht der Reboot-Handler.
+- name: Configure static address profile
+  community.general.nmcli:
+    conn_name: "{{ node_network_conn_name }}"
+    ifname: "{{ node_network_interface }}"
+    type: ethernet
+    method4: manual
+    ip4: "{{ ansible_host }}/{{ node_network_prefix }}"
+    gw4: "{{ node_network_gateway }}"
+    dns4: "{{ node_network_dns }}"
+    method6: disabled
+    autoconnect: true
+    state: present
+  notify: Reboot for network change
+
+- name: Remove the DHCP profile created at first boot
+  community.general.nmcli:
+    conn_name: "{{ node_base_default_conn }}"
+    state: absent
+  loop: "{{ ['Wired connection 1'] }}"
+  loop_control:
+    loop_var: node_base_default_conn
+  when: node_network_conn_name != node_base_default_conn
+  notify: Reboot for network change

@@ -1,0 +1,39 @@
+---
+# Kubernetes verlangt abgeschalteten Swap. dphys-swapfile richtet ihn beim
+# Booten sonst neu ein, deshalb maskieren statt nur deaktivieren.
+- name: Check for dphys-swapfile
+  ansible.builtin.stat:
+    path: /etc/init.d/dphys-swapfile
+  register: node_base_dphys
+
+- name: Disable dphys-swapfile
+  when: node_base_dphys.stat.exists
+  block:
+    - name: Turn off swap via dphys-swapfile
+      ansible.builtin.command: dphys-swapfile swapoff
+      register: node_base_swapoff
+      changed_when: false
+      failed_when: false
+
+    - name: Mask dphys-swapfile service
+      ansible.builtin.systemd:
+        name: dphys-swapfile
+        state: stopped
+        enabled: false
+        masked: true
+
+- name: Read active swap devices
+  ansible.builtin.command: swapon --noheadings --show=NAME
+  register: node_base_swapon
+  changed_when: false
+
+- name: Disable remaining swap
+  ansible.builtin.command: swapoff -a
+  when: node_base_swapon.stdout | trim | length > 0
+  changed_when: true
+
+- name: Remove swap entries from fstab
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    regexp: '^\s*[^#].*\sswap\s'
+    state: absent
