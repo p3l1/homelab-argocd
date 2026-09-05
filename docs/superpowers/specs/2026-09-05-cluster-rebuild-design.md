@@ -107,7 +107,7 @@ Reboot-Handler.
 
 ## Rolle `kube_vip`
 
-Die API erhält unter `10.35.99.110` eine schwebende Adresse. kube-vip läuft als
+Die API erhält unter `10.35.99.210` eine schwebende Adresse. kube-vip läuft als
 DaemonSet im Cluster, weshalb die Adresse noch nicht existiert, wenn der zweite
 Server über sie beitreten will. Die Rolle legt das Manifest deshalb **vor dem
 Start von k3s** unter `/var/lib/rancher/k3s/server/manifests/kube-vip.yaml` ab;
@@ -125,11 +125,11 @@ Monitoring-Clusters, `.200` dessen Traefik-LoadBalancer.
 | Zweck | Adresse | Hardware |
 |---|---|---|
 | API-VIP | `.110` | — |
-| `kube-01` – `kube-03`, Server | `.111` – `.113` | 3× Pi 4 |
-| `kube-04`, Agent | `.114` | 1× Pi 4 |
-| `kube-05`, `kube-06`, Agent | `.115` – `.116` | 2× Pi 5 |
-| `kube-07`, `kube-08`, reserviert | `.117` – `.118` | 2× Pi 5, derzeit Docker |
-| MetalLB-Pool | `.210` – `.230` | — |
+| `kube-01` – `kube-03`, Server | `.201` – `.203` | 3× Pi 4 |
+| `kube-04`, Agent | `.204` | 1× Pi 4 |
+| `kube-05`, `kube-06`, Agent | `.205` – `.206` | 2× Pi 5 |
+| `kube-07`, `kube-08`, reserviert | `.207` – `.208` | 2× Pi 5, derzeit Docker |
+| MetalLB-Pool | `.220` – `.240` | — |
 
 Die Server-Nodes tragen `CriticalAddonsOnly=true:NoExecute`, damit Workloads
 auf den Agents landen.
@@ -159,5 +159,5 @@ Vorhaben mit eigener Spezifikation.
 
 Der ArgoCD-Bootstrap gehört dagegen dazu, weil der Neuaufbau ohne ihn nicht
 abgeschlossen ist: `argocd-autopilot` gegen den frischen Cluster und der
-MetalLB-Pool auf `.210` – `.230`. Er wird als Kapitel des Runbooks
+MetalLB-Pool auf `.220` – `.240`. Er wird als Kapitel des Runbooks
 `docs/cluster-rebuild.md` festgehalten.

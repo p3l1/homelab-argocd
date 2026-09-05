@@ -10,12 +10,12 @@ Die Entwurfsentscheidungen stehen in
 
 | Rolle | Hardware | Hostname | Adresse |
 |---|---|---|---|
-| API-VIP (kube-vip) | — | — | `10.35.99.110` |
-| Server, etcd, getaintet | 3× Pi 4 | `kube-01` – `kube-03` | `.111` – `.113` |
-| Agent | 1× Pi 4 | `kube-04` | `.114` |
-| Agent | 2× Pi 5 | `kube-05`, `kube-06` | `.115` – `.116` |
-| reserviert, derzeit Docker | 2× Pi 5 | `kube-07`, `kube-08` | `.117` – `.118` |
-| MetalLB-Pool | — | — | `.210` – `.230` |
+| API-VIP (kube-vip) | — | — | `10.35.99.210` |
+| Server, etcd, getaintet | 3× Pi 4 | `kube-01` – `kube-03` | `.201` – `.203` |
+| Agent | 1× Pi 4 | `kube-04` | `.204` |
+| Agent | 2× Pi 5 | `kube-05`, `kube-06` | `.205` – `.206` |
+| reserviert, derzeit Docker | 2× Pi 5 | `kube-07`, `kube-08` | `.207` – `.208` |
+| MetalLB-Pool | — | — | `.220` – `.240` |
 
 Ausgespart bleiben `.1` (Gateway) sowie `.100` und `.200` — die gehören dem
 Talos-Cluster aus `homelab-monitoring`.
@@ -101,7 +101,7 @@ nicht idempotent und gehört korrigiert.
 export KUBECONFIG=~/.kube/config
 kubectl get nodes -o wide          # 6 Nodes, alle Ready
 kubectl -n kube-system get ds kube-vip-ds
-ping 10.35.99.110
+ping 10.35.99.210
 ```
 
 ## 4. ArgoCD einrichten
@@ -111,11 +111,11 @@ argocd-autopilot repo bootstrap --app https://github.com/argoproj-labs/argocd-au
 ```
 
 MetalLB muss laufen, bevor der Server über eine LoadBalancer-Adresse
-erreichbar wird — der Pool ist `.210` – `.230`:
+erreichbar wird — der Pool ist `.220` – `.240`:
 
 ```bash
 kubectl patch svc argocd-server -n argocd \
-  --patch '{"spec":{"type":"LoadBalancer","loadBalancerIP":"10.35.99.210"}}'
+  --patch '{"spec":{"type":"LoadBalancer","loadBalancerIP":"10.35.99.220"}}'
 
 kubectl -n argocd get secret argocd-initial-admin-secret \
   -o jsonpath="{.data.password}" | base64 -d; echo

@@ -15,7 +15,7 @@ node_locale: de_DE.UTF-8
 
 # --- k3s ------------------------------------------------------------------
 k3s_version: v1.36.4+k3s1
-api_endpoint: 10.35.99.110      # kube-vip, siehe Rolle kube_vip
+api_endpoint: 10.35.99.210      # kube-vip, siehe Rolle kube_vip
 api_port: 6443
 cluster_context: homelab
 user_kubectl: true
