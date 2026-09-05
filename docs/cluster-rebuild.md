@@ -80,32 +80,45 @@ das Skript ab.
 
 ## 2. Node in Betrieb nehmen
 
-SSD in den Pi, einschalten, etwa eine Minute warten. Dann:
+SSD in den Pi, einschalten, etwa eine Minute warten. Der Pi hängt danach an
+einer DHCP-Adresse und heißt noch `raspberrypi`.
+
+### Welches Gerät wird welcher Node?
+
+Die Server gehören auf die Raspberry Pi 4, die Agents auf die stärkeren Pi 5.
+Welches Gerät welches Modell ist, verrät:
 
 ```bash
-ansible-playbook playbooks/bootstrap.yml --limit kube-01
+./scripts/identify-nodes.sh 10.35.99.11 10.35.99.20 10.35.99.30
 ```
 
-Das Playbook verbindet sich über die Adresse aus dem Inventory. Der Node muss
-darunter also bereits erreichbar sein — **der Router braucht eine
-DHCP-Reservierung auf die MAC-Adresse jedes Pi**, passend zum Adressplan oben.
+Die Adressen findest du in der DHCP-Liste des Routers. Trage sie anschließend
+in `inventory/bootstrap.yml` ein — dort steht je Node, über welche Adresse
+verbunden wird (`ansible_host`) und welche er dauerhaft bekommt
+(`node_address`).
 
-Hängt ein Node übergangsweise an einer anderen Adresse, lässt sie sich für
-den Lauf mitgeben:
+### Erstkontakt
 
 ```bash
-ansible-playbook playbooks/bootstrap.yml --limit kube-01 -e ansible_host=10.35.99.57
+ansible-playbook -i inventory/bootstrap.yml playbooks/bootstrap.yml --ask-pass
 ```
 
-Anschließend schreibt `node_base` die Adresse per NetworkManager fest, sodass
-der Node nicht mehr vom DHCP abhängt. Ändert sich die Adresse dabei, startet
-er einmal neu; stimmt sie schon, passiert nichts.
+Das Playbook meldet sich als `pi` mit Passwort an, setzt Hostname und
+Zeitzone, installiert die Pakete, hinterlegt den YubiKey, schaltet Swap und
+Passwort-Anmeldung ab und schreibt die feste Adresse fest. Beim
+Adresswechsel startet der Node neu; Ansible folgt ihm dabei auf die neue
+Adresse.
+
+Verlangt `sudo` auf dem Pi ein Passwort, zusätzlich `--ask-become-pass`
+angeben.
+
+Ab hier ist Passwort-Anmeldung abgeschaltet und der YubiKey der einzige Weg
+hinein — alle weiteren Läufe kommen ohne `--ask-pass` aus und nutzen das
+reguläre Inventory.
 
 Vor jeder Änderung prüft das Playbook, ob der antwortende Host wirklich der
 gemeinte ist — so lässt sich nicht versehentlich ein laufender Node
 überschreiben.
-
-Schritte 1 und 2 für jeden der sechs Nodes wiederholen.
 
 ## 3. Cluster ausrollen
 

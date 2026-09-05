@@ -9,7 +9,7 @@
     ifname: "{{ node_network_interface }}"
     type: ethernet
     method4: manual
-    ip4: "{{ ansible_host }}/{{ node_network_prefix }}"
+    ip4: "{{ node_address }}/{{ node_network_prefix }}"
     gw4: "{{ node_network_gateway }}"
     dns4: "{{ node_network_dns }}"
     method6: disabled

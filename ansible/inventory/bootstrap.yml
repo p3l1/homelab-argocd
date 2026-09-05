@@ -1,0 +1,44 @@
+---
+# Uebergangs-Inventory fuer den Erstkontakt.
+#
+# Frisch aufgesetzte Pis haengen an einer DHCP-Adresse und heissen alle
+# "raspberrypi". Hier wird festgelegt, welches Geraet welcher Node wird:
+#   ansible_host  aktuelle DHCP-Adresse, ueber die verbunden wird
+#   node_address  Zieladresse, die node_base dauerhaft festschreibt
+#
+# Welches Geraet welches Modell ist, zeigt scripts/identify-nodes.sh -
+# Server gehoeren auf die Raspberry Pi 4, Agents auf die staerkeren Pi 5.
+#
+#   ansible-playbook -i inventory/bootstrap.yml playbooks/bootstrap.yml --ask-pass
+#
+# Danach antworten die Nodes unter .211-.216 und das regulaere Inventory greift.
+k3s_cluster:
+  children:
+    server:
+      hosts:
+        kube-01:
+          ansible_host: 10.35.99.CHANGEME
+          node_address: 10.35.99.211
+          node_model: rpi4
+        kube-02:
+          ansible_host: 10.35.99.CHANGEME
+          node_address: 10.35.99.212
+          node_model: rpi4
+        kube-03:
+          ansible_host: 10.35.99.CHANGEME
+          node_address: 10.35.99.213
+          node_model: rpi4
+    agent:
+      hosts:
+        kube-04:
+          ansible_host: 10.35.99.CHANGEME
+          node_address: 10.35.99.214
+          node_model: rpi4
+        kube-05:
+          ansible_host: 10.35.99.CHANGEME
+          node_address: 10.35.99.215
+          node_model: rpi5
+        kube-06:
+          ansible_host: 10.35.99.CHANGEME
+          node_address: 10.35.99.216
+          node_model: rpi5

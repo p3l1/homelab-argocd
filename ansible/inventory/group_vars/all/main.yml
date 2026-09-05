@@ -1,7 +1,12 @@
 ---
 # --- Zugang ---------------------------------------------------------------
-ansible_user: philipp
+ansible_user: pi
 ansible_become: true
+
+# Zieladresse des Node. Im regulaeren Inventory identisch mit der
+# Verbindungsadresse; beim Bootstrap haengt der Node noch am DHCP und
+# inventory/bootstrap.yml setzt beide getrennt.
+node_address: "{{ ansible_host }}"
 # Quelle ist ansible/files/ssh/ - flash-node.sh liest dieselben Dateien.
 node_ssh_public_key_files:
   - files/ssh/yubikey.pub

@@ -4,8 +4,23 @@
     name: ssh
     state: restarted
 
-# Der Adresswechsel trennt die Verbindung. Nach dem Neustart antwortet der
-# Node unter der Adresse aus dem Inventory.
+# Der Neustart trennt die Verbindung, und der Node kehrt unter einer anderen
+# Adresse zurueck als der, ueber die wir verbunden sind. Deshalb wird der
+# Neustart nur angestossen und danach auf die Zieladresse gewartet.
 - name: Reboot for network change
-  ansible.builtin.reboot:
-    reboot_timeout: 300
+  ansible.builtin.shell: "sleep 2 && systemctl reboot"
+  async: 1
+  poll: 0
+  changed_when: true
+  listen: Reboot for network change
+
+- name: Follow the node to its new address
+  ansible.builtin.set_fact:
+    ansible_host: "{{ node_address }}"
+  listen: Reboot for network change
+
+- name: Wait for the node to come back
+  ansible.builtin.wait_for_connection:
+    delay: 20
+    timeout: 300
+  listen: Reboot for network change
