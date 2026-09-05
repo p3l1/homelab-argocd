@@ -97,6 +97,18 @@ in `inventory/bootstrap.yml` ein — dort steht je Node, über welche Adresse
 verbunden wird (`ansible_host`) und welche er dauerhaft bekommt
 (`node_address`).
 
+Die Belegung am USW Flex 2.5G 8 PoE:
+
+| Port | Node | Modell |
+|---|---|---|
+| 1 | `kube-05` | Pi 5 |
+| 2 | `kube-06` | Pi 5 |
+| 3, 4 | Docker-Hosts, nicht im Cluster | Pi 5 |
+| 5 | `kube-01` | Pi 4 |
+| 6 | `kube-03` | Pi 4 |
+| 7 | `kube-02` | Pi 4 |
+| 8 | `kube-04` | Pi 4 |
+
 ### Erstkontakt
 
 ```bash

@@ -9,6 +9,9 @@
 # Welches Geraet welches Modell ist, zeigt scripts/identify-nodes.sh -
 # Server gehoeren auf die Raspberry Pi 4, Agents auf die staerkeren Pi 5.
 #
+# Die Kommentare nennen den Port am USW Flex 2.5G 8 PoE. Port 3 und 4 tragen
+# die beiden Docker-Hosts und gehoeren nicht zum Cluster.
+#
 #   ansible-playbook -i inventory/bootstrap.yml playbooks/bootstrap.yml --ask-pass
 #
 # Danach antworten die Nodes unter .211-.216 und das regulaere Inventory greift.
@@ -17,28 +20,28 @@ k3s_cluster:
     server:
       hosts:
         kube-01:
-          ansible_host: 10.35.99.CHANGEME
+          ansible_host: 10.35.99.34  # Port 5
           node_address: 10.35.99.211
           node_model: rpi4
         kube-02:
-          ansible_host: 10.35.99.CHANGEME
+          ansible_host: 10.35.99.30  # Port 7
           node_address: 10.35.99.212
           node_model: rpi4
         kube-03:
-          ansible_host: 10.35.99.CHANGEME
+          ansible_host: 10.35.99.20  # Port 6
           node_address: 10.35.99.213
           node_model: rpi4
     agent:
       hosts:
         kube-04:
-          ansible_host: 10.35.99.CHANGEME
+          ansible_host: 10.35.99.42  # Port 8
           node_address: 10.35.99.214
           node_model: rpi4
         kube-05:
-          ansible_host: 10.35.99.CHANGEME
+          ansible_host: 10.35.99.11  # Port 1
           node_address: 10.35.99.215
           node_model: rpi5
         kube-06:
-          ansible_host: 10.35.99.CHANGEME
+          ansible_host: 10.35.99.31  # Port 2
           node_address: 10.35.99.216
           node_model: rpi5
