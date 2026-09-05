@@ -26,7 +26,7 @@ in [`../docs/superpowers/specs/2026-09-05-cluster-rebuild-design.md`](../docs/su
 |---|---|
 | `flash-node.sh` | SSD beschreiben, prüfen und Erstkonfiguration ablegen |
 | `identify-nodes.sh` | Modell, MAC und Seriennummer frisch gestarteter Pis |
-| `bootstrap-node.sh` | Erstkontakt mit dem richtigen Inventory und den nötigen Flags |
+| `bootstrap-node.sh` | Erstkontakt für einen, mehrere oder `all` Nodes; wählt Inventory und Flags selbst (`--dry-run` zeigt nur, was liefe) |
 
 ## Rollen
 
