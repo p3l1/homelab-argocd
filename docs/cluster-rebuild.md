@@ -127,7 +127,14 @@ ansible-playbook -i inventory/bootstrap.yml playbooks/bootstrap.yml \
 
 Das Playbook meldet sich als `pi` mit Passwort an, setzt Hostname und
 Zeitzone, installiert die Pakete, hinterlegt den YubiKey, schaltet Swap und
-Passwort-Anmeldung ab und schreibt die feste Adresse fest. Beim
+Passwort-Anmeldung ab und schreibt die feste Adresse fest. Zum Schluss räumt
+es auf: `bluez`, `avahi-daemon` und `wpasupplicant` fliegen samt ihrer
+Dienste raus, und `dtoverlay=disable-wifi` sowie `dtoverlay=disable-bt` in
+`config.txt` sorgen dafür, dass die Funktreiber gar nicht mehr laden — dafür
+startet der Node einmal neu.
+
+`rpcbind` und `nfs-blkmap` bleiben bewusst: sie gehören zu `nfs-common`, das
+Longhorn für RWX-Volumes braucht. Beim
 Adresswechsel startet der Node neu; Ansible folgt ihm dabei auf die neue
 Adresse.
 

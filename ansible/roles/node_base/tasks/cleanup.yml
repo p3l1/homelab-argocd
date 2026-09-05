@@ -1,0 +1,44 @@
+---
+# Ein Cluster-Node braucht weder Funk noch Zeroconf. Die Pakete verschwinden
+# samt ihrer Dienste, und die Overlays sorgen dafuer, dass die Treiber gar
+# nicht erst geladen werden.
+#
+# rpcbind und nfs-blkmap bleiben: sie gehoeren zu nfs-common, das Longhorn
+# fuer RWX-Volumes braucht.
+- name: Remove packages a cluster node does not need
+  ansible.builtin.apt:
+    name: "{{ node_base_remove_packages }}"
+    state: absent
+    purge: true
+    autoremove: true
+
+- name: Disable the radios in firmware
+  ansible.builtin.lineinfile:
+    path: /boot/firmware/config.txt
+    line: "{{ overlay_item }}"
+    regexp: "^{{ overlay_item | regex_escape }}$"
+    state: present
+    insertafter: EOF
+  loop: "{{ node_base_disable_overlays }}"
+  loop_control:
+    loop_var: overlay_item
+  notify: Reboot node
+
+- name: Collect service state
+  ansible.builtin.service_facts:
+
+- name: Confirm no unwanted service is still running
+  ansible.builtin.assert:
+    that: >-
+      ansible_facts.services
+      | dict2items
+      | selectattr('key', 'search', 'avahi-daemon|bluetooth|wpa_supplicant')
+      | selectattr('value.state', 'eq', 'running')
+      | list | length == 0
+    fail_msg: >-
+      Es laufen noch Dienste, die entfernt sein sollten:
+      {{ ansible_facts.services | dict2items
+         | selectattr('key', 'search', 'avahi-daemon|bluetooth|wpa_supplicant')
+         | selectattr('value.state', 'eq', 'running')
+         | map(attribute='key') | join(', ') }}
+    success_msg: Keine ueberfluessigen Dienste mehr aktiv.

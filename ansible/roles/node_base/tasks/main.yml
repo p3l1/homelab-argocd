@@ -32,6 +32,7 @@
     - swap.yml
     - network.yml
     - ssh.yml
+    - cleanup.yml
   loop_control:
     loop_var: include_item
 

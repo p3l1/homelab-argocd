@@ -14,3 +14,14 @@ node_base_packages:
 # aus, bis auf einem Node erprobt. Einschalten mit:
 #   -e node_sudo_via_ssh_agent=true
 node_sudo_via_ssh_agent: false
+
+# Funk und Zeroconf braucht ein Cluster-Node nicht. nfs-common und das daran
+# haengende rpcbind bleiben - Longhorn braucht sie fuer RWX-Volumes.
+node_base_remove_packages:
+  - bluez
+  - avahi-daemon
+  - wpasupplicant
+
+node_base_disable_overlays:
+  - dtoverlay=disable-wifi
+  - dtoverlay=disable-bt

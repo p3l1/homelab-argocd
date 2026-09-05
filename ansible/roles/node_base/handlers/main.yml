@@ -3,3 +3,8 @@
   ansible.builtin.systemd:
     name: ssh
     state: restarted
+
+# Die Overlays greifen erst nach einem Neustart.
+- name: Reboot node
+  ansible.builtin.reboot:
+    reboot_timeout: 300
