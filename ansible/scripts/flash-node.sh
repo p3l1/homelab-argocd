@@ -5,6 +5,7 @@
 #
 #   ./flash-node.sh kube-01 /dev/disk6
 #   ./flash-node.sh --config-only kube-01 /dev/disk6
+#   ./flash-node.sh --no-verify kube-01 /dev/disk6
 #
 # Mit --config-only wird nur die custom.toml neu geschrieben, das Image bleibt
 # unberuehrt - gedacht fuer bereits geflashte SSDs, deren hinterlegte
@@ -31,12 +32,17 @@ info() { printf '\033[94m==>\033[0m %s\n' "$1"; }
 ok() { printf '\033[92m[OK]\033[0m %s\n' "$1"; }
 
 CONFIG_ONLY=false
-if [[ "${1:-}" == "--config-only" ]]; then
-  CONFIG_ONLY=true
+VERIFY=true
+while [[ "${1:-}" == --* ]]; do
+  case "$1" in
+    --config-only) CONFIG_ONLY=true ;;
+    --no-verify)   VERIFY=false ;;
+    *) die "Unbekannte Option: $1" ;;
+  esac
   shift
-fi
+done
 
-[[ $# -eq 2 ]] || die "Aufruf: $0 [--config-only] <hostname> <device>   z.B. $0 kube-01 /dev/disk6"
+[[ $# -eq 2 ]] || die "Aufruf: $0 [--config-only] [--no-verify] <hostname> <device>   z.B. $0 kube-01 /dev/disk6"
 HOSTNAME="$1"
 DEVICE="$2"
 
@@ -98,6 +104,19 @@ if ! $CONFIG_ONLY; then
   xz -dc "$IMAGE_XZ" | sudo dd of="$RAW_DEVICE" bs=4m status=progress
   sync
   ok "Image geschrieben"
+
+  # Zurueckgelesen wird vor der custom.toml, solange das Abbild noch
+  # unveraendert ist - danach weicht die Boot-Partition zwangslaeufig ab.
+  if $VERIFY; then
+    info "Lese zurueck und vergleiche"
+    IMG_SIZE="$(xz -l --robot "$IMAGE_XZ" | awk '/^totals/ {print $5}')"
+    [[ "$IMG_SIZE" =~ ^[0-9]+$ ]] || die "Groesse des Abbilds nicht ermittelbar."
+    EXPECT_IMG="$(xz -dc "$IMAGE_XZ" | shasum -a 256 | awk '{print $1}')"
+    ACTUAL_IMG="$(sudo dd if="$RAW_DEVICE" bs=1m 2>/dev/null | head -c "$IMG_SIZE" | shasum -a 256 | awk '{print $1}')"
+    [[ "$EXPECT_IMG" == "$ACTUAL_IMG" ]] \
+      || die "Das Geschriebene weicht vom Abbild ab. SSD oder Kabel pruefen und erneut flashen."
+    ok "Geschriebene Daten stimmen mit dem Abbild ueberein"
+  fi
 fi
 
 # --- Erstkonfiguration ----------------------------------------------------

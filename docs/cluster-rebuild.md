@@ -44,8 +44,13 @@ cd ansible
 
 Das Skript lädt das aktuelle Raspberry Pi OS Lite arm64, prüft die
 SHA256-Summe und verlangt eine ausdrückliche Bestätigung des Ziel-Device —
-**der Schreibvorgang löscht die SSD vollständig**. Anschließend legt es die
+**der Schreibvorgang löscht die SSD vollständig**. Danach liest es das
+Geschriebene zurück und vergleicht es mit dem Abbild; erst dann legt es die
 `custom.toml` mit Hostname, Benutzer, SSH-Schlüssel und Locale ab.
+
+Die Rücklese-Prüfung kostet etwa eine Minute und deckt stille Schreibfehler
+auf, die sich sonst erst beim nicht bootenden Pi zeigen. Mit `--no-verify`
+lässt sie sich überspringen.
 
 Hinterlegt werden alle öffentlichen Schlüssel aus `ansible/files/ssh/` —
 derzeit ausschließlich der GPG-Authentication-Subkey des YubiKey. Die Rolle
