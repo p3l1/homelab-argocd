@@ -48,9 +48,12 @@ SHA256-Summe und verlangt eine ausdrückliche Bestätigung des Ziel-Device —
 `custom.toml` mit Hostname, Benutzer, SSH-Schlüssel und Locale ab.
 
 Hinterlegt werden alle öffentlichen Schlüssel aus `ansible/files/ssh/` —
-derzeit der YubiKey (GPG-Authentication-Subkey) und ein lokaler Schlüssel als
-Rückfallweg. Die Rolle `node_base` pflegt später dieselbe Liste, Quelle ist
-also beide Male dasselbe Verzeichnis. Passwort-Anmeldung ist abgeschaltet.
+derzeit ausschließlich der GPG-Authentication-Subkey des YubiKey. Die Rolle
+`node_base` pflegt später dieselbe Liste, Quelle ist also beide Male dasselbe
+Verzeichnis. Passwort-Anmeldung ist abgeschaltet.
+
+Der Zugang hängt damit vollständig am YubiKey: Ohne gesteckten Token gibt es
+keinen Weg auf die Nodes — weder für dich noch für Ansible.
 
 Ändern sich die Schlüssel, muss eine bereits geflashte SSD nicht neu
 beschrieben werden:

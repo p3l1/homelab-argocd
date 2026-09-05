@@ -4,8 +4,7 @@ ansible_user: philipp
 ansible_become: true
 # Quelle ist ansible/files/ssh/ - flash-node.sh liest dieselben Dateien.
 node_ssh_public_key_files:
-  - files/ssh/yubikey.pub        # YubiKey, primaerer Zugang
-  - files/ssh/homelab-nodes.pub  # Rueckfallweg, falls der YubiKey fehlt
+  - files/ssh/yubikey.pub
 
 # --- Netz -----------------------------------------------------------------
 node_network_prefix: 24

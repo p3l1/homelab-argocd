@@ -7,7 +7,9 @@
 | Datei | Herkunft |
 |---|---|
 | `yubikey.pub` | GPG-Authentication-Subkey auf dem YubiKey (`A097B5F697CF30CB`) |
-| `homelab-nodes.pub` | `~/.ssh/homelab_nodes_ed25519`, Rückfallweg ohne YubiKey |
+
+Es gibt bewusst keinen zweiten Schlüssel: Der Zugang zu den Nodes hängt am
+YubiKey, der dafür gesteckt sein muss.
 
 Welche Dateien tatsächlich verwendet werden, steht in
 `inventory/group_vars/all/main.yml` unter `node_ssh_public_key_files`.
