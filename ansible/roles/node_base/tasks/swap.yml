@@ -1,6 +1,39 @@
 ---
-# Kubernetes verlangt abgeschalteten Swap. dphys-swapfile richtet ihn beim
-# Booten sonst neu ein, deshalb maskieren statt nur deaktivieren.
+# Kubernetes verlangt abgeschalteten Swap.
+#
+# Auf Raspberry Pi OS Trixie gibt es kein dphys-swapfile mehr - den Swap legt
+# systemd-zram-generator als /dev/zram0 an, konfiguriert in
+# /usr/lib/systemd/zram-generator.conf. Eine Datei in /etc hat Vorrang.
+- name: Check for systemd-zram-generator
+  ansible.builtin.stat:
+    path: /usr/lib/systemd/zram-generator.conf
+  register: node_base_zram_conf
+
+- name: Disable zram swap
+  when: node_base_zram_conf.stat.exists
+  block:
+    - name: Override the zram configuration
+      ansible.builtin.copy:
+        content: |
+          # Von Ansible verwaltet - Rolle node_base, swap.yml
+          # Kubernetes verlangt abgeschalteten Swap.
+          [zram0]
+          zram-size = 0
+        dest: /etc/systemd/zram-generator.conf
+        owner: root
+        group: root
+        mode: "0644"
+
+    # Sicherheitsnetz: greift die Konfiguration nicht, verhindert die
+    # Maskierung den Start trotzdem.
+    - name: Mask the zram setup unit
+      ansible.builtin.systemd:
+        name: systemd-zram-setup@zram0.service
+        enabled: false
+        masked: true
+      failed_when: false
+
+# dphys-swapfile gibt es auf aelteren Ausgaben noch.
 - name: Check for dphys-swapfile
   ansible.builtin.stat:
     path: /etc/init.d/dphys-swapfile
@@ -8,28 +41,22 @@
 
 - name: Disable dphys-swapfile
   when: node_base_dphys.stat.exists
-  block:
-    - name: Turn off swap via dphys-swapfile
-      ansible.builtin.command: dphys-swapfile swapoff
-      register: node_base_swapoff
-      changed_when: false
-      failed_when: false
+  ansible.builtin.systemd:
+    name: dphys-swapfile
+    state: stopped
+    enabled: false
+    masked: true
 
-    - name: Mask dphys-swapfile service
-      ansible.builtin.systemd:
-        name: dphys-swapfile
-        state: stopped
-        enabled: false
-        masked: true
-
+# /proc/swaps statt swapon, das liegt in /sbin und damit ausserhalb des
+# PATH einer nicht angemeldeten Sitzung.
 - name: Read active swap devices
-  ansible.builtin.command: swapon --noheadings --show=NAME
-  register: node_base_swapon
+  ansible.builtin.command: cat /proc/swaps
+  register: node_base_swaps
   changed_when: false
 
 - name: Disable remaining swap
-  ansible.builtin.command: swapoff -a
-  when: node_base_swapon.stdout | trim | length > 0
+  ansible.builtin.command: /sbin/swapoff -a
+  when: node_base_swaps.stdout_lines | length > 1
   changed_when: true
 
 - name: Remove swap entries from fstab

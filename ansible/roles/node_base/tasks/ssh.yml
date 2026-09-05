@@ -1,26 +1,50 @@
 ---
+# Der Schluessel muss liegen, bevor die Passwort-Anmeldung faellt - sonst
+# sperrt der naechste Task uns aus.
 - name: Install authorized keys
   ansible.posix.authorized_key:
     user: "{{ ansible_user }}"
     key: "{{ lookup('file', playbook_dir + '/../' + key_item) }}"
     state: present
+    exclusive: false
   loop: "{{ node_ssh_public_key_files }}"
   loop_control:
     loop_var: key_item
 
+# Eine eigene Datei statt Aenderungen an der Distributionsdatei: sshd_config
+# bindet sshd_config.d/*.conf in Zeile 12 ein, und bei OpenSSH gewinnt der
+# zuerst gelesene Wert. Was hier steht, sticht also alles Spaetere.
 - name: Harden sshd
-  ansible.builtin.lineinfile:
-    path: /etc/ssh/sshd_config
-    regexp: "{{ ssh_item.regexp }}"
-    line: "{{ ssh_item.line }}"
-    validate: /usr/sbin/sshd -t -f %s
-  loop:
-    - regexp: '^#?PasswordAuthentication\s'
-      line: 'PasswordAuthentication no'
-    - regexp: '^#?PermitRootLogin\s'
-      line: 'PermitRootLogin prohibit-password'
-    - regexp: '^#?ChallengeResponseAuthentication\s'
-      line: 'ChallengeResponseAuthentication no'
-  loop_control:
-    loop_var: ssh_item
-  notify: Restart ssh
+  block:
+    - name: Write the hardening drop-in
+      ansible.builtin.copy:
+        content: |
+          # Von Ansible verwaltet - Rolle node_base, ssh.yml
+          PasswordAuthentication no
+          KbdInteractiveAuthentication no
+          PermitRootLogin prohibit-password
+        dest: /etc/ssh/sshd_config.d/10-homelab.conf
+        owner: root
+        group: root
+        mode: "0644"
+        backup: true
+      register: node_base_sshd_dropin
+      notify: Restart ssh
+
+    # Geprueft wird die Gesamtkonfiguration. Ein validate: am copy-Task
+    # bekaeme nur das Fragment zu sehen und scheiterte an fehlenden Hostkeys.
+    - name: Verify the resulting sshd configuration
+      ansible.builtin.command: /usr/sbin/sshd -t
+      changed_when: false
+
+  rescue:
+    - name: Remove the broken drop-in
+      ansible.builtin.file:
+        path: /etc/ssh/sshd_config.d/10-homelab.conf
+        state: absent
+
+    - name: Report the rollback
+      ansible.builtin.fail:
+        msg: >-
+          Die sshd-Konfiguration war fehlerhaft und wurde zurueckgenommen.
+          Der Zugang bleibt unveraendert.
