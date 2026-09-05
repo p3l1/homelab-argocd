@@ -169,6 +169,19 @@ keymap = "${KEYMAP}"
 timezone = "${TIMEZONE}"
 TOML
 
+# Ohne diesen Parameter wird custom.toml beim Start schlicht ignoriert.
+# firstboot entfernt ihn selbst wieder, sobald es durchgelaufen ist.
+FIRSTBOOT_INIT="init=/usr/lib/raspberrypi-sys-mods/firstboot"
+if grep -q "$FIRSTBOOT_INIT" "${BOOT}/cmdline.txt"; then
+  ok "firstboot-Hook bereits gesetzt"
+else
+  # cmdline.txt muss eine einzige Zeile bleiben, sonst bootet der Pi nicht.
+  printf '%s %s\n' "$(tr -d '\r\n' < "${BOOT}/cmdline.txt")" "$FIRSTBOOT_INIT" \
+    > "${BOOT}/cmdline.txt.tmp"
+  mv "${BOOT}/cmdline.txt.tmp" "${BOOT}/cmdline.txt"
+  ok "firstboot-Hook in cmdline.txt eingetragen"
+fi
+
 sync
 ok "custom.toml fuer ${HOSTNAME} abgelegt (${#KEYS[@]} Schluessel)"
 diskutil unmountDisk "$DEVICE" >/dev/null

@@ -52,6 +52,12 @@ Die Rücklese-Prüfung kostet etwa eine Minute und deckt stille Schreibfehler
 auf, die sich sonst erst beim nicht bootenden Pi zeigen. Mit `--no-verify`
 lässt sie sich überspringen.
 
+Zusätzlich trägt das Skript `init=/usr/lib/raspberrypi-sys-mods/firstboot` in
+`cmdline.txt` ein. Ohne diesen Parameter wird `custom.toml` beim Start
+kommentarlos ignoriert — der Pi kommt dann als `raspberrypi` ohne SSH hoch.
+`firstboot` entfernt den Parameter selbst wieder, sobald es durchgelaufen
+ist.
+
 Hinterlegt werden alle öffentlichen Schlüssel aus `ansible/files/ssh/` —
 derzeit ausschließlich der GPG-Authentication-Subkey des YubiKey. Die Rolle
 `node_base` pflegt später dieselbe Liste, Quelle ist also beide Male dasselbe
