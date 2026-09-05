@@ -34,3 +34,8 @@
     - ssh.yml
   loop_control:
     loop_var: include_item
+
+# Noch nicht erprobt - bewusst abgeschaltet, siehe defaults/main.yml.
+- name: Allow sudo via forwarded SSH agent
+  ansible.builtin.include_tasks: sudo_agent.yml
+  when: node_sudo_via_ssh_agent | bool

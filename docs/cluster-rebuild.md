@@ -109,8 +109,40 @@ Passwort-Anmeldung ab und schreibt die feste Adresse fest. Beim
 Adresswechsel startet der Node neu; Ansible folgt ihm dabei auf die neue
 Adresse.
 
-Verlangt `sudo` auf dem Pi ein Passwort, zusätzlich `--ask-become-pass`
-angeben.
+`sudo` verlangt auf den Pis ein Passwort, also zusätzlich
+`--ask-become-pass` angeben.
+
+### sudo über den SSH-Agent statt Passwort
+
+Optional kann `sudo` sich über den weitergereichten SSH-Agent
+authentifizieren — dann genügt der gesteckte YubiKey und es braucht kein
+Passwort mehr. Die Rolle bringt das mit, **standardmäßig abgeschaltet**.
+
+Erst prüfen, was der aktuelle Stand ist:
+
+```bash
+ansible-playbook playbooks/check-sudo-agent.yml --limit kube-05 --ask-become-pass
+```
+
+Dann auf **einem** Node aktivieren und erneut prüfen:
+
+```bash
+ansible-playbook playbooks/bootstrap.yml --limit kube-05 \
+  --ask-become-pass -e node_sudo_via_ssh_agent=true
+ansible-playbook playbooks/check-sudo-agent.yml --limit kube-05
+```
+
+Erst wenn das sauber durchläuft, die Einstellung dauerhaft in
+`inventory/group_vars/all/main.yml` setzen.
+
+Zwei Vorkehrungen sind eingebaut: Der PAM-Eintrag ist `sufficient`, nicht
+`required` — scheitert die Agent-Prüfung, fragt PAM wie bisher nach dem
+Passwort. Und schlägt die Änderung fehl, stellt ein `rescue`-Block die
+gesicherte `/etc/pam.d/sudo` wieder her.
+
+Die akzeptierten Schlüssel liegen in `/etc/security/sudo_authorized_keys` und
+gehören root. Unter `~/.ssh/authorized_keys` könnte sich sonst jeder, der
+Zugriff auf das Konto hat, selbst `sudo`-Rechte eintragen.
 
 Ab hier ist Passwort-Anmeldung abgeschaltet und der YubiKey der einzige Weg
 hinein — alle weiteren Läufe kommen ohne `--ask-pass` aus und nutzen das

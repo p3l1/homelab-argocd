@@ -1,0 +1,80 @@
+---
+# sudo per weitergereichtem SSH-Agent statt Passwort.
+#
+# Bewusst 'sufficient' und nicht 'required': schlaegt die Agent-Pruefung fehl,
+# faellt PAM auf die Passwortabfrage zurueck. Ein Aussperren ist damit
+# ausgeschlossen.
+#
+# Die Schluesseldatei gehoert root. Laege sie unter ~/.ssh, koennte jeder mit
+# Zugriff auf das Konto sich selbst einen Schluessel eintragen und damit
+# sudo erlangen.
+- name: Install pam_ssh_agent_auth
+  ansible.builtin.apt:
+    name: libpam-ssh-agent-auth
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Install keys accepted for sudo
+  ansible.builtin.copy:
+    content: |
+      # Von Ansible verwaltet - Rolle node_base, sudo_agent.yml
+      {% for f in node_ssh_public_key_files %}
+      {{ lookup('file', playbook_dir + '/../' + f) }}
+      {% endfor %}
+    dest: /etc/security/sudo_authorized_keys
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Keep SSH_AUTH_SOCK across sudo
+  ansible.builtin.copy:
+    content: |
+      # Von Ansible verwaltet - Rolle node_base, sudo_agent.yml
+      Defaults env_keep += "SSH_AUTH_SOCK"
+    dest: /etc/sudoers.d/010_ssh-agent-auth
+    owner: root
+    group: root
+    mode: "0440"
+    validate: /usr/sbin/visudo -c -f %s
+
+- name: Enable agent authentication for sudo
+  block:
+    - name: Add pam_ssh_agent_auth to the sudo stack
+      ansible.builtin.lineinfile:
+        path: /etc/pam.d/sudo
+        line: "auth sufficient pam_ssh_agent_auth.so file=/etc/security/sudo_authorized_keys"
+        insertbefore: '^@include common-auth'
+        firstmatch: true
+        backup: true
+      register: node_base_pam_sudo
+
+    - name: Confirm sudo still works
+      ansible.builtin.command: sudo -n true
+      become: false
+      changed_when: false
+      register: node_base_sudo_check
+      failed_when: false
+
+    - name: Fail if the sudo stack is broken
+      ansible.builtin.assert:
+        that: node_base_sudo_check.rc in [0, 1]
+        fail_msg: >-
+          sudo antwortet nach der PAM-Aenderung unerwartet
+          (rc={{ node_base_sudo_check.rc }}). Die Sicherung liegt unter
+          {{ node_base_pam_sudo.backup | default('/etc/pam.d/sudo.*') }}.
+
+  rescue:
+    - name: Restore the previous sudo stack
+      ansible.builtin.copy:
+        src: "{{ node_base_pam_sudo.backup }}"
+        dest: /etc/pam.d/sudo
+        remote_src: true
+        mode: "0644"
+      when: node_base_pam_sudo.backup is defined
+
+    - name: Report the rollback
+      ansible.builtin.fail:
+        msg: >-
+          Die PAM-Aenderung wurde zurueckgenommen. sudo funktioniert
+          weiterhin ueber das Passwort.

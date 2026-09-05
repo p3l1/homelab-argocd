@@ -9,3 +9,8 @@ node_base_packages:
   - git
   - htop
   - jq
+
+# sudo ueber den weitergereichten SSH-Agent statt Passwort. Standardmaessig
+# aus, bis auf einem Node erprobt. Einschalten mit:
+#   -e node_sudo_via_ssh_agent=true
+node_sudo_via_ssh_agent: false

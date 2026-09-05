@@ -1,0 +1,57 @@
+---
+# Prueft, ob sudo ueber den weitergereichten SSH-Agent funktioniert - ohne
+# etwas zu veraendern. Vor dem Aktivieren auf einem einzelnen Node laufen
+# lassen:
+#
+#   ansible-playbook playbooks/check-sudo-agent.yml --limit kube-05
+- name: Check sudo via forwarded SSH agent
+  hosts: k3s_cluster
+  gather_facts: false
+  become: false
+
+  tasks:
+    - name: Is the agent reaching the node at all?
+      ansible.builtin.command: ssh-add -l
+      environment:
+        SSH_AUTH_SOCK: "{{ ansible_env.SSH_AUTH_SOCK | default('') }}"
+      register: check_agent
+      changed_when: false
+      failed_when: false
+
+    - name: Report agent state
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'Agent erreichbar, Schluessel: ' ~ check_agent.stdout_lines | length
+             if check_agent.rc == 0
+             else 'Agent NICHT erreichbar (rc=' ~ check_agent.rc ~ '). ForwardAgent pruefen.' }}
+
+    - name: Drop any cached sudo timestamp
+      ansible.builtin.command: sudo -k
+      changed_when: false
+
+    # Ohne verworfenen Zeitstempel waere das Ergebnis wertlos: ein frueheres
+    # sudo derselben Sitzung wuerde faelschlich Erfolg vortaeuschen.
+    - name: Try sudo without a password
+      ansible.builtin.command: sudo -n true
+      register: check_sudo
+      changed_when: false
+      failed_when: false
+
+    - name: Report result
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'sudo ohne Passwort moeglich - der Agent wird akzeptiert.'
+             if check_sudo.rc == 0
+             else 'sudo verlangt weiterhin ein Passwort (rc=' ~ check_sudo.rc ~ ').' }}
+
+    - name: Is the PAM module configured?
+      ansible.builtin.command: grep -c pam_ssh_agent_auth /etc/pam.d/sudo
+      register: check_pam
+      changed_when: false
+      failed_when: false
+
+    - name: Report PAM state
+      ansible.builtin.debug:
+        msg: >-
+          pam_ssh_agent_auth in /etc/pam.d/sudo:
+          {{ 'ja' if check_pam.rc == 0 else 'nein' }}
