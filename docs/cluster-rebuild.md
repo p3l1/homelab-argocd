@@ -184,17 +184,28 @@ gemeinte ist — so lässt sich nicht versehentlich ein laufender Node
 ## 3. Cluster ausrollen
 
 ```bash
-ansible-playbook playbooks/site.yml
+ansible-playbook playbooks/site.yml --ask-become-pass
 ```
 
 Das Playbook konfiguriert die Nodes (`node_base`), wendet die Vorbereitungen
 der Collection an (`prereq`, `raspberrypi` — letztere setzt die
-cgroup-Parameter in `cmdline.txt`), legt das kube-vip-Manifest ab und
-installiert Server und Agents.
+cgroup-Parameter in `cmdline.txt` und startet die Nodes dafür einmal neu),
+legt das kube-vip-Manifest ab und installiert Server und Agents.
 
-Die VIP muss stehen, bevor der zweite Server beitritt. Deshalb landet das
-kube-vip-Manifest **vor** dem Start von k3s unter
-`/var/lib/rancher/k3s/server/manifests/` — k3s rollt dieses Verzeichnis beim
+Die Server werden gestaffelt installiert:
+
+1. `kube-01` allein — er legt den Cluster an (`cluster-init`) und bringt
+   kube-vip hoch
+2. Ein Wartepunkt, bis die API unter `10.35.99.210:6443` antwortet
+3. `kube-02` und `kube-03` treten über diese Adresse bei
+4. die Agents
+
+Der Wartepunkt ist nötig, weil die Collection von sich aus nur zehn Sekunden
+pausiert — zu wenig, solange kube-vip sein Image erst herunterladen muss. Ohne
+ihn griffen die übrigen Server ins Leere.
+
+Das kube-vip-Manifest liegt **vor** dem Start von k3s unter
+`/var/lib/rancher/k3s/server/manifests/`; k3s rollt dieses Verzeichnis beim
 Start selbsttätig aus.
 
 ### Abnahme

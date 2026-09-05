@@ -18,7 +18,7 @@
     - role: k3s.orchestration.prereq
     - role: k3s.orchestration.raspberrypi
 
-# Muss vor k3s_server laufen: k3s rollt beim Start alles aus dem
+# Muss vor k3s_server liegen: k3s rollt beim Start alles aus dem
 # manifests-Verzeichnis aus, und die VIP muss stehen, bevor der zweite
 # Server ueber sie beitritt.
 - name: Stage kube-vip manifest
@@ -28,8 +28,37 @@
   roles:
     - role: kube_vip
 
-- name: Install k3s servers
-  hosts: server
+# Der erste Server allein: er legt den Cluster an und bringt kube-vip hoch.
+- name: Install the first k3s server
+  hosts: server[0]
+  gather_facts: false
+  become: true
+  roles:
+    - role: k3s.orchestration.k3s_server
+
+# Die uebrigen Server treten ueber die VIP bei, die es ohne diesen Schritt
+# noch nicht gibt. Die Collection wartet von sich aus nur zehn Sekunden -
+# zu wenig, solange kube-vip sein Image erst ziehen muss.
+- name: Wait for the API to answer on the VIP
+  hosts: server[0]
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Wait for kube-vip to bring up the address
+      ansible.builtin.wait_for:
+        host: "{{ api_endpoint }}"
+        port: "{{ api_port }}"
+        delay: 5
+        sleep: 5
+        timeout: 600
+      delegate_to: localhost
+
+    - name: Report
+      ansible.builtin.debug:
+        msg: "API erreichbar unter {{ api_endpoint }}:{{ api_port }}"
+
+- name: Install the remaining k3s servers
+  hosts: server[1:]
   gather_facts: false
   become: true
   roles:

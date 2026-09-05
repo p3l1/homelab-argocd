@@ -28,11 +28,17 @@ cluster_context: homelab
 user_kubectl: true
 
 # servicelb weicht MetalLB, local-storage weicht Longhorn.
+#
+# Der Cloud-Controller bleibt an: ohne ihn behalten alle Nodes den Taint
+# node.cloudprovider.kubernetes.io/uninitialized und sind unschedulable.
+# Fuer MetalLB genuegt es, servicelb abzuschalten.
+#
+# Der Taint haelt Workloads von der Control Plane fern; sie laufen auf den
+# Agents. kube-vip toleriert ihn.
 server_config_yaml: |
   disable:
     - servicelb
     - local-storage
-  disable-cloud-controller: true
   write-kubeconfig-mode: "0644"
   node-taint:
     - "CriticalAddonsOnly=true:NoExecute"
