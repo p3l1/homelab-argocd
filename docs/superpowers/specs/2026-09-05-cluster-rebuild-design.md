@@ -125,11 +125,11 @@ Monitoring-Clusters, `.200` dessen Traefik-LoadBalancer.
 | Zweck | Adresse | Hardware |
 |---|---|---|
 | API-VIP | `.110` | — |
-| `kube-01` – `kube-03`, Server | `.201` – `.203` | 3× Pi 4 |
-| `kube-04`, Agent | `.204` | 1× Pi 4 |
-| `kube-05`, `kube-06`, Agent | `.205` – `.206` | 2× Pi 5 |
-| `kube-07`, `kube-08`, reserviert | `.207` – `.208` | 2× Pi 5, derzeit Docker |
-| MetalLB-Pool | `.220` – `.240` | — |
+| `kube-01` – `kube-03`, Server | `.211` – `.213` | 3× Pi 4 |
+| `kube-04`, Agent | `.214` | 1× Pi 4 |
+| `kube-05`, `kube-06`, Agent | `.215` – `.216` | 2× Pi 5 |
+| `kube-07`, `kube-08`, reserviert | `.217` – `.218` | 2× Pi 5, derzeit Docker |
+| MetalLB-Pool | `.230` – `.250` | — |
 
 Die Server-Nodes tragen `CriticalAddonsOnly=true:NoExecute`, damit Workloads
 auf den Agents landen.
@@ -159,5 +159,5 @@ Vorhaben mit eigener Spezifikation.
 
 Der ArgoCD-Bootstrap gehört dagegen dazu, weil der Neuaufbau ohne ihn nicht
 abgeschlossen ist: `argocd-autopilot` gegen den frischen Cluster und der
-MetalLB-Pool auf `.220` – `.240`. Er wird als Kapitel des Runbooks
+MetalLB-Pool auf `.230` – `.250`. Er wird als Kapitel des Runbooks
 `docs/cluster-rebuild.md` festgehalten.

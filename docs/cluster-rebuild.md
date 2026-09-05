@@ -11,11 +11,11 @@ Die Entwurfsentscheidungen stehen in
 | Rolle | Hardware | Hostname | Adresse |
 |---|---|---|---|
 | API-VIP (kube-vip) | — | — | `10.35.99.210` |
-| Server, etcd, getaintet | 3× Pi 4 | `kube-01` – `kube-03` | `.201` – `.203` |
-| Agent | 1× Pi 4 | `kube-04` | `.204` |
-| Agent | 2× Pi 5 | `kube-05`, `kube-06` | `.205` – `.206` |
-| reserviert, derzeit Docker | 2× Pi 5 | `kube-07`, `kube-08` | `.207` – `.208` |
-| MetalLB-Pool | — | — | `.220` – `.240` |
+| Server, etcd, getaintet | 3× Pi 4 | `kube-01` – `kube-03` | `.211` – `.213` |
+| Agent | 1× Pi 4 | `kube-04` | `.214` |
+| Agent | 2× Pi 5 | `kube-05`, `kube-06` | `.215` – `.216` |
+| reserviert, derzeit Docker | 2× Pi 5 | `kube-07`, `kube-08` | `.217` – `.218` |
+| MetalLB-Pool | — | — | `.230` – `.250` |
 
 Ausgespart bleiben `.1` (Gateway) sowie `.100` und `.200` — die gehören dem
 Talos-Cluster aus `homelab-monitoring`.
@@ -111,11 +111,11 @@ argocd-autopilot repo bootstrap --app https://github.com/argoproj-labs/argocd-au
 ```
 
 MetalLB muss laufen, bevor der Server über eine LoadBalancer-Adresse
-erreichbar wird — der Pool ist `.220` – `.240`:
+erreichbar wird — der Pool ist `.230` – `.250`:
 
 ```bash
 kubectl patch svc argocd-server -n argocd \
-  --patch '{"spec":{"type":"LoadBalancer","loadBalancerIP":"10.35.99.220"}}'
+  --patch '{"spec":{"type":"LoadBalancer","loadBalancerIP":"10.35.99.230"}}'
 
 kubectl -n argocd get secret argocd-initial-admin-secret \
   -o jsonpath="{.data.password}" | base64 -d; echo
