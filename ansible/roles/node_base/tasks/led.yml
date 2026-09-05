@@ -1,0 +1,22 @@
+---
+# UID-LED des Rackmate-Einschubs. Sie haengt an GPIO4 und ist nur an den
+# Raspberry Pi 5 verdrahtet; das Werkzeug wird trotzdem ueberall abgelegt,
+# damit auf allen Nodes derselbe Befehl existiert.
+#
+# pinctrl statt der Python-Bibliotheken aus der DeskPi-Anleitung: es liegt
+# ohnehin auf dem System und nimmt auf Pi 4 wie Pi 5 dieselbe BCM-Nummer,
+# waehrend sich die gpiochip-Nummerierung zwischen beiden unterscheidet.
+- name: Install the node-led helper
+  ansible.builtin.copy:
+    src: node-led
+    dest: /usr/local/bin/node-led
+    owner: root
+    group: root
+    mode: "0755"
+
+# Ohne die Gruppe gpio braeuchte node-led sudo.
+- name: Ensure the user may drive the GPIO
+  ansible.builtin.user:
+    name: "{{ ansible_user }}"
+    groups: gpio
+    append: true

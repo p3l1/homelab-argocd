@@ -230,6 +230,28 @@ kubectl -n argocd get secret argocd-initial-admin-secret \
   -o jsonpath="{.data.password}" | base64 -d; echo
 ```
 
+## Einen Node im Rack finden
+
+Der Rackmate-Einschub hat je eine UID-LED an GPIO4. Sie ist **nur an den
+Raspberry Pi 5 verdrahtet** — auf den Pi 4 läuft der Befehl, bleibt aber
+unsichtbar.
+
+```bash
+./scripts/led.sh kube-05 blink        # blinkt 60 Sekunden
+./scripts/led.sh kube-05 blink 120
+./scripts/led.sh kube-05 off
+./scripts/led.sh all status
+```
+
+Auf dem Node selbst liegt dasselbe als `node-led`. `blink` kehrt sofort
+zurück und läuft als systemd-Nutzerdienst weiter, übersteht das Abmelden also.
+
+Gesteuert wird über `pinctrl` statt der Python-Bibliotheken aus der
+DeskPi-Anleitung: es ist ohnehin installiert, braucht kein `sudo` (der
+Benutzer ist in der Gruppe `gpio`) und nimmt auf Pi 4 wie Pi 5 dieselbe
+BCM-Nummer — die `gpiochip`-Nummerierung unterscheidet sich zwischen beiden
+Modellen erheblich.
+
 ## Betrieb
 
 ### Einen ausgefallenen Node ersetzen

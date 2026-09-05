@@ -33,6 +33,7 @@
     - network.yml
     - ssh.yml
     - cleanup.yml
+    - led.yml
   loop_control:
     loop_var: include_item
 

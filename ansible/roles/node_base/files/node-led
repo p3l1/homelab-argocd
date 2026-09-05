@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+#
+# Schaltet die UID-LED des DeskPi-Rackmate-Einschubs (GPIO4).
+#
+#   node-led on              dauerhaft an
+#   node-led off             aus, beendet auch ein laufendes Blinken
+#   node-led blink [s]       blinkt im Hintergrund, Vorgabe 60 Sekunden
+#   node-led status          aktueller Zustand
+#
+# Die LED sitzt am Rackmate-Einschub und ist nur an den Raspberry Pi 5
+# verdrahtet. sudo wird nicht gebraucht - der Benutzer ist in der Gruppe gpio.
+
+set -euo pipefail
+
+GPIO=4
+UNIT=node-led-blink
+SELF="$(readlink -f "${BASH_SOURCE[0]}")"
+
+stop_blink() {
+  systemctl --user stop "$UNIT" 2>/dev/null || true
+  pkill -f "$SELF _loop" 2>/dev/null || true
+}
+
+case "${1:-status}" in
+  on)
+    stop_blink; pinctrl set "$GPIO" op dh; echo "LED an auf $(hostname)"
+    ;;
+  off)
+    stop_blink; pinctrl set "$GPIO" op dl; echo "LED aus auf $(hostname)"
+    ;;
+  blink)
+    seconds="${2:-60}"
+    [[ "$seconds" =~ ^[0-9]+$ ]] || { echo "Dauer muss eine Zahl sein." >&2; exit 1; }
+    stop_blink
+    # --no-block, sonst wartet systemd-run bis die Schleife fertig ist.
+    if ! systemd-run --user --unit="$UNIT" --no-block --quiet \
+         "$SELF" _loop "$seconds" 2>/dev/null; then
+      # Ohne systemd-Nutzerdienst: eigene Sitzung, damit das Blinken das
+      # Abmelden ueberlebt.
+      setsid "$SELF" _loop "$seconds" >/dev/null 2>&1 &
+    fi
+    echo "LED blinkt ${seconds}s auf $(hostname)"
+    ;;
+  status)
+    printf '%-10s %s\n' "$(hostname)" "$(pinctrl get "$GPIO")"
+    tr -d '\0' </proc/device-tree/model 2>/dev/null | grep -q "Raspberry Pi 5" \
+      || echo "  Hinweis: Die Rack-LED ist nur an den Raspberry Pi 5 verdrahtet."
+    ;;
+  _loop)
+    # Intern, von blink aufgerufen.
+    end=$((SECONDS + ${2:-60}))
+    while [ "$SECONDS" -lt "$end" ]; do
+      pinctrl set "$GPIO" op dh; sleep 0.5
+      pinctrl set "$GPIO" op dl; sleep 0.5
+    done
+    pinctrl set "$GPIO" op dl
+    ;;
+  *)
+    echo "Aufruf: node-led {on|off|blink [Sekunden]|status}" >&2
+    exit 1
+    ;;
+esac
