@@ -56,6 +56,18 @@ Die Blueprints verweisen auf die `ExternalName`-Dienste aus
 `apps/newt/config/services`. Damit steht je Anwendung ein Name, unabhängig
 vom Namensraum, in dem sie läuft.
 
+## Machine Client
+
+Für dieses Repository existiert der Client **`homelab-argocd CI`**
+(`fine-mastigoproctus-giganteus`, clientId 17). Er ist der privaten Ressource
+`tekton-webhook` zugeordnet und damit der einzige Weg, den EventListener zu
+erreichen — der Alias `tekton.homelab.private` löst nur innerhalb des Tunnels
+auf.
+
+Angelegt wurde er über die API; `pick-client-defaults` liefert dafür
+passende Werte. Die Zugangsdaten liegen als GitHub-Secrets
+(`PANGOLIN_OLM_ID`, `PANGOLIN_OLM_SECRET`).
+
 ## Sites in dieser Pangolin-Instanz
 
 | Site (`niceId`) | Name | Zweck |
