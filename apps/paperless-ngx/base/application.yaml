@@ -75,6 +75,11 @@ spec:
             # Grosszuegig: Bei RAG kommt Kontext aehnlicher Dokumente dazu,
             # und das Modell rechnet auf vier ARM-Kernen ohne GPU.
             PAPERLESS_AI_LLM_REQUEST_TIMEOUT: "300"
+            # Der Aufbau des Vektorindex ueber 789 Dokumente sprengt das
+            # voreingestellte Zeitlimit von 1800 s: Der Task wurde zweimal
+            # hart abgebrochen. Die Dokumentation empfiehlt genau dafuer
+            # eine hoehere Grenze auf schwacher Hardware.
+            PAPERLESS_WORKER_TIMEOUT: "7200"
             PAPERLESS_AI_LLM_EMBEDDING_BACKEND: huggingface
             # Nicht das Standardmodell all-MiniLM-L6-v2: das ist auf
             # englische Archive ausgelegt, hier liegen deutsche Dokumente.
