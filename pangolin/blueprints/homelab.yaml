@@ -23,10 +23,16 @@ private-resources:
     # Nicht tekton.homelab.internal - der Name gehoert der Traefik-Route im
     # LAN; zwei Ziele unter einem Namen waeren nur verwirrend.
     alias: tekton-webhook.homelab.internal
-    # Admin darf hier nicht stehen - die Rolle hat ohnehin Zugriff und
-    # Pangolin weist sie ausdruecklich zurueck.
-    roles:
-      - Member
+    # Zugriff nur fuer den CI-Client und mich. Keine Rollen: Admin ist
+    # ohnehin ausgenommen, und Member waere zu weit gefasst.
+    #
+    # Die Liste gehoert in den Blueprint, nicht nur in die API - jeder Lauf
+    # loescht die bestehenden Zuordnungen und setzt sie aus dieser Datei neu.
+    users:
+      - philipp@herzo.gs
+    machines:
+      # niceId des Clients "homelab-argocd CI"
+      - fine-mastigoproctus-giganteus
 
 public-resources:
   argocd:
