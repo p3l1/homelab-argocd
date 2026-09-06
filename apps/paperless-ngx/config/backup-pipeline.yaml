@@ -70,8 +70,10 @@ spec:
         # Bucket existiert - das darf der Schluessel nicht und muss er nicht.
         rclone copyto --s3-no-check-bucket \
           /export/backup/latest-backup.zip "scw:${SCW_BUCKET}/latest-backup.zip"
+        # Die datierte Fassung serverseitig kopieren statt ein zweites Mal
+        # hochzuladen - das sparte hier rund acht Minuten Uplink.
         rclone copyto --s3-no-check-bucket \
-          /export/backup/latest-backup.zip \
+          "scw:${SCW_BUCKET}/latest-backup.zip" \
           "scw:${SCW_BUCKET}/daily/paperless-$(date +%F).zip"
         rclone delete --min-age 14d "scw:${SCW_BUCKET}/daily"
         echo "==> hochgeladen"
