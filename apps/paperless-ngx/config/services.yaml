@@ -118,6 +118,12 @@ spec:
       labels:
         app: valkey
     spec:
+      # Das Einstiegsskript will /data chownen und darf das nicht. Mit
+      # fsGroup uebergibt das Kubelet das Volume bereits passend.
+      securityContext:
+        runAsUser: 999
+        runAsGroup: 1000
+        fsGroup: 1000
       containers:
         - name: valkey
           image: docker.io/valkey/valkey:8-alpine

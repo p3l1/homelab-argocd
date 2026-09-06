@@ -11,6 +11,19 @@ angewandt:
 sops -d secrets/<datei>.sops.yaml | kubectl apply -f -
 ```
 
+## Ein neues Secret anlegen
+
+`scripts/secret.sh` fragt die Werte einzeln ab (ohne sie anzuzeigen), legt das
+Secret im Cluster an und hinterlegt es verschlüsselt hier:
+
+```bash
+./scripts/secret.sh newt-credentials newt PANGOLIN_ENDPOINT NEWT_ID NEWT_SECRET
+```
+
+Existiert die Datei bereits, übernimmt ein leeres Eingabefeld den bisherigen
+Wert — so lassen sich einzelne Schlüssel nachtragen, ohne die übrigen erneut
+einzugeben.
+
 | Datei | Zweck |
 |---|---|
 | `arcane-secrets.sops.yaml` | `ENCRYPTION_KEY` und `JWT_SECRET` für Arcane |
