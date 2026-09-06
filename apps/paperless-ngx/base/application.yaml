@@ -70,12 +70,17 @@ spec:
             # Vorschlaege, spuerbar beim Chat.
             PAPERLESS_AI_LLM_BACKEND: ollama
             PAPERLESS_AI_LLM_ENDPOINT: http://ollama.ollama.svc.cluster.local:11434
-            PAPERLESS_AI_LLM_MODEL: llama3.2:1b
-            # de-de, nicht de: Paperless schlaegt den Code in Djangos
-            # LANGUAGES nach, und dort steht nur "de-de". Bei "de" landet
-            # der Code woertlich im Uebersetzungsprompt ("rewrite ... in
-            # de"), und die Vorschlaege bleiben englisch.
-            PAPERLESS_AI_LLM_OUTPUT_LANGUAGE: de-de
+            # gemma3:1b statt llama3.2:1b: gemessen viermal schneller
+            # beim 270m-Geschwister und deutlich disziplinierter im Format
+            # - llama plauderte um die Antwort herum und erfand Felder.
+            PAPERLESS_AI_LLM_MODEL: gemma3:1b
+            # "de", nicht "de-de" - entgegen der Intuition. Paperless
+            # schlaegt den Code in Djangos LANGUAGES nach: "de-de" wird zu
+            # "German", "de" bleibt stehen. Gemessen ist "de" aber besser:
+            # bei "rewrite ... in German" faellt gemma3:1b in einen
+            # Assistenzmodus ("Okay, I understand...") statt zu uebersetzen,
+            # bei "in de" liefert es sauberes JSON. Dreimal je Variante.
+            PAPERLESS_AI_LLM_OUTPUT_LANGUAGE: de
             # Grosszuegig: Bei RAG kommt Kontext aehnlicher Dokumente dazu,
             # und das Modell rechnet auf vier ARM-Kernen ohne GPU.
             PAPERLESS_AI_LLM_REQUEST_TIMEOUT: "300"
