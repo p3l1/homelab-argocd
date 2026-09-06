@@ -65,11 +65,6 @@ spec:
                 secretKeyRef:
                   name: paperless-secrets
                   key: PAPERLESS_SOCIALACCOUNT_PROVIDERS
-            # Der Import bringt acht aktive Mail-Regeln mit, drei davon
-            # loeschen die Mail nach der Verarbeitung. Solange der
-            # Docker-Stack dieselben Postfaecher abruft, darf hier nichts
-            # laufen.
-            PAPERLESS_EMAIL_TASK_CRON: disable
             PAPERLESS_EMAIL_HOST: ha01s025.org-dns.com
             PAPERLESS_EMAIL_PORT: "465"
             PAPERLESS_EMAIL_USE_SSL: "true"
