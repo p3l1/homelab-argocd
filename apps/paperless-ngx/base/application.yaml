@@ -31,11 +31,11 @@ spec:
             PAPERLESS_CSRF_TRUSTED_ORIGINS: https://documents.cloud.p3l1.de,https://paperless.homelab.internal
             PAPERLESS_ALLOWED_HOSTS: documents.cloud.p3l1.de,paperless.homelab.internal
             PAPERLESS_TIME_ZONE: Europe/Berlin
-            # Bislang lief genau ein Webserver-Prozess. Eine
-            # KI-Vorschlagsanfrage dauert Minuten und blockierte damit die
-            # gesamte Oberflaeche - jeden Seitenaufruf, jede Suche. Drei
-            # Prozesse: einer darf im Modell haengen, zwei bedienen weiter.
-            PAPERLESS_WEBSERVER_WORKERS: "3"
+            # Kein WEBSERVER_WORKERS: Granian faehrt Paperless als ASGI,
+            # Django gibt synchrone Views in einen Threadpool - eine lange
+            # KI-Anfrage belegt einen Thread, nicht den Server. Mehr
+            # Prozesse braeuchten nur Speicher und CPU.
+            #
             # Zwei Hintergrundaufgaben parallel, je zwei Threads: Das
             # Produkt bleibt bei den vier Kernen des Pi.
             PAPERLESS_TASK_WORKERS: "2"
@@ -131,9 +131,9 @@ spec:
               cpu: 200m
               memory: 512Mi
             limits:
-              # 4 statt 3 GiB: Jeder Webserver-Prozess laedt die Anwendung
-              # eigenstaendig in den Speicher, dazu kommt das
-              # Einbettungsmodell. Der Node hat 8 GiB.
+              # Das Einbettungsmodell wird in diesem Pod geladen und
+              # gerechnet. Der Node hat 8 GiB und traegt auch eine
+              # Datenbankreplik.
               memory: 4Gi
           service:
             main:
