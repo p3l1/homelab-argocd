@@ -55,6 +55,20 @@ for k in "${KEYS[@]}"; do
   fi
 done
 
+# Schluessel, die schon in der Datei stehen und diesmal nicht abgefragt
+# wurden, bleiben erhalten. Ohne das loescht ein Aufruf, der nur einen
+# Schluessel nachtragen will, alle uebrigen aus der Datei - im Cluster
+# faellt es nicht auf, weil "kubectl apply" zusammenfuehrt, aber nach
+# einem Neuaufbau waeren sie weg.
+ALL_KEYS=("${KEYS[@]}")
+for k in "${!CURRENT[@]}"; do
+  if [[ -z "${VALUES[$k]:-}" ]]; then
+    VALUES["$k"]="${CURRENT[$k]}"
+    ALL_KEYS+=("$k")
+    info "$k bleibt unveraendert erhalten"
+  fi
+done
+
 # Erst schreiben, dann verschluesseln - die Klartextfassung existiert nur
 # kurz und mit engen Rechten.
 TMP=$(mktemp); trap 'rm -f "$TMP"' EXIT
@@ -69,7 +83,7 @@ chmod 600 "$TMP"
   echo "  namespace: $NS"
   echo "type: Opaque"
   echo "stringData:"
-  for k in "${KEYS[@]}"; do
+  for k in "${ALL_KEYS[@]}"; do
     printf '  %s: %s\n' "$k" "$(printf '%s' "${VALUES[$k]}" | python3 -c 'import sys,json;print(json.dumps(sys.stdin.read()))')"
   done
 } > "$TMP"

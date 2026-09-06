@@ -99,9 +99,9 @@ spec:
                 - name: RCLONE_CONFIG_SCW_PROVIDER
                   value: Other
                 - name: RCLONE_CONFIG_SCW_REGION
-                  value: fr-par
+                  value: nl-ams
                 - name: RCLONE_CONFIG_SCW_ENDPOINT
-                  value: s3.fr-par.scw.cloud
+                  value: s3.nl-ams.scw.cloud
                 - name: RCLONE_CONFIG_SCW_ACCESS_KEY_ID
                   valueFrom:
                     secretKeyRef:
