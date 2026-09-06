@@ -1,0 +1,98 @@
+# Tika und Gotenberg erschliessen Office-Dokumente. Das Chart kennt beide
+# nicht, deshalb hier als eigene Deployments - analog zur Compose-Installation
+# in p3l1/documents.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tika
+  namespace: paperless
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tika
+  template:
+    metadata:
+      labels:
+        app: tika
+    spec:
+      containers:
+        - name: tika
+          image: docker.io/apache/tika:3.2.4.0
+          ports:
+            - containerPort: 9998
+              name: http
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tika
+  namespace: paperless
+spec:
+  selector:
+    app: tika
+  ports:
+    - port: 9998
+      targetPort: http
+      name: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gotenberg
+  namespace: paperless
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gotenberg
+  template:
+    metadata:
+      labels:
+        app: gotenberg
+    spec:
+      containers:
+        - name: gotenberg
+          image: docker.io/gotenberg/gotenberg:8.31
+          # Chromium wandelt .eml-Dateien um. Ohne diese Flags wuerde dabei
+          # externer Inhalt geladen - Zaehlpixel, im Zweifel JavaScript.
+          args:
+            - gotenberg
+            - --chromium-disable-javascript=true
+            - --chromium-allow-list=file:///tmp/.*
+          ports:
+            - containerPort: 3000
+              name: http
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gotenberg
+  namespace: paperless
+spec:
+  selector:
+    app: gotenberg
+  ports:
+    - port: 3000
+      targetPort: http
+      name: http
