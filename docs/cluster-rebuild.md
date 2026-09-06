@@ -300,7 +300,21 @@ k3s mitgelieferte Traefik ist dafür in `server_config_yaml` abgeschaltet.
 | whoami | `https://whoami.homelab.internal` |
 
 Die DNS-Einträge stehen derzeit **von Hand** im Router, unter Settings →
-Routing & Firewall → DNS → Local DNS Records, alle fünf auf `10.35.99.230`.
+Routing & Firewall → DNS → Local DNS Records. Welche genau, verrät
+
+```bash
+./scripts/dns-records.sh
+```
+
+— es liest die Namen aus den HTTPRoutes im Cluster, statt eine Liste zu
+pflegen, die veraltet.
+
+Damit der Browser die Zertifikate akzeptiert, muss die cluster-lokale CA
+einmalig hinterlegt werden:
+
+```bash
+./scripts/trust-ca.sh --install
+```
 
 Automatisieren ließe sich das mit `external-dns` und dem UniFi-Webhook; die
 Application liegt unter `apps/external-dns`, ist aber **zurückgestellt**. Der
