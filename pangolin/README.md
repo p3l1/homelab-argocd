@@ -67,10 +67,26 @@ vom Namensraum, in dem sie läuft.
 
 Die Blueprints hier fassen ausschließlich `intent-anniella-pulchra` an.
 
+## Was beim Anwenden geschieht
+
+Blueprints sind **additiv**, kein deklarativer Abgleich: Zu jedem Eintrag
+sucht Pangolin über den Schlüssel — er entspricht dem `niceId` der API — eine
+bestehende Ressource. Wird es fündig, aktualisiert es sie, sonst legt es an.
+Ressourcen, die **nicht** in der Datei stehen, bleiben unberührt; es gibt
+keine Prune-Logik.
+
+Das gilt für den Weg über die CLI, den diese Pipeline nutzt. Zwei andere
+Betriebsarten verhalten sich anders: Newt mit `--blueprint-file` und
+Docker-Labels setzen die Datei **fortlaufend** durch und überschreiben dabei
+Änderungen, die im Dashboard gemacht wurden. Wer den Newt in `apps/newt`
+später um diesen Schalter ergänzt, ändert damit die Semantik.
+
+Praktische Folge: Ein Eintrag, den man hier entfernt, verschwindet nicht aus
+Pangolin — das muss im Dashboard geschehen.
+
 ## Paperless fehlt bewusst
 
 Unter `documents.cloud.p3l1.de` läuft bereits eine Paperless-Instanz auf dem
 Docker-Host. Der Cluster hat inzwischen eine eigene — beide gleichzeitig zu
-veröffentlichen ergibt keinen Sinn. Welche gelten soll, ist eine
-Migrationsentscheidung; bis sie gefallen ist, bleibt Paperless aus dem
-Blueprint heraus.
+veröffentlichen ergibt keinen Sinn. Umgestellt wird **nach der Migration der
+Dokumente**; bis dahin bleibt Paperless aus dem Blueprint heraus.
