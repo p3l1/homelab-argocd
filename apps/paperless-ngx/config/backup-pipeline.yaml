@@ -55,7 +55,7 @@ spec:
         - { name: media, mountPath: /usr/src/paperless/media }
         - { name: data, mountPath: /usr/src/paperless/data }
         - { name: export, mountPath: /usr/src/paperless/export }
-      resources:
+      computeResources:
         requests: { cpu: 100m, memory: 256Mi }
         limits: { memory: 1Gi }
 
@@ -91,7 +91,7 @@ spec:
             secretKeyRef: { name: paperless-secrets, key: SCW_BUCKET }
       volumeMounts:
         - { name: export, mountPath: /export }
-      resources:
+      computeResources:
         requests: { cpu: 100m, memory: 128Mi }
         limits: { memory: 512Mi }
 

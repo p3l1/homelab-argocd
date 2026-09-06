@@ -34,13 +34,13 @@ spec:
         # Unter /tmp, damit kein Volume noetig ist - die Datenbank stirbt
         # mit dem Pod, und das ist beabsichtigt.
         - { name: PGDATA, value: /tmp/pgdata }
-      resources:
+      computeResources:
         requests: { cpu: 100m, memory: 256Mi }
         limits: { memory: 1Gi }
     - name: valkey
       image: docker.io/valkey/valkey:8-alpine
       args: ["--save", ""]
-      resources:
+      computeResources:
         requests: { cpu: 50m, memory: 64Mi }
         limits: { memory: 256Mi }
   steps:
@@ -66,7 +66,7 @@ spec:
         - name: SCW_BUCKET
           valueFrom:
             secretKeyRef: { name: paperless-restore-secrets, key: SCW_BUCKET }
-      resources:
+      computeResources:
         requests: { cpu: 100m, memory: 128Mi }
         limits: { memory: 512Mi }
 
@@ -126,7 +126,7 @@ spec:
         - { name: PAPERLESS_DATA_DIR, value: /tmp/pl/data }
         - { name: PAPERLESS_MEDIA_ROOT, value: /tmp/pl/media }
         - { name: PAPERLESS_TIME_ZONE, value: Europe/Berlin }
-      resources:
+      computeResources:
         requests: { cpu: 200m, memory: 512Mi }
         limits: { memory: 2Gi }
 
