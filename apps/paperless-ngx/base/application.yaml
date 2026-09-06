@@ -22,7 +22,14 @@ spec:
           image:
             tag: 3.1.3
           env:
-            PAPERLESS_URL: https://paperless.homelab.internal
+            # Der externe Name ist der primaere: Aus PAPERLESS_URL bildet
+            # Paperless die Links, die es verschickt, und die
+            # OIDC-Rueckrufadresse. Der interne Name muss zusaetzlich
+            # eingetragen sein, sonst weist Django POSTs ueber
+            # paperless.homelab.internal als CSRF-Verstoss ab.
+            PAPERLESS_URL: https://documents.cloud.p3l1.de
+            PAPERLESS_CSRF_TRUSTED_ORIGINS: https://documents.cloud.p3l1.de,https://paperless.homelab.internal
+            PAPERLESS_ALLOWED_HOSTS: documents.cloud.p3l1.de,paperless.homelab.internal
             PAPERLESS_TIME_ZONE: Europe/Berlin
             PAPERLESS_OCR_LANGUAGE: deu+eng
             PAPERLESS_OCR_LANGUAGES: deu eng
