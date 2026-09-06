@@ -285,6 +285,36 @@ ab, bringt sie in den Cluster und hinterlegt sie verschlüsselt unter
 ./scripts/secret.sh newt-credentials newt PANGOLIN_ENDPOINT NEWT_ID NEWT_SECRET
 ```
 
+### Erreichbarkeit
+
+Traefik läuft als Gateway-API-Controller auf `10.35.99.230` und terminiert TLS
+mit einer Wildcard für `*.homelab.internal` aus der cluster-lokalen CA. Der in
+k3s mitgelieferte Traefik ist dafür in `server_config_yaml` abgeschaltet.
+
+| Anwendung | Adresse |
+|---|---|
+| ArgoCD | `https://argocd.homelab.internal` |
+| Paperless | `https://paperless.homelab.internal` |
+| Umami | `https://umami.homelab.internal` |
+| Arcane | `https://arcane.homelab.internal` |
+| whoami | `https://whoami.homelab.internal` |
+
+Die DNS-Einträge legt `external-dns` selbsttätig im UniFi-Router an — dessen
+Network Integration API ist auf dem Express vorhanden. Dafür braucht es einen
+API-Schlüssel aus **Settings → Control Plane → Integrations**:
+
+```bash
+./scripts/secret.sh unifi-credentials external-dns UNIFI_HOST UNIFI_API_KEY
+```
+
+`UNIFI_HOST` ist `https://10.35.99.1`. `domainFilters` beschränkt external-dns
+auf `homelab.internal`, `txtOwnerId` markiert die eigenen Einträge — alles
+Übrige im Router bleibt unberührt.
+
+Nach außen führt der Newt-Tunnel. Die `ExternalName`-Dienste unter
+`apps/newt/config/services` geben Pangolin je Anwendung einen Namen,
+unabhängig vom Namensraum.
+
 ### Stolpersteine, die uns begegnet sind
 
 | Symptom | Ursache |

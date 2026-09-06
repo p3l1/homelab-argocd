@@ -1,4 +1,7 @@
 ---
+# Das Gateway terminiert TLS mit der Wildcard aus dem Traefik-Namensraum.
+# Diese Bescheinigung dient dem Zugriff auf argocd-server selbst, etwa fuer
+# die CLI mit --grpc-web.
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
@@ -7,9 +10,8 @@ metadata:
 spec:
   secretName: argocd-server-tls
   dnsNames:
-    - argocd.p3l1.de
+    - argocd.homelab.internal
   issuerRef:
-    # Cluster-lokale CA aus apps/cert-manager/config/pki.yaml. Fuer ein
-    # oeffentlich gueltiges Zertifikat braeuchte es einen ACME-Issuer.
     name: homelab-ca
     kind: ClusterIssuer
+    group: cert-manager.io
