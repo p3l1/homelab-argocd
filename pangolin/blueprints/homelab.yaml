@@ -131,3 +131,5 @@ public-resources:
           path: /
           interval: 30
           timeout: 5
+
+# Von Pipelines-as-Code ausgeloest - Aenderung an dieser Datei startet die Pipeline.
