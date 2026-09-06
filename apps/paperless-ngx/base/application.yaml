@@ -29,7 +29,11 @@ spec:
             # paperless.homelab.internal als CSRF-Verstoss ab.
             PAPERLESS_URL: https://documents.cloud.p3l1.de
             PAPERLESS_CSRF_TRUSTED_ORIGINS: https://documents.cloud.p3l1.de,https://paperless.homelab.internal
-            PAPERLESS_ALLOWED_HOSTS: documents.cloud.p3l1.de,paperless.homelab.internal
+            # Der Cluster-Name gehoert dazu: Der MCP-Server aus
+            # apps/paperless-mcp spricht Paperless direkt ueber den
+            # Service an. Der oeffentliche Weg taugt dafuer nicht, dort
+            # steht Pangolins SSO davor und liefert HTML statt JSON.
+            PAPERLESS_ALLOWED_HOSTS: documents.cloud.p3l1.de,paperless.homelab.internal,paperless-ngx.paperless.svc.cluster.local
             PAPERLESS_TIME_ZONE: Europe/Berlin
             # Kein WEBSERVER_WORKERS: Granian faehrt Paperless als ASGI,
             # Django gibt synchrone Views in einen Threadpool - eine lange
