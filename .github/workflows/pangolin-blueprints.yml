@@ -3,7 +3,9 @@
 #
 # Der Webhook liegt als private Pangolin-Ressource im Cluster und ist aus dem
 # Netz nicht erreichbar. Der Machine Client "homelab-argocd CI" baut den
-# Tunnel auf, danach steht der Dienst unter seinem Alias bereit.
+# Tunnel auf; erst darueber loest der Alias auf.
+#
+# Aufbau uebernommen aus p3l1/homelab-monitoring.
 name: Pangolin-Blueprints anwenden
 
 on:
@@ -14,43 +16,95 @@ on:
       - .github/workflows/pangolin-blueprints.yml
   workflow_dispatch:
 
+concurrency:
+  group: pangolin-blueprints
+  cancel-in-progress: false
+
+env:
+  # Die private Ressource, nur durch den Tunnel erreichbar.
+  WEBHOOK_URL: http://tekton.homelab.private:8080
+
 jobs:
   trigger:
     runs-on: ubuntu-latest
-    steps:
-      - name: Olm installieren
-        run: |
-          curl -fsSL -o /tmp/olm \
-            "https://github.com/fosrl/olm/releases/download/${OLM_VERSION}/olm_linux_amd64"
-          chmod +x /tmp/olm
-        env:
-          OLM_VERSION: "1.9.1"
+    timeout-minutes: 10
 
-      - name: Tunnel aufbauen
+    steps:
+      - name: Pangolin-Client starten
+        env:
+          CLIENT_ID: ${{ secrets.PANGOLIN_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.PANGOLIN_CLIENT_SECRET }}
         run: |
-          sudo /tmp/olm \
-            --id "${{ secrets.PANGOLIN_OLM_ID }}" \
-            --secret "${{ secrets.PANGOLIN_OLM_SECRET }}" \
-            --endpoint "${{ secrets.PANGOLIN_ENDPOINT }}" &
-          # Der Tunnel braucht einen Moment, bis der Alias aufloest.
-          for i in $(seq 1 30); do
-            getent hosts tekton.homelab.private >/dev/null 2>&1 && break
-            sleep 2
+          docker run -d --name pangolin-cli \
+            --network host \
+            --cap-add NET_ADMIN \
+            --device /dev/net/tun:/dev/net/tun \
+            -e PANGOLIN_ENDPOINT=https://cloud.p3l1.de \
+            -e CLIENT_ID="$CLIENT_ID" \
+            -e CLIENT_SECRET="$CLIENT_SECRET" \
+            fosrl/pangolin-cli
+
+      - name: Auf das WireGuard-Geraet warten
+        run: |
+          for i in $(seq 1 24); do
+            if docker logs pangolin-cli 2>&1 | grep -q "WireGuard device created"; then
+              echo "Tunnel steht nach $((i * 5))s"
+              exit 0
+            fi
+            sleep 5
           done
-          getent hosts tekton.homelab.private \
-            || { echo "Alias loest nicht auf - Tunnel steht nicht." >&2; exit 1; }
+          echo "::error::Pangolin hat kein WireGuard-Geraet angelegt"
+          docker logs pangolin-cli
+          exit 1
+
+      - name: Runner auf den Pangolin-Resolver zeigen lassen
+        run: |
+          # --network host teilt den Netzwerk-Namensraum, aber nicht /etc. Der
+          # Resolver, den der Container gesetzt hat, gilt also nur dort - curl
+          # loest auf dem Host auf und braucht ihn ebenfalls.
+          dns=$(docker logs pangolin-cli 2>&1 \
+            | grep -oE 'DNS proxy started on [0-9.]+' | tail -1 | awk '{print $5}')
+          if [ -z "$dns" ]; then
+            echo "::error::Pangolin-DNS-Adresse nicht ermittelbar"
+            docker logs pangolin-cli | tail -40
+            exit 1
+          fi
+          echo "Pangolin-Resolver: $dns"
+
+          # /etc/resolv.conf ist hier meist ein Symlink nach systemd-resolved.
+          # Durch eine echte Datei ersetzen, damit der Eintrag bleibt - die
+          # alten Server bleiben als Rueckfall fuer alles ausserhalb des Tunnels.
+          { echo "nameserver $dns"; cat /etc/resolv.conf; } > /tmp/resolv.new
+          sudo cp --remove-destination /tmp/resolv.new /etc/resolv.conf
 
       - name: Pipeline anstossen
+        env:
+          WEBHOOK_SECRET: ${{ secrets.TEKTON_WEBHOOK_SECRET }}
         run: |
+          host=${WEBHOOK_URL#http://}; host=${host%%:*}
+          for i in $(seq 1 24); do
+            getent hosts "$host" >/dev/null 2>&1 && break
+            sleep 5
+          done
+          getent hosts "$host" >/dev/null 2>&1 || {
+            echo "::error::$host loest nicht auf"
+            cat /etc/resolv.conf
+            docker logs pangolin-cli 2>&1 | tail -30
+            exit 1
+          }
+
           payload=$(printf '{"ref":"%s"}' "${GITHUB_REF_NAME}")
           sig="sha256=$(printf '%s' "$payload" \
-            | openssl dgst -sha256 -hmac "${{ secrets.TEKTON_WEBHOOK_SECRET }}" \
-            | awk '{print $2}')"
-          code=$(curl -sS -o /tmp/out -w '%{http_code}' \
-            -X POST "http://tekton.homelab.private:8080" \
+            | openssl dgst -sha256 -hmac "$WEBHOOK_SECRET" | awk '{print $2}')"
+          code=$(curl -sS -m 20 -o /tmp/out -w '%{http_code}' \
+            -X POST "$WEBHOOK_URL" \
             -H "Content-Type: application/json" \
             -H "X-GitHub-Event: push" \
-            -H "X-Hub-Signature-256: ${sig}" \
+            -H "X-Hub-Signature-256: $sig" \
             -d "$payload")
-          cat /tmp/out
-          [ "$code" = "202" ] || { echo "EventListener antwortete mit ${code}" >&2; exit 1; }
+          cat /tmp/out; echo
+          [ "$code" = "202" ] || { echo "::error::EventListener antwortete mit $code"; exit 1; }
+
+      - name: Client stoppen
+        if: always()
+        run: docker rm -f pangolin-cli || true

@@ -19,10 +19,25 @@ HMAC-Signatur — Erreichbarkeit allein genügt also nicht.
 
 | Secret | Herkunft |
 |---|---|
-| `PANGOLIN_OLM_ID` | Client-ID des Machine Client `homelab-argocd CI` |
-| `PANGOLIN_OLM_SECRET` | zugehöriges Geheimnis |
-| `PANGOLIN_ENDPOINT` | `https://cloud.p3l1.de` |
+| `PANGOLIN_CLIENT_ID` | Client-ID des Machine Client `homelab-argocd CI` |
+| `PANGOLIN_CLIENT_SECRET` | zugehöriges Geheimnis |
 | `TEKTON_WEBHOOK_SECRET` | gemeinsames Geheimnis mit dem EventListener |
+
+Die Namensgebung folgt `p3l1/homelab-monitoring`, wo derselbe Aufbau bereits
+im Einsatz ist.
+
+## Warum der Container und nicht das Binary
+
+Der Client läuft als `fosrl/pangolin-cli` im Docker-Container mit
+`--network host`, `NET_ADMIN` und `/dev/net/tun`. `fosrl/olm` ist laut eigener
+Beschreibung eine **interne Bibliothek** für Pangolin-Clients, kein Werkzeug
+für diesen Zweck.
+
+Entscheidend ist der Schritt danach: `--network host` teilt zwar den
+Netzwerk-Namensraum, aber nicht `/etc`. Der Resolver, den der Container
+einträgt, gilt deshalb nur dort — `curl` löst auf dem Host auf und braucht ihn
+ebenfalls. Ohne diesen Schritt steht der Tunnel, der Alias löst aber nicht
+auf.
 
 ## Cluster-Seite
 
