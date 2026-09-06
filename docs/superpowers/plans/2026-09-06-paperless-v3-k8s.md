@@ -1173,7 +1173,7 @@ Drei Stolpersteine, alle beim Ausführen gefunden:
   `rancher/kubectl` sind beide distroless (`exec: "sh": not found`), Bitnami
   hat versionierte Tags zurückgezogen. `docker.io/alpine/k8s` funktioniert.
 
-- [ ] **Step 5: Einen Lauf von Hand auslösen und abnehmen**
+- [x] **Step 5: Einen Lauf von Hand auslösen und abnehmen**
 
 ```bash
 kubectl -n paperless create job --from=cronjob/paperless-backup backup-now
@@ -1184,7 +1184,7 @@ kubectl -n paperless logs <pipelinerun-pod> -c step-upload
 Erwartet: Der PipelineRun endet `Succeeded`, im Upload-Log die Größe der
 Sicherung und keine rclone-Fehler.
 
-- [ ] **Step 6: Die Rückspielprobe auslösen und abnehmen**
+- [x] **Step 6: Die Rückspielprobe auslösen und abnehmen**
 
 ```bash
 kubectl -n paperless-restore create job \
@@ -1206,7 +1206,7 @@ Organisation auch nicht. Dazu die falsche Region und ein
 
 `BACKUP.md` beschreibt jetzt beide Pipelines.
 
-- [ ] **Step 8: Das Umzugsgut aus der export-PVC räumen**
+- [x] **Step 8: Das Umzugsgut aus der export-PVC räumen**
 
 Erst wenn die Rückspielprobe grün ist. Bis dahin ist `v3-final` die einzige
 Kopie im Cluster.
