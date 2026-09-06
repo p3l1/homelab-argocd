@@ -1,12 +1,14 @@
 # CloudNativePG legt Cluster und Zugangsdaten an; das Secret umami-db-app
 # entsteht dabei automatisch und enthaelt unter anderem 'uri'.
+#
+# Eine Instanz: die Daten sind ersetzbar, Longhorn haelt die Repliken.
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
   name: umami-db
   namespace: umami
 spec:
-  instances: 2
+  instances: 1
   storage:
     size: 5Gi
     storageClass: longhorn

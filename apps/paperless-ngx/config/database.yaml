@@ -1,10 +1,12 @@
+# Drei Instanzen: ein Primary und zwei Repliken, verteilt auf die drei
+# Agents. Uebersteht den Ausfall eines Nodes ohne Datenverlust.
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
   name: paperless-db
   namespace: paperless
 spec:
-  instances: 2
+  instances: 3
   storage:
     size: 5Gi
     storageClass: longhorn
