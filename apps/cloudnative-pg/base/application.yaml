@@ -1,0 +1,25 @@
+# Operator fuer PostgreSQL. Loest den frueheren postgres-operator ab; die
+# Datenbanken selbst definieren die jeweiligen Anwendungen.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cloudnative-pg
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-7"
+spec:
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+  project: infrastructure
+  sources:
+    - chart: cloudnative-pg
+      repoURL: https://cloudnative-pg.github.io/charts
+      targetRevision: 0.29.0
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cnpg-system

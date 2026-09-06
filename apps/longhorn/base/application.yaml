@@ -1,0 +1,35 @@
+# Verteilter Speicher ueber die SSDs der Nodes. k3s' local-storage ist dafuer
+# in der Serverkonfiguration abgeschaltet.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: longhorn
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-8"
+spec:
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+  project: infrastructure
+  sources:
+    - chart: longhorn
+      repoURL: https://charts.longhorn.io
+      targetRevision: 1.12.1
+      helm:
+        valuesObject:
+          defaultSettings:
+            # Die Control-Plane traegt keine Workloads, also auch keine Repliken.
+            taintToleration: ""
+            defaultDataPath: /var/lib/longhorn
+          persistence:
+            # Drei Agents, also drei Repliken moeglich - zwei genuegen und
+            # schonen die SSDs.
+            defaultClassReplicaCount: 2
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: longhorn-system

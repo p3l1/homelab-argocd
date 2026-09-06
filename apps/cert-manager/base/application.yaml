@@ -1,0 +1,34 @@
+# cert-manager stellt die Zertifikate im Cluster aus. Die PKI liegt als
+# zweite Quelle daneben, damit ArgoCD erst die CRDs und dann die Issuer anlegt.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cert-manager
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-9"
+spec:
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      # Die CRDs sprengen bei client-side apply das 256-KiB-Limit der
+      # last-applied-configuration-Annotation.
+      - ServerSideApply=true
+  project: infrastructure
+  sources:
+    - chart: cert-manager
+      repoURL: https://charts.jetstack.io
+      targetRevision: v1.21.1
+      helm:
+        valuesObject:
+          crds:
+            enabled: true
+    - repoURL: https://github.com/p3l1/homelab-argocd.git
+      targetRevision: main
+      path: apps/cert-manager/config
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cert-manager

@@ -1,0 +1,28 @@
+# MetalLB vergibt LoadBalancer-Adressen im LAN. k3s' servicelb ist dafuer
+# in der Serverkonfiguration abgeschaltet.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: metallb
+  namespace: argocd
+  annotations:
+    # Vor allem anderen: ohne LoadBalancer bekommt kein Dienst eine Adresse.
+    argocd.argoproj.io/sync-wave: "-10"
+spec:
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+  project: infrastructure
+  sources:
+    - chart: metallb
+      repoURL: https://metallb.github.io/metallb
+      targetRevision: 0.15.3
+    # Namespace und Pool liegen in derselben App, damit ArgoCD sie in der
+    # richtigen Reihenfolge anlegt: Namespace -> CRDs -> Pool.
+    - repoURL: https://github.com/p3l1/homelab-argocd.git
+      targetRevision: main
+      path: apps/metallb/config
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: metallb-system
