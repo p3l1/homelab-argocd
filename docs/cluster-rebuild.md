@@ -239,19 +239,62 @@ ping 10.35.99.210
 ## 4. ArgoCD einrichten
 
 ```bash
-argocd-autopilot repo bootstrap --app https://github.com/argoproj-labs/argocd-autopilot/manifests/ha
+kubectl create namespace argocd
+kubectl apply -k bootstrap/argo-cd --server-side --force-conflicts
+kubectl apply -f bootstrap/argo-cd.yaml
+kubectl apply -f bootstrap/cluster-resources.yaml
+kubectl apply -f bootstrap/root.yaml
 ```
 
-MetalLB muss laufen, bevor der Server über eine LoadBalancer-Adresse
-erreichbar wird — der Pool ist `.230` – `.250`:
+`root` liest `projects/`, dort erzeugen die ApplicationSets aus jedem
+`apps/*/overlays/<projekt>/config.json` eine Application. Am Ende stehen 23
+Applications.
+
+**Wichtig:** Die Kustomization in `bootstrap/argo-cd` setzt `namespace: argocd`.
+Wendet man stattdessen die Upstream-Manifeste direkt an, binden die
+ClusterRoleBindings ihre ServiceAccounts im Namespace `default` — `kubectl -n`
+wirkt auf clusterweite Objekte nicht. ArgoCD kann dann nichts listen und alle
+Applications bleiben auf `Unknown`:
+
+```
+tlsstores.traefik.io is forbidden: User "system:serviceaccount:argocd:
+argocd-application-controller" cannot list resource ... at the cluster scope
+```
+
+### Abnahme
 
 ```bash
-kubectl patch svc argocd-server -n argocd \
-  --patch '{"spec":{"type":"LoadBalancer","loadBalancerIP":"10.35.99.230"}}'
+kubectl -n argocd get applications
+```
 
+Erwartet werden 23 Applications in `Synced/Healthy`. Die Zugangsdaten für die
+Oberfläche:
+
+```bash
 kubectl -n argocd get secret argocd-initial-admin-secret \
   -o jsonpath="{.data.password}" | base64 -d; echo
 ```
+
+### Secrets
+
+Was ArgoCD nicht verwaltet, legt `scripts/secret.sh` an — es fragt die Werte
+ab, bringt sie in den Cluster und hinterlegt sie verschlüsselt unter
+`secrets/`:
+
+```bash
+./scripts/secret.sh newt-credentials newt PANGOLIN_ENDPOINT NEWT_ID NEWT_SECRET
+```
+
+### Stolpersteine, die uns begegnet sind
+
+| Symptom | Ursache |
+|---|---|
+| Alle Applications `Unknown` | ClusterRoleBindings zeigten auf Namespace `default` |
+| Longhorn hängt endlos | Helm-Hook `longhorn-pre-upgrade`; `preUpgradeChecker.jobEnabled: false` setzen |
+| `ImagePullBackOff` bei Bitnami-Images | Bitnami hat versionierte Tags aus dem öffentlichen Registry entfernt |
+| `exec format error` | Image ohne arm64-Manifest — vor dem Einsatz gegen die Registry prüfen |
+| `chown: Operation not permitted` | Volume gehört root; `fsGroup` im Pod-Security-Context setzen |
+| Tekton dauerhaft `OutOfSync` | Webhook schreibt `caBundle` in die CRDs; über `ignoreDifferences` ausnehmen |
 
 ## Einen Node im Rack finden
 

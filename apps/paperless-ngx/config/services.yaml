@@ -167,7 +167,7 @@ metadata:
   namespace: paperless
 spec:
   selector:
-    app: redis
+    app: valkey
   ports:
     - port: 6379
       targetPort: valkey
