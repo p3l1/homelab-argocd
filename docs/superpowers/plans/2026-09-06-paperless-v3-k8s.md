@@ -945,7 +945,7 @@ nennt den Namen.
   Cluster-Dienst auf 3.1.3 aus Task 6.
 - Produziert: 788 Dokumente im Cluster.
 
-- [ ] **Step 1: Zieldatenbank auf Leere prüfen**
+- [x] **Step 1: Zieldatenbank auf Leere prüfen**
 
 ```bash
 export KUBECONFIG=~/.kube/config
@@ -960,7 +960,7 @@ print('Benutzer:', User.objects.count())
 Erwartet: `Dokumente: 0`. Die Benutzerzahl darf über null liegen; der Importer
 sagt in Step 4, ob ihn das stört.
 
-- [ ] **Step 2: Platz in der export-PVC prüfen**
+- [x] **Step 2: Platz in der export-PVC prüfen**
 
 ```bash
 kubectl -n paperless exec deploy/paperless-ngx -- df -h /usr/src/paperless/export
@@ -970,7 +970,7 @@ Erwartet: rund 10 GB Kapazität, nahezu vollständig frei. Steht dort noch 5 GB,
 ist die Vergrößerung aus Task 6 nicht durchgelaufen — dann dort nachsehen,
 bevor die Übertragung beginnt.
 
-- [ ] **Step 3: Übertragen**
+- [x] **Step 3: Übertragen**
 
 Als Strom, ohne Zwischenlandung auf dem Mac:
 
@@ -982,7 +982,7 @@ ssh root@10.35.99.168 'tar -C /opt/paperless/export -cf - v3-final' \
 
 Läuft bei rund 1 GB über das Heimnetz einige Minuten und gibt nichts aus.
 
-- [ ] **Step 4: Vollständigkeit der Übertragung prüfen**
+- [x] **Step 4: Vollständigkeit der Übertragung prüfen**
 
 ```bash
 ssh root@10.35.99.168 'find /opt/paperless/export/v3-final -type f | wc -l'
@@ -993,7 +993,7 @@ kubectl -n paperless exec deploy/paperless-ngx -- \
 Erwartet: beide Zahlen identisch. Weichen sie ab, ist der Strom abgerissen —
 Step 3 wiederholen, `tar` überschreibt.
 
-- [ ] **Step 5: Einlesen**
+- [x] **Step 5: Einlesen**
 
 ```bash
 kubectl -n paperless exec deploy/paperless-ngx -- \
@@ -1011,7 +1011,7 @@ kubectl -n paperless exec deploy/paperless-ngx -- \
   document_importer /usr/src/paperless/export/v3-final --no-progress-bar
 ```
 
-- [ ] **Step 6: Die Mail-Regeln im Cluster stilllegen**
+- [x] **Step 6: Die Mail-Regeln im Cluster stilllegen**
 
 Der Import bringt acht aktive Mail-Regeln mit. Drei davon haben `action=1`,
 also `DELETE`: Sie löschen die Mail nach der Verarbeitung. Solange der
@@ -1037,7 +1037,7 @@ Erwartet: `stillgelegte Regeln: 8` und `noch aktiv: 0`.
 Beim späteren Umschwenk nach außen werden sie hier wieder aktiviert und im
 Docker-Stack abgeschaltet — nie in beiden zugleich.
 
-- [ ] **Step 7: Suchindex neu aufbauen lassen**
+- [x] **Step 7: Suchindex neu aufbauen lassen**
 
 ```bash
 kubectl -n paperless exec deploy/paperless-ngx -- python3 manage.py document_index reindex
@@ -1047,7 +1047,7 @@ Der Import füllt die Datenbank, der Tantivy-Index wird davon nicht zwingend
 mitgezogen. Ohne diesen Schritt findet die Volltextsuche nichts, obwohl alle
 Dokumente da sind.
 
-- [ ] **Step 8: Abnahme gegen die Referenz**
+- [x] **Step 8: Abnahme gegen die Referenz**
 
 ```bash
 kubectl -n paperless exec deploy/paperless-ngx -- python3 manage.py shell -c "
@@ -1070,7 +1070,7 @@ print(Document.objects.count(), Correspondent.objects.count(), Tag.objects.count
 "' | tail -1
 ```
 
-- [ ] **Step 9: Abnahme in der Oberfläche**
+- [x] **Step 9: Abnahme in der Oberfläche**
 
 `https://paperless.homelab.internal` aufrufen und prüfen:
 
