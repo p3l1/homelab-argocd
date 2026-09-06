@@ -57,6 +57,17 @@ spec:
             PAPERLESS_TIKA_ENABLED: "1"
             PAPERLESS_TIKA_ENDPOINT: http://tika:9998
             PAPERLESS_TIKA_GOTENBERG_ENDPOINT: http://gotenberg:3000
+            # Nur Einbettungen, kein Generierungsmodell: Der Index braucht
+            # laut paperless/config.py allein ai_enabled und ein
+            # embedding_backend. Damit laufen Aehnlichkeitssuche und
+            # semantische Suche vollstaendig lokal - kein Dokument verlaesst
+            # den Cluster. Vorschlaege und Chat blieben aus, dafuer braeuchte
+            # es zusaetzlich PAPERLESS_AI_LLM_BACKEND.
+            PAPERLESS_AI_ENABLED: "true"
+            PAPERLESS_AI_LLM_EMBEDDING_BACKEND: huggingface
+            # Nicht das Standardmodell all-MiniLM-L6-v2: das ist auf
+            # englische Archive ausgelegt, hier liegen deutsche Dokumente.
+            PAPERLESS_AI_LLM_EMBEDDING_MODEL: intfloat/multilingual-e5-small
             # Eigener Client bei Pocket-ID, nicht der des Docker-Stacks:
             # so bleibt ein Secret-Wechsel auf eine Installation begrenzt.
             PAPERLESS_APPS: allauth.socialaccount.providers.openid_connect
@@ -78,6 +89,15 @@ spec:
                 secretKeyRef:
                   name: paperless-secrets
                   key: PAPERLESS_EMAIL_HOST_PASSWORD
+          # Bislang ohne Grenze. Das Einbettungsmodell wird im Pod geladen
+          # und gerechnet; ohne Limit koennte ein Indexlauf den Node fuellen,
+          # auf dem auch die Datenbank liegt.
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              memory: 3Gi
           service:
             main:
               ports:
