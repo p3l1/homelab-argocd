@@ -25,6 +25,10 @@ spec:
     - repoURL: https://github.com/p3l1/homelab-argocd.git
       targetRevision: main
       path: apps/pipelines-as-code/routes
+    # Eigene Einstellungen, die das Release-Manifest ergaenzen.
+    - repoURL: https://github.com/p3l1/homelab-argocd.git
+      targetRevision: main
+      path: apps/pipelines-as-code/settings
     # Angemeldete Repositories, eine Datei je Repository.
     - repoURL: https://github.com/p3l1/homelab-argocd.git
       targetRevision: main

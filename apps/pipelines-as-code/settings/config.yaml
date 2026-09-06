@@ -1,0 +1,10 @@
+---
+# Ergaenzt die Einstellungen aus dem Release-Manifest. Ohne die Adresse
+# verweist der Status am Commit auf "dashboard.is.not.configured".
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pipelines-as-code
+  namespace: pipelines-as-code
+data:
+  tekton-dashboard-url: https://tekton.cloud.p3l1.de
