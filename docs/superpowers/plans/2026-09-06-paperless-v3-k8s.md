@@ -1107,6 +1107,11 @@ existiert.
 - Produziert: täglich um 03:00 Uhr ein `latest-backup.zip` im Scaleway-Bucket,
   das der wöchentliche GitHub-Workflow erwartet.
 
+**Stand:** Das Manifest liegt bereits im Repository, aber mit
+`suspend: true` — ohne Zugangsdaten scheiterte sonst jede Nacht ein Lauf.
+Die Schritte 3 bis 5 sowie 10 und 11 sind damit erledigt; offen sind die
+Zugangsdaten, das Scharfschalten und die Abnahme.
+
 - [ ] **Step 1: Scaleway-Zugangsdaten ergänzen**
 
 Zugangsschlüssel, Bucket und Endpunkt aus der Scaleway-Konsole holen — die
@@ -1136,7 +1141,7 @@ Erwartet: alle sieben Schlüssel — die vier aus Task 5 und die drei neuen.
 Fehlt einer der alten, hat das Skript die Datei nicht als Grundlage genommen;
 dann aus `sops -d` wiederherstellen, bevor es weitergeht.
 
-- [ ] **Step 3: Den CronJob anlegen**
+- [x] **Step 3: Den CronJob anlegen**
 
 `apps/paperless-ngx/config/backup-cronjob.yaml`:
 
@@ -1280,7 +1285,7 @@ spec:
 `--delete` räumt den vorherigen Lauf aus dem Exportverzeichnis, sonst wächst
 die PVC mit jeder Nacht.
 
-- [ ] **Step 4: Vor dem Committen lokal prüfen**
+- [x] **Step 4: Vor dem Committen lokal prüfen**
 
 ```bash
 cd ~/github/homelab-argocd
@@ -1289,7 +1294,7 @@ kubectl apply --dry-run=client -f apps/paperless-ngx/config/backup-cronjob.yaml
 
 Erwartet: `cronjob.batch/paperless-backup created (dry run)`.
 
-- [ ] **Step 5: Den Selektor der podAffinity gegen die Wirklichkeit prüfen**
+- [x] **Step 5: Den Selektor der podAffinity gegen die Wirklichkeit prüfen**
 
 ```bash
 export KUBECONFIG=~/.kube/config
@@ -1303,7 +1308,7 @@ das Chart ein anderes Label — dann mit
 im `matchLabels` des CronJob eintragen. Ein Selektor, der nichts trifft, lässt
 den Job dauerhaft `Pending` bleiben.
 
-- [ ] **Step 6: Committen und schieben**
+- [x] **Step 6: Committen und schieben**
 
 ```bash
 cd ~/github/homelab-argocd
@@ -1320,6 +1325,19 @@ podAffinity pins the job to the same node instead of moving them to
 ReadWriteMany."
 git push origin main
 ```
+
+- [ ] **Step 6b: Den CronJob scharfschalten**
+
+`suspend: true` in `apps/paperless-ngx/config/backup-cronjob.yaml` auf
+`false` setzen, committen, schieben. Erst jetzt, mit hinterlegten
+Zugangsdaten, kann ein nächtlicher Lauf gelingen.
+
+```bash
+kubectl -n paperless get cronjob paperless-backup \
+  -o custom-columns=NAME:.metadata.name,SUSPEND:.spec.suspend,SCHEDULE:.spec.schedule
+```
+
+Erwartet: `SUSPEND` steht auf `false`.
 
 - [ ] **Step 7: Einen Lauf von Hand auslösen**
 
@@ -1353,7 +1371,7 @@ Erwartet: `latest-backup.zip` mit rund 1 GB und ein Eintrag unter `daily/`.
 kubectl -n paperless delete job backup-probe
 ```
 
-- [ ] **Step 10: Die Altlasten in `p3l1/documents` beseitigen**
+- [x] **Step 10: Die Altlasten in `p3l1/documents` beseitigen**
 
 In `BACKUP.md` den Abschnitt „Automation" ersetzen: Die Sicherung läuft nicht
 mehr auf dem Docker-Host, sondern als CronJob `paperless-backup` im Namensraum
@@ -1373,7 +1391,7 @@ grep -n "PAPERLESS_VERSION" .github/workflows/backup-restore-test.yml
 
 Erwartet: `PAPERLESS_VERSION: "3.1.3"`.
 
-- [ ] **Step 11: Committen**
+- [x] **Step 11: Committen**
 
 ```bash
 cd ~/github/documents

@@ -1,0 +1,138 @@
+# Taeglich um 03:00: Export in die export-PVC, Upload nach Scaleway.
+#
+# suspend: true, bis die Scaleway-Zugangsdaten im Secret liegen — ein Lauf
+# ohne sie scheitert jede Nacht. Zum Scharfschalten auf false setzen.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: paperless-backup
+  namespace: paperless
+spec:
+  suspend: true
+  schedule: "0 3 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        spec:
+          restartPolicy: Never
+          # media liest, export schreibt - beide ReadWriteOnce und bereits
+          # vom Deployment eingebunden. Der Job muss deshalb auf denselben
+          # Node, sonst bleibt er ohne Volumes haengen.
+          affinity:
+            podAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                - labelSelector:
+                    matchLabels:
+                      app.kubernetes.io/name: paperless
+                      app.kubernetes.io/instance: paperless-ngx
+                  topologyKey: kubernetes.io/hostname
+          initContainers:
+            - name: export
+              image: ghcr.io/paperless-ngx/paperless-ngx:3.1.3
+              command:
+                - sh
+                - -c
+                - |
+                  set -e
+                  # document_exporter legt sein Ziel nicht an, sondern
+                  # bricht mit "That path doesn't exist" ab.
+                  mkdir -p /usr/src/paperless/export/backup
+                  exec document_exporter /usr/src/paperless/export/backup \
+                    --zip --zip-name latest-backup --delete --no-progress-bar
+              env:
+                - name: PAPERLESS_DBENGINE
+                  value: postgresql
+                - name: PAPERLESS_DBHOST
+                  value: paperless-db-rw
+                - name: PAPERLESS_DBNAME
+                  value: paperless
+                - name: PAPERLESS_DBUSER
+                  valueFrom:
+                    secretKeyRef:
+                      name: paperless-db-app
+                      key: username
+                - name: PAPERLESS_DBPASS
+                  valueFrom:
+                    secretKeyRef:
+                      name: paperless-db-app
+                      key: password
+                - name: PAPERLESS_SECRET_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: paperless-secrets
+                      key: PAPERLESS_SECRET_KEY
+                - name: PAPERLESS_REDIS
+                  value: redis://valkey:6379
+              volumeMounts:
+                - name: media
+                  mountPath: /usr/src/paperless/media
+                - name: data
+                  mountPath: /usr/src/paperless/data
+                - name: export
+                  mountPath: /usr/src/paperless/export
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 256Mi
+                limits:
+                  memory: 1Gi
+          containers:
+            - name: upload
+              image: docker.io/rclone/rclone:1.71.0
+              command:
+                - sh
+                - -c
+                - |
+                  set -e
+                  rclone copyto /export/backup/latest-backup.zip \
+                    "scw:${SCW_BUCKET}/latest-backup.zip"
+                  rclone copyto /export/backup/latest-backup.zip \
+                    "scw:${SCW_BUCKET}/daily/paperless-$(date +%F).zip"
+                  rclone delete --min-age 14d "scw:${SCW_BUCKET}/daily"
+              env:
+                - name: RCLONE_CONFIG_SCW_TYPE
+                  value: s3
+                - name: RCLONE_CONFIG_SCW_PROVIDER
+                  value: Other
+                - name: RCLONE_CONFIG_SCW_REGION
+                  value: fr-par
+                - name: RCLONE_CONFIG_SCW_ENDPOINT
+                  value: s3.fr-par.scw.cloud
+                - name: RCLONE_CONFIG_SCW_ACCESS_KEY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: paperless-secrets
+                      key: RCLONE_CONFIG_SCW_ACCESS_KEY_ID
+                - name: RCLONE_CONFIG_SCW_SECRET_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: paperless-secrets
+                      key: RCLONE_CONFIG_SCW_SECRET_ACCESS_KEY
+                - name: SCW_BUCKET
+                  valueFrom:
+                    secretKeyRef:
+                      name: paperless-secrets
+                      key: SCW_BUCKET
+              volumeMounts:
+                - name: export
+                  mountPath: /export
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 128Mi
+                limits:
+                  memory: 512Mi
+          volumes:
+            - name: media
+              persistentVolumeClaim:
+                claimName: paperless-ngx-media
+            - name: data
+              persistentVolumeClaim:
+                claimName: paperless-ngx-data
+            - name: export
+              persistentVolumeClaim:
+                claimName: paperless-ngx-export
