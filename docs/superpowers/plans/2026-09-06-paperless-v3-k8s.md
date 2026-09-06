@@ -497,7 +497,7 @@ den Commit aus Task 2 rückgängig machen.
   überträgt, und eine Kopie unter `~/backups/paperless/2026-09-06-post-v3/`
   auf dem Mac.
 
-- [ ] **Step 1: Zielverzeichnis anlegen und exportieren**
+- [x] **Step 1: Zielverzeichnis anlegen und exportieren**
 
 Wie in Task 1: `document_exporter` legt sein Ziel nicht selbst an, und
 `docker exec` läuft als root — deshalb das `chown` auf den Benutzer, dem der
@@ -514,7 +514,7 @@ Erwartet: `exit=0`. Die Meldung `No passphrase was given, sensitive fields
 will be in plaintext` ist normal — die Installation nutzt keine
 Verschlüsselung.
 
-- [ ] **Step 2: Gegen die Referenz prüfen**
+- [x] **Step 2: Gegen die Referenz prüfen**
 
 ```bash
 ssh root@10.35.99.168 'python3 -c "
@@ -526,7 +526,7 @@ print(\"Dokumente im Manifest:\", len([e for e in m if e[\"model\"] == \"documen
 
 Erwartet: `788`.
 
-- [ ] **Step 3: Auf den Mac holen**
+- [x] **Step 3: Auf den Mac holen**
 
 ```bash
 mkdir -p ~/backups/paperless/2026-09-06-post-v3
@@ -538,7 +538,7 @@ du -sh ~/backups/paperless/2026-09-06-post-v3
 Erwartet: `exit=0` und rund 1 GB. Kein `--info=progress2` — siehe Task 1,
 Step 8.
 
-- [ ] **Step 4: Abnahme**
+- [x] **Step 4: Abnahme**
 
 ```bash
 python3 -c "
