@@ -55,3 +55,22 @@ CLI selbst bei `0.16.0` ist und `apply blueprint` dort noch fehlt.
 Die Blueprints verweisen auf die `ExternalName`-Dienste aus
 `apps/newt/config/services`. Damit steht je Anwendung ein Name, unabhängig
 vom Namensraum, in dem sie läuft.
+
+## Sites in dieser Pangolin-Instanz
+
+| Site (`niceId`) | Name | Zweck |
+|---|---|---|
+| `intent-anniella-pulchra` | Homelab Services | **dieser k3s-Cluster** |
+| `sore-zebra-tailed-lizard` | Homelab Documents | Docker-Host mit Paperless, Home Assistant, Komodo |
+| `weary-uperodon-taprobanicus` | Homelab Monitoring | der abgeschaltete Talos-Cluster |
+| `selfish-gray-marmot` | cloud.p3l1.de | Pangolin selbst |
+
+Die Blueprints hier fassen ausschließlich `intent-anniella-pulchra` an.
+
+## Paperless fehlt bewusst
+
+Unter `documents.cloud.p3l1.de` läuft bereits eine Paperless-Instanz auf dem
+Docker-Host. Der Cluster hat inzwischen eine eigene — beide gleichzeitig zu
+veröffentlichen ergibt keinen Sinn. Welche gelten soll, ist eine
+Migrationsentscheidung; bis sie gefallen ist, bleibt Paperless aus dem
+Blueprint heraus.

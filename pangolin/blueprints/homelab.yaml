@@ -1,5 +1,9 @@
 ---
-# Welche Dienste durch den Pangolin-Tunnel erreichbar sind.
+# Welche Dienste des k3s-Clusters durch den Tunnel erreichbar sind.
+#
+# site verweist auf "Homelab Services" - die Site, an der der Newt aus
+# apps/newt haengt. Die uebrigen Sites (Homelab Documents, Homelab
+# Monitoring) gehoeren zu anderen Hosts und werden hier nicht angefasst.
 #
 # Die Ziele zeigen auf die ExternalName-Dienste aus apps/newt/config/services,
 # die Newt im Cluster aufloest. So steht hier je Anwendung ein Name,
@@ -10,37 +14,25 @@ public-resources:
   argocd:
     name: ArgoCD
     protocol: http
-    full-domain: argocd.p3l1.de
+    full-domain: argocd.cloud.p3l1.de
     auth:
       sso-enabled: true
     targets:
-      - site: homelab
+      - site: intent-anniella-pulchra
         hostname: newt-argocd-service.newt.svc.cluster.local
         method: https
         port: 443
 
-  paperless:
-    name: Paperless
-    protocol: http
-    full-domain: paperless.p3l1.de
-    auth:
-      sso-enabled: true
-    targets:
-      - site: homelab
-        hostname: newt-paperless-service.newt.svc.cluster.local
-        method: http
-        port: 8000
-
   umami:
     name: Umami
     protocol: http
-    full-domain: umami.p3l1.de
+    full-domain: umami.cloud.p3l1.de
     auth:
       # Umami sammelt Zugriffe fremder Seiten ein; das Skript muss ohne
       # Anmeldung erreichbar sein.
       sso-enabled: false
     targets:
-      - site: homelab
+      - site: intent-anniella-pulchra
         hostname: newt-umami-service.newt.svc.cluster.local
         method: http
         port: 3000
@@ -48,11 +40,11 @@ public-resources:
   arcane:
     name: Arcane
     protocol: http
-    full-domain: arcane.p3l1.de
+    full-domain: arcane.cloud.p3l1.de
     auth:
       sso-enabled: true
     targets:
-      - site: homelab
+      - site: intent-anniella-pulchra
         hostname: newt-arcane-service.newt.svc.cluster.local
         method: http
         port: 3552
