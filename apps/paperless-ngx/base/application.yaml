@@ -50,6 +50,14 @@ spec:
             PAPERLESS_TIKA_ENABLED: "1"
             PAPERLESS_TIKA_ENDPOINT: http://tika:9998
             PAPERLESS_TIKA_GOTENBERG_ENDPOINT: http://gotenberg:3000
+            # Eigener Client bei Pocket-ID, nicht der des Docker-Stacks:
+            # so bleibt ein Secret-Wechsel auf eine Installation begrenzt.
+            PAPERLESS_APPS: allauth.socialaccount.providers.openid_connect
+            PAPERLESS_SOCIALACCOUNT_PROVIDERS:
+              valueFrom:
+                secretKeyRef:
+                  name: paperless-secrets
+                  key: PAPERLESS_SOCIALACCOUNT_PROVIDERS
             # Der Import bringt acht aktive Mail-Regeln mit, drei davon
             # loeschen die Mail nach der Verarbeitung. Solange der
             # Docker-Stack dieselben Postfaecher abruft, darf hier nichts
