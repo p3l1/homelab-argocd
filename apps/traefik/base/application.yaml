@@ -57,12 +57,12 @@ spec:
         - .spec.preserveUnknownFields
         - .status
     # Der Gateway-Controller ergaenzt Vorgabewerte in den Listenern, die im
-    # Manifest nicht stehen.
+    # Manifest nicht stehen - etwa group und kind an den certificateRefs.
     - group: gateway.networking.k8s.io
       kind: Gateway
       jqPathExpressions:
         - .spec.listeners[].allowedRoutes
-        - .spec.listeners[].tls.mode
+        - .spec.listeners[].tls
   destination:
     server: https://kubernetes.default.svc
     namespace: traefik
