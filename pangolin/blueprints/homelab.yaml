@@ -19,9 +19,17 @@ public-resources:
       sso-enabled: true
     targets:
       - site: intent-anniella-pulchra
+        # argocd-server laeuft mit server.insecure=true, beide Dienstports
+        # zeigen auf 8080 und sprechen HTTP. Mit https gab es Bad Gateway.
+        method: http
         hostname: newt-argocd-service.newt.svc.cluster.local
-        method: https
-        port: 443
+        port: 80
+        healthcheck:
+          hostname: newt-argocd-service.newt.svc.cluster.local
+          port: 80
+          path: /healthz
+          interval: 30
+          timeout: 5
 
   umami:
     name: Umami
@@ -33,9 +41,15 @@ public-resources:
       sso-enabled: false
     targets:
       - site: intent-anniella-pulchra
-        hostname: newt-umami-service.newt.svc.cluster.local
         method: http
+        hostname: newt-umami-service.newt.svc.cluster.local
         port: 3000
+        healthcheck:
+          hostname: newt-umami-service.newt.svc.cluster.local
+          port: 3000
+          path: /api/heartbeat
+          interval: 30
+          timeout: 5
 
   arcane:
     name: Arcane
@@ -45,6 +59,12 @@ public-resources:
       sso-enabled: true
     targets:
       - site: intent-anniella-pulchra
-        hostname: newt-arcane-service.newt.svc.cluster.local
         method: http
+        hostname: newt-arcane-service.newt.svc.cluster.local
         port: 3552
+        healthcheck:
+          hostname: newt-arcane-service.newt.svc.cluster.local
+          port: 3552
+          path: /
+          interval: 30
+          timeout: 5
