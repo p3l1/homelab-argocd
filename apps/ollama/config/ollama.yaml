@@ -66,11 +66,14 @@ spec:
             # Modell im Speicher halten: Das Laden dauert auf dem Pi
             # laenger als die meisten Antworten.
             - { name: OLLAMA_KEEP_ALIVE, value: "30m" }
-            # Voreingestellt sind 512 wartende Anfragen. Bei Minuten je
-            # Antwort staut sich das lautlos ueber Stunden auf. Mit 1 wird
-            # eine Anfrage gerechnet, eine darf warten, alles weitere
-            # bekommt sofort 503 - auf vier ARM-Kernen ist alles andere
-            # nur eine Warteschlange, die niemand abarbeitet.
+            # Voreingestellt sind 512 wartende Anfragen; bei Minuten je
+            # Antwort staut sich das lautlos ueber Stunden auf.
+            #
+            # Achtung: Gemessen lehnt Ollama deswegen NICHT ab. Fuenf
+            # gleichzeitige Anfragen wurden alle angenommen und
+            # nacheinander abgearbeitet (17 bis 100 s). Die Grenze bleibt
+            # als Absicht stehen, der wirksame Schutz ist der Timeout auf
+            # der Paperless-Seite (PAPERLESS_AI_LLM_REQUEST_TIMEOUT).
             - { name: OLLAMA_MAX_QUEUE, value: "1" }
             - { name: OLLAMA_MODELS, value: /models }
           volumeMounts:
