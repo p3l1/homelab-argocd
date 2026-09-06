@@ -54,9 +54,10 @@ spec:
           serviceAccountName: paperless-backup-trigger
           containers:
             - name: trigger
-              # Offizielles Image: Bitnami hat versionierte Tags aus dem
-              # oeffentlichen Registry entfernt.
-              image: registry.k8s.io/kubectl:v1.33.4
+              # rancher/kubectl statt registry.k8s.io/kubectl: letzteres ist
+              # distroless und hat keine Shell, und statt Bitnami, das
+              # versionierte Tags aus dem oeffentlichen Registry entfernt hat.
+              image: docker.io/rancher/kubectl:v1.33.4
               command:
                 - sh
                 - -c
