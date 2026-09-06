@@ -581,43 +581,48 @@ Secret bleibt der Pod im `CreateContainerConfigError` hängen.
 
 **Interfaces:**
 - Produziert: Secret `paperless-secrets` im Namensraum `paperless` mit den
-  Schlüsseln `PAPERLESS_SECRET_KEY`, `PAPERLESS_SOCIALACCOUNT_PROVIDERS`,
-  `PAPERLESS_EMAIL_HOST_USER`, `PAPERLESS_EMAIL_HOST_PASSWORD`. Task 6
-  referenziert alle vier per `secretKeyRef`, Task 8 ergänzt die
-  rclone-Schlüssel in derselben Datei.
+  Schlüsseln `PAPERLESS_SECRET_KEY`, `PAPERLESS_EMAIL_HOST_USER`,
+  `PAPERLESS_EMAIL_HOST_PASSWORD`. Task 6 referenziert alle drei per
+  `secretKeyRef`, Task 8 ergänzt die rclone-Schlüssel in derselben Datei.
 
-- [ ] **Step 1: Die Werte aus der Compose-Installation holen**
+**Ohne OIDC.** Die Client-Secrets beim Anbieter sind abgelaufen und werden
+erneuert; eine abgelaufene Konfiguration in den Cluster zu kopieren, schleppte
+nur eine kaputte Anmeldung mit. Sie fehlt dort auch nicht: Der Cluster ist
+vorerst nur über `paperless.homelab.internal` erreichbar, und die
+Rückrufadresse beim Anbieter zeigt auf `documents.cloud.p3l1.de` — OIDC
+funktionierte intern also ohnehin nicht. Angemeldet wird sich über die
+lokalen Konten, die der Import mitbringt. Nachzutragen ist beides beim
+Umschwenk nach außen, mit demselben Skript.
 
-Jeweils in die Zwischenablage, damit sie nicht im Terminal stehen bleiben. Ein
-Wert nach dem anderen, direkt vor der jeweiligen Eingabeaufforderung in
-Step 2:
+- [x] **Step 1: Secret anlegen**
 
-```bash
-ssh root@10.35.99.168 'grep "^PAPERLESS_SECRET_KEY=" /etc/komodo/repos/p3l1/documents/docker-compose.env | cut -d= -f2-' | tr -d "\n" | pbcopy
-```
-
-Analog für `OIDC_CONFIG` (der Wert gehört auf den Schlüssel
-`PAPERLESS_SOCIALACCOUNT_PROVIDERS`), `PAPERLESS_EMAIL_HOST_USER` und
-`PAPERLESS_EMAIL_HOST_PASSWORD`.
-
-Der Schlüssel muss derselbe bleiben wie unter Docker — sonst verfallen alle
-Sitzungen und API-Token, die der Import mitbringt.
-
-- [ ] **Step 2: Secret anlegen**
+Die drei Werte stehen in `docker-compose.env` auf dem Host. Sie wandern per
+Pipe direkt ins Skript, damit sie weder im Terminal noch im Verlauf
+erscheinen — das Skript liest mit `read -s` von der Standardeingabe:
 
 ```bash
 cd ~/github/homelab-argocd
-./scripts/secret.sh paperless-secrets paperless \
-  PAPERLESS_SECRET_KEY \
-  PAPERLESS_SOCIALACCOUNT_PROVIDERS \
-  PAPERLESS_EMAIL_HOST_USER \
-  PAPERLESS_EMAIL_HOST_PASSWORD
+ENV=/etc/komodo/repos/p3l1/documents/docker-compose.env
+{
+  for k in PAPERLESS_SECRET_KEY PAPERLESS_EMAIL_HOST_USER PAPERLESS_EMAIL_HOST_PASSWORD; do
+    ssh root@10.35.99.168 "grep '^${k}=' $ENV | cut -d= -f2-"
+  done
+} | ./scripts/secret.sh paperless-secrets paperless \
+      PAPERLESS_SECRET_KEY \
+      PAPERLESS_EMAIL_HOST_USER \
+      PAPERLESS_EMAIL_HOST_PASSWORD
 ```
 
-Das Skript fragt die Werte einzeln ab, ohne sie anzuzeigen, legt das Secret im
-Cluster an und hinterlegt es verschlüsselt unter `secrets/`.
+Alle drei Werte sind einzeilig — geprüft —, sonst käme die Zeilenzuordnung
+durcheinander.
 
-- [ ] **Step 3: Abnahme — ohne die Werte auszugeben**
+`PAPERLESS_SECRET_KEY` muss derselbe bleiben wie unter Docker, sonst verfallen
+die Sitzungen und API-Token, die der Import mitbringt.
+
+Von Hand geht es genauso: `./scripts/secret.sh` ohne Pipe aufrufen und die
+Werte einzeln eingeben.
+
+- [x] **Step 2: Abnahme — ohne die Werte auszugeben**
 
 ```bash
 export KUBECONFIG=~/.kube/config
@@ -630,10 +635,10 @@ for k,v in sorted(d.items()): print(f'{k}: {len(v)} Zeichen (base64)')
 "
 ```
 
-Erwartet: vier Schlüssel, alle mit einer Länge deutlich über null. Ein
+Erwartet: drei Schlüssel, alle mit einer Länge deutlich über null. Ein
 Schlüssel mit null Zeichen bedeutet, dass die Eingabe leer war.
 
-- [ ] **Step 4: Prüfen, dass die verschlüsselte Datei lesbar bleibt**
+- [x] **Step 3: Prüfen, dass die verschlüsselte Datei lesbar bleibt**
 
 ```bash
 cd ~/github/homelab-argocd
@@ -644,7 +649,7 @@ Erwartet: `apiVersion`, `kind: Secret`, Name und Namensraum im Klartext, die
 Nutzlast entschlüsselt. Das bestätigt, dass der PGP-Schlüssel greift und die
 Datei nach einem Neuaufbau wieder einspielbar ist.
 
-- [ ] **Step 5: README ergänzen und committen**
+- [x] **Step 4: README ergänzen und committen**
 
 In `secrets/README.md` die Tabelle um eine Zeile erweitern:
 
@@ -737,12 +742,10 @@ unverändert:
             PAPERLESS_TIKA_ENABLED: "1"
             PAPERLESS_TIKA_ENDPOINT: http://tika:9998
             PAPERLESS_TIKA_GOTENBERG_ENDPOINT: http://gotenberg:3000
-            PAPERLESS_APPS: allauth.socialaccount.providers.openid_connect
-            PAPERLESS_SOCIALACCOUNT_PROVIDERS:
-              valueFrom:
-                secretKeyRef:
-                  name: paperless-secrets
-                  key: PAPERLESS_SOCIALACCOUNT_PROVIDERS
+            # Der Import bringt acht aktive Mail-Regeln mit, drei davon
+            # loeschen die Mail nach der Verarbeitung. Ohne diesen Riegel
+            # raeumten Cluster und Docker-Stack dieselben Postfaecher leer.
+            PAPERLESS_EMAIL_TASK_CRON: disable
             PAPERLESS_EMAIL_HOST: ha01s025.org-dns.com
             PAPERLESS_EMAIL_PORT: "465"
             PAPERLESS_EMAIL_USE_SSL: "true"
@@ -967,7 +970,33 @@ kubectl -n paperless exec deploy/paperless-ngx -- \
   document_importer /usr/src/paperless/export/v3-final --no-progress-bar
 ```
 
-- [ ] **Step 6: Suchindex neu aufbauen lassen**
+- [ ] **Step 6: Die Mail-Regeln im Cluster stilllegen**
+
+Der Import bringt acht aktive Mail-Regeln mit. Drei davon haben `action=1`,
+also `DELETE`: Sie löschen die Mail nach der Verarbeitung. Solange der
+Docker-Stack produktiv dieselben Postfächer abruft, dürfen nicht zwei
+Instanzen darin arbeiten — sonst verschwinden Mails, bevor die jeweils andere
+sie gesehen hat, und bei `DELETE` endgültig.
+
+`PAPERLESS_EMAIL_TASK_CRON: disable` aus Task 6 verhindert den geplanten
+Abruf bereits. Das hier ist der zweite Riegel, weil ein Fehler an dieser
+Stelle nicht rückholbar wäre:
+
+```bash
+kubectl -n paperless exec deploy/paperless-ngx -- python3 manage.py shell -c "
+from paperless_mail.models import MailRule
+n = MailRule.objects.filter(enabled=True).update(enabled=False)
+print('stillgelegte Regeln:', n)
+print('noch aktiv:', MailRule.objects.filter(enabled=True).count())
+"
+```
+
+Erwartet: `stillgelegte Regeln: 8` und `noch aktiv: 0`.
+
+Beim späteren Umschwenk nach außen werden sie hier wieder aktiviert und im
+Docker-Stack abgeschaltet — nie in beiden zugleich.
+
+- [ ] **Step 7: Suchindex neu aufbauen lassen**
 
 ```bash
 kubectl -n paperless exec deploy/paperless-ngx -- python3 manage.py document_index reindex
@@ -977,7 +1006,7 @@ Der Import füllt die Datenbank, der Tantivy-Index wird davon nicht zwingend
 mitgezogen. Ohne diesen Schritt findet die Volltextsuche nichts, obwohl alle
 Dokumente da sind.
 
-- [ ] **Step 7: Abnahme gegen die Referenz**
+- [ ] **Step 8: Abnahme gegen die Referenz**
 
 ```bash
 kubectl -n paperless exec deploy/paperless-ngx -- python3 manage.py shell -c "
@@ -1000,7 +1029,7 @@ print(Document.objects.count(), Correspondent.objects.count(), Tag.objects.count
 "' | tail -1
 ```
 
-- [ ] **Step 8: Abnahme in der Oberfläche**
+- [ ] **Step 9: Abnahme in der Oberfläche**
 
 `https://paperless.homelab.internal` aufrufen und prüfen:
 
