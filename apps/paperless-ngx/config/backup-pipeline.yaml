@@ -1,0 +1,130 @@
+---
+# Naechtliche Sicherung nach Scaleway als Tekton-Pipeline. Die
+# Rueckspielprobe liegt bewusst nicht hier, sondern in einem eigenen
+# Namensraum mit eigenen, nur lesenden Zugangsdaten - sie soll beweisen,
+# dass sich aus der Sicherung allein wiederherstellen laesst, und darf
+# dafuer nichts aus dieser Umgebung brauchen. Siehe
+# apps/paperless-restore-test.
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: paperless-backup-export
+  namespace: paperless
+spec:
+  description: >
+    Exportiert alle Dokumente und laedt das Ergebnis nach Scaleway.
+  steps:
+    - name: export
+      image: ghcr.io/paperless-ngx/paperless-ngx:3.1.3
+      # Als paperless (1000), sonst gehoerten die erzeugten Dateien root
+      # und der regulaere Pod kaeme nicht mehr an sie heran.
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+      workingDir: /usr/src/paperless/src
+      script: |
+        #!/bin/sh
+        set -e
+        # Nicht der Wrapper /usr/local/bin/document_exporter: der haengt an
+        # s6 und scheitert ausserhalb des initialisierten Containers mit
+        # "unable to envdir /run/s6". document_exporter legt sein Ziel
+        # zudem nicht selbst an.
+        mkdir -p /usr/src/paperless/export/backup
+        exec python3 manage.py document_exporter \
+          /usr/src/paperless/export/backup \
+          --zip --zip-name latest-backup --delete --no-progress-bar
+      env:
+        - name: PAPERLESS_DBENGINE
+          value: postgresql
+        - name: PAPERLESS_DBHOST
+          value: paperless-db-rw
+        - name: PAPERLESS_DBNAME
+          value: paperless
+        - name: PAPERLESS_DBUSER
+          valueFrom:
+            secretKeyRef: { name: paperless-db-app, key: username }
+        - name: PAPERLESS_DBPASS
+          valueFrom:
+            secretKeyRef: { name: paperless-db-app, key: password }
+        - name: PAPERLESS_SECRET_KEY
+          valueFrom:
+            secretKeyRef: { name: paperless-secrets, key: PAPERLESS_SECRET_KEY }
+        - name: PAPERLESS_REDIS
+          value: redis://valkey:6379
+      volumeMounts:
+        - { name: media, mountPath: /usr/src/paperless/media }
+        - { name: data, mountPath: /usr/src/paperless/data }
+        - { name: export, mountPath: /usr/src/paperless/export }
+      resources:
+        requests: { cpu: 100m, memory: 256Mi }
+        limits: { memory: 1Gi }
+
+    - name: upload
+      image: docker.io/rclone/rclone:1.71.0
+      script: |
+        #!/bin/sh
+        set -e
+        SIZE=$(stat -c %s /export/backup/latest-backup.zip)
+        echo "==> Sicherung ist $((SIZE / 1024 / 1024)) MB gross"
+        # --s3-no-check-bucket: rclone prueft sonst per CreateBucket, ob der
+        # Bucket existiert - das darf der Schluessel nicht und muss er nicht.
+        rclone copyto --s3-no-check-bucket \
+          /export/backup/latest-backup.zip "scw:${SCW_BUCKET}/latest-backup.zip"
+        rclone copyto --s3-no-check-bucket \
+          /export/backup/latest-backup.zip \
+          "scw:${SCW_BUCKET}/daily/paperless-$(date +%F).zip"
+        rclone delete --min-age 14d "scw:${SCW_BUCKET}/daily"
+        echo "==> hochgeladen"
+      envFrom:
+        - configMapRef: { name: paperless-rclone }
+      env:
+        - name: RCLONE_CONFIG_SCW_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef: { name: paperless-secrets, key: RCLONE_CONFIG_SCW_ACCESS_KEY_ID }
+        - name: RCLONE_CONFIG_SCW_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef: { name: paperless-secrets, key: RCLONE_CONFIG_SCW_SECRET_ACCESS_KEY }
+        - name: SCW_BUCKET
+          valueFrom:
+            secretKeyRef: { name: paperless-secrets, key: SCW_BUCKET }
+      volumeMounts:
+        - { name: export, mountPath: /export }
+      resources:
+        requests: { cpu: 100m, memory: 128Mi }
+        limits: { memory: 512Mi }
+
+  # media liest, export schreibt - beide ReadWriteOnce und bereits vom
+  # Deployment eingebunden. Der TaskRun landet deshalb ueber die Affinitaet
+  # im PipelineRun auf demselben Node.
+  volumes:
+    - name: media
+      persistentVolumeClaim: { claimName: paperless-ngx-media }
+    - name: data
+      persistentVolumeClaim: { claimName: paperless-ngx-data }
+    - name: export
+      persistentVolumeClaim: { claimName: paperless-ngx-export }
+
+---
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: paperless-backup
+  namespace: paperless
+spec:
+  description: Sichert Paperless nach Scaleway.
+  tasks:
+    - name: backup
+      taskRef: { name: paperless-backup-export }
+
+---
+# Endpunkt und Region stehen offen, nur die Schluessel liegen im Secret.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: paperless-rclone
+  namespace: paperless
+data:
+  RCLONE_CONFIG_SCW_TYPE: s3
+  RCLONE_CONFIG_SCW_PROVIDER: Scaleway
+  RCLONE_CONFIG_SCW_REGION: nl-ams
+  RCLONE_CONFIG_SCW_ENDPOINT: s3.nl-ams.scw.cloud

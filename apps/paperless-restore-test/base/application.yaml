@@ -1,0 +1,25 @@
+# Weist woechentlich nach, dass sich die Paperless-Sicherung zurueckspielen
+# laesst. Bewusst eine eigene Anwendung in einem eigenen Namensraum: Die
+# Probe soll belegen, dass aus der Sicherung allein wiederhergestellt werden
+# kann, und darf dafuer nichts aus der Produktionsumgebung brauchen - weder
+# deren Datenbank noch deren Volumes noch deren Zugangsdaten.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: paperless-restore-test
+  namespace: argocd
+spec:
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+  project: apps
+  sources:
+    - repoURL: https://github.com/p3l1/homelab-argocd.git
+      targetRevision: main
+      path: apps/paperless-restore-test/config
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: paperless-restore

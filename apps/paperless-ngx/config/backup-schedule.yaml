@@ -1,0 +1,98 @@
+---
+# Tekton kennt keinen Zeitplan; ein CronJob legt den PipelineRun an. Der
+# Job selbst tut nichts weiter - die Arbeit, die Protokolle und die
+# Historie liegen im PipelineRun und damit im Tekton Dashboard.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: paperless-backup-trigger
+  namespace: paperless
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: paperless-backup-trigger
+  namespace: paperless
+rules:
+  - apiGroups: ["tekton.dev"]
+    resources: ["pipelineruns"]
+    verbs: ["create", "list", "delete"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: paperless-backup-trigger
+  namespace: paperless
+subjects:
+  - kind: ServiceAccount
+    name: paperless-backup-trigger
+    namespace: paperless
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: paperless-backup-trigger
+
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: paperless-backup
+  namespace: paperless
+spec:
+  schedule: "0 3 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        spec:
+          restartPolicy: Never
+          serviceAccountName: paperless-backup-trigger
+          containers:
+            - name: trigger
+              # Offizielles Image: Bitnami hat versionierte Tags aus dem
+              # oeffentlichen Registry entfernt.
+              image: registry.k8s.io/kubectl:v1.33.4
+              command:
+                - sh
+                - -c
+                - |
+                  set -e
+                  cat <<EOF | kubectl create -f -
+                  apiVersion: tekton.dev/v1
+                  kind: PipelineRun
+                  metadata:
+                    generateName: paperless-backup-
+                    namespace: paperless
+                  spec:
+                    pipelineRef:
+                      name: paperless-backup
+                    timeouts:
+                      pipeline: 2h
+                    taskRunTemplate:
+                      podTemplate:
+                        # media, data und export sind ReadWriteOnce und
+                        # haengen am Paperless-Pod. Ohne diese Affinitaet
+                        # bliebe der TaskRun auf einem anderen Node
+                        # dauerhaft Pending.
+                        affinity:
+                          podAffinity:
+                            requiredDuringSchedulingIgnoredDuringExecution:
+                              - labelSelector:
+                                  matchLabels:
+                                    app.kubernetes.io/name: paperless
+                                    app.kubernetes.io/instance: paperless-ngx
+                                topologyKey: kubernetes.io/hostname
+                  EOF
+                  # Alte Laeufe abraeumen, damit die Historie nicht waechst.
+                  kubectl get pipelinerun -n paperless \
+                    -l tekton.dev/pipeline=paperless-backup \
+                    --sort-by=.metadata.creationTimestamp -o name \
+                    | head -n -10 | xargs -r kubectl delete -n paperless
+              resources:
+                requests: { cpu: 50m, memory: 64Mi }
+                limits: { memory: 256Mi }

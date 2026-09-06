@@ -1,0 +1,162 @@
+---
+# Holt latest-backup.zip aus Scaleway und spielt sie probeweise ein.
+#
+# Alles, was die Probe braucht, bringt sie selbst mit: Datenbank und Redis
+# als Sidecars, Medien und Daten in einem leeren Workspace. Sie hat keinen
+# Zugriff auf die Produktionsdatenbank, deren Volumes oder deren Secrets,
+# und ihre Scaleway-Zugangsdaten duerfen nur lesen. Genau das ist der Punkt:
+# Gelingt die Probe, ist bewiesen, dass die Sicherung fuer sich allein
+# genuegt.
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: paperless-restore-check
+  namespace: paperless-restore
+spec:
+  description: >
+    Laedt die juengste Sicherung und liest sie in eine Wegwerf-Datenbank ein.
+  params:
+    - name: expected-documents
+      type: string
+      description: >
+        Erwartete Dokumentenzahl. "0" prueft nur, dass ueberhaupt etwas
+        zurueckkommt - sinnvoll, solange die Zahl noch waechst.
+      default: "0"
+  workspaces:
+    - name: scratch
+  sidecars:
+    - name: postgres
+      image: docker.io/library/postgres:17
+      env:
+        - { name: POSTGRES_DB, value: paperless }
+        - { name: POSTGRES_USER, value: paperless }
+        - { name: POSTGRES_PASSWORD, value: probe }
+        # Unter /tmp, damit kein Volume noetig ist - die Datenbank stirbt
+        # mit dem Pod, und das ist beabsichtigt.
+        - { name: PGDATA, value: /tmp/pgdata }
+      resources:
+        requests: { cpu: 100m, memory: 256Mi }
+        limits: { memory: 1Gi }
+    - name: valkey
+      image: docker.io/valkey/valkey:8-alpine
+      args: ["--save", ""]
+      resources:
+        requests: { cpu: 50m, memory: 64Mi }
+        limits: { memory: 256Mi }
+  steps:
+    - name: download
+      image: docker.io/rclone/rclone:1.71.0
+      script: |
+        #!/bin/sh
+        set -e
+        rclone copyto "scw:${SCW_BUCKET}/latest-backup.zip" \
+          "$(workspaces.scratch.path)/latest-backup.zip"
+        SIZE=$(stat -c %s "$(workspaces.scratch.path)/latest-backup.zip")
+        echo "==> geladen: $((SIZE / 1024 / 1024)) MB"
+        test "$SIZE" -gt 1048576 || { echo "FEHLER: Sicherung unter 1 MB"; exit 1; }
+      envFrom:
+        - configMapRef: { name: paperless-restore-rclone }
+      env:
+        - name: RCLONE_CONFIG_SCW_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef: { name: paperless-restore-secrets, key: RCLONE_CONFIG_SCW_ACCESS_KEY_ID }
+        - name: RCLONE_CONFIG_SCW_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef: { name: paperless-restore-secrets, key: RCLONE_CONFIG_SCW_SECRET_ACCESS_KEY }
+        - name: SCW_BUCKET
+          valueFrom:
+            secretKeyRef: { name: paperless-restore-secrets, key: SCW_BUCKET }
+      resources:
+        requests: { cpu: 100m, memory: 128Mi }
+        limits: { memory: 512Mi }
+
+    - name: restore
+      image: ghcr.io/paperless-ngx/paperless-ngx:3.1.3
+      workingDir: /usr/src/paperless/src
+      script: |
+        #!/bin/bash
+        set -e
+        W="$(workspaces.scratch.path)"
+
+        echo "==> Warte auf die Wegwerf-Datenbank"
+        for _ in $(seq 1 60); do
+          pg_isready -h 127.0.0.1 -U paperless -q && break
+          sleep 2
+        done
+        pg_isready -h 127.0.0.1 -U paperless
+
+        echo "==> Entpacke"
+        mkdir -p "$W/restore" /tmp/pl/media /tmp/pl/data
+        python3 -m zipfile -e "$W/latest-backup.zip" "$W/restore"
+
+        echo "==> Schema anlegen"
+        python3 manage.py migrate --no-input
+
+        echo "==> Sicherung einlesen"
+        python3 manage.py document_importer "$W/restore" --no-progress-bar
+
+        echo "==> Nachzaehlen"
+        python3 manage.py shell -c "
+        from documents.models import Document, Correspondent, Tag
+        n = Document.objects.count()
+        print('Dokumente     :', n)
+        print('Korrespondenten:', Correspondent.objects.count())
+        print('Tags          :', Tag.objects.count())
+        expected = int('$(params.expected-documents)')
+        if expected and n != expected:
+            raise SystemExit(f'FEHLER: erwartet {expected}, zurueckgelesen {n}')
+        if not n:
+            raise SystemExit('FEHLER: kein einziges Dokument zurueckgelesen')
+        print('Rueckspielprobe bestanden')
+        "
+      env:
+        - { name: PAPERLESS_DBENGINE, value: postgresql }
+        - { name: PAPERLESS_DBHOST, value: 127.0.0.1 }
+        - { name: PAPERLESS_DBNAME, value: paperless }
+        - { name: PAPERLESS_DBUSER, value: paperless }
+        - { name: PAPERLESS_DBPASS, value: probe }
+        - { name: PAPERLESS_REDIS, value: "redis://127.0.0.1:6379" }
+        # Nur fuer diesen Lauf; signiert nichts, was jemand behaelt.
+        - { name: PAPERLESS_SECRET_KEY, value: restore-probe-only }
+        - { name: PAPERLESS_DATA_DIR, value: /tmp/pl/data }
+        - { name: PAPERLESS_MEDIA_ROOT, value: /tmp/pl/media }
+        - { name: PAPERLESS_TIME_ZONE, value: Europe/Berlin }
+      resources:
+        requests: { cpu: 200m, memory: 512Mi }
+        limits: { memory: 2Gi }
+
+---
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: paperless-restore-check
+  namespace: paperless-restore
+spec:
+  description: Rueckspielprobe der Paperless-Sicherung.
+  params:
+    - name: expected-documents
+      type: string
+      default: "0"
+  workspaces:
+    - name: scratch
+  tasks:
+    - name: restore-check
+      taskRef: { name: paperless-restore-check }
+      params:
+        - name: expected-documents
+          value: $(params.expected-documents)
+      workspaces:
+        - name: scratch
+          workspace: scratch
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: paperless-restore-rclone
+  namespace: paperless-restore
+data:
+  RCLONE_CONFIG_SCW_TYPE: s3
+  RCLONE_CONFIG_SCW_PROVIDER: Scaleway
+  RCLONE_CONFIG_SCW_REGION: nl-ams
+  RCLONE_CONFIG_SCW_ENDPOINT: s3.nl-ams.scw.cloud

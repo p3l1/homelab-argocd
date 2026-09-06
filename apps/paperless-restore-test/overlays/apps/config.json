@@ -1,0 +1,11 @@
+{
+  "appName": "paperless-restore-test",
+  "userGivenName": "paperless-restore-test",
+  "destNamespace": "paperless-restore",
+  "destServer": "https://kubernetes.default.svc",
+  "srcPath": "apps/paperless-restore-test/base",
+  "srcRepoURL": "https://github.com/p3l1/homelab-argocd.git",
+  "srcTargetRevision": "main",
+  "labels": null,
+  "annotations": null
+}
