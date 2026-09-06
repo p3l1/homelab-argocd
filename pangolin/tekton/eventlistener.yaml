@@ -41,6 +41,31 @@ roleRef:
   kind: Role
   name: tekton-triggers-role
 ---
+# ClusterTriggerBinding und ClusterInterceptor sind clusterweite Objekte; eine
+# Role im Namensraum genuegt dafuer nicht, der EventListener startet sonst
+# nicht ("failed to wait for cache to sync").
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: tekton-triggers-clusterrole
+rules:
+  - apiGroups: [triggers.tekton.dev]
+    resources: [clustertriggerbindings, clusterinterceptors]
+    verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: tekton-triggers-clusterbinding
+subjects:
+  - kind: ServiceAccount
+    name: tekton-triggers-sa
+    namespace: tekton-pipelines
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: tekton-triggers-clusterrole
+---
 apiVersion: triggers.tekton.dev/v1beta1
 kind: TriggerTemplate
 metadata:

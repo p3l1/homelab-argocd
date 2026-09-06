@@ -23,13 +23,13 @@ private-resources:
     # Nicht tekton.homelab.internal - der Name gehoert der Traefik-Route im
     # LAN; zwei Ziele unter einem Namen waeren nur verwirrend.
     alias: tekton-webhook.homelab.internal
-    # Zugriff nur fuer den CI-Client und mich. Keine Rollen: Admin ist
-    # ohnehin ausgenommen, und Member waere zu weit gefasst.
+    # Zugriff nur fuer den CI-Client. Keine Rollen und keine Benutzer:
+    # Admins haben ohnehin Zugriff, und der interne und der Pocket-ID-Benutzer
+    # teilen sich Benutzername und Adresse - der Blueprint loest ueber genau
+    # diese Felder auf und traefe daher immer beide.
     #
-    # Die Liste gehoert in den Blueprint, nicht nur in die API - jeder Lauf
+    # Die Liste gehoert in den Blueprint, nicht nur in die API: jeder Lauf
     # loescht die bestehenden Zuordnungen und setzt sie aus dieser Datei neu.
-    users:
-      - philipp@herzo.gs
     machines:
       # niceId des Clients "homelab-argocd CI"
       - fine-mastigoproctus-giganteus
