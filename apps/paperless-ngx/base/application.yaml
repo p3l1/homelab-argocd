@@ -71,7 +71,11 @@ spec:
             PAPERLESS_AI_LLM_BACKEND: ollama
             PAPERLESS_AI_LLM_ENDPOINT: http://ollama.ollama.svc.cluster.local:11434
             PAPERLESS_AI_LLM_MODEL: llama3.2:1b
-            PAPERLESS_AI_LLM_OUTPUT_LANGUAGE: de
+            # de-de, nicht de: Paperless schlaegt den Code in Djangos
+            # LANGUAGES nach, und dort steht nur "de-de". Bei "de" landet
+            # der Code woertlich im Uebersetzungsprompt ("rewrite ... in
+            # de"), und die Vorschlaege bleiben englisch.
+            PAPERLESS_AI_LLM_OUTPUT_LANGUAGE: de-de
             # Grosszuegig: Bei RAG kommt Kontext aehnlicher Dokumente dazu,
             # und das Modell rechnet auf vier ARM-Kernen ohne GPU.
             PAPERLESS_AI_LLM_REQUEST_TIMEOUT: "300"
