@@ -192,6 +192,61 @@ Erwartet: `export/` rund 934 MB, `paperless-2.20.14.dump` 2,3 MB,
 `data.tar.gz` 52 MB, `Dokumente: 788`, beide Dateizahlen `2356`, und
 `Magic: b'PGDMP' -> gueltig`.
 
+- [x] **Step 10: Den Export gegen die Prüfsummen der Datenbank halten**
+
+Dateizahl und Größe sagen nichts über den Inhalt. Das Manifest führt zu jedem
+Dokument die MD5-Summe von Original und Archivfassung, wie sie in der
+Datenbank steht:
+
+```bash
+cd ~/github/homelab-argocd
+./scripts/verify-paperless-backup.py ~/backups/paperless/2026-09-06-pre-v3/export
+```
+
+Erwartet: `Pruefsummen korrekt: 1566`, keine abweichende, keine fehlende
+Datei. Die 1566 sind 788 Originale plus 778 Archivfassungen — zehn Dokumente
+haben keine, was bei bereits durchsuchbaren PDFs normal ist.
+
+- [x] **Step 11: Prüfen, dass Archiv und Dump unterwegs heil geblieben sind**
+
+```bash
+gzip -t ~/backups/paperless/2026-09-06-pre-v3/data.tar.gz && echo "gzip-CRC OK"
+for f in paperless-2.20.14.dump data.tar.gz; do
+  h_host=$(ssh root@10.35.99.168 "sha256sum /opt/paperless/backup/$f | cut -d' ' -f1")
+  h_mac=$(shasum -a 256 ~/backups/paperless/2026-09-06-pre-v3/$f | cut -d' ' -f1)
+  [ "$h_host" = "$h_mac" ] && echo "$f: identisch" || echo "$f: ABWEICHUNG"
+done
+```
+
+Erwartet: `gzip-CRC OK` und beide Dateien `identisch`.
+
+- [x] **Step 12: Den Rückweg wirklich gehen — Dump in eine Wegwerf-Datenbank**
+
+Der `pg_dump` ist der Rückweg aus Task 3. Ungeprüft ist er eine Annahme. Der
+Test spielt die **Kopie vom Mac** ein — die, die im Ernstfall benutzt würde —
+und lässt die Produktivdatenbank unberührt:
+
+```bash
+ssh root@10.35.99.168 'docker exec documents-db-1 createdb -U paperless paperless_verify'
+cat ~/backups/paperless/2026-09-06-pre-v3/paperless-2.20.14.dump \
+  | ssh root@10.35.99.168 'docker exec -i documents-db-1 pg_restore -U paperless \
+      -d paperless_verify --no-owner --no-privileges'
+for db in paperless_verify paperless; do
+  ssh root@10.35.99.168 "docker exec documents-db-1 psql -U paperless -d $db -t -A -c \
+    'select md5(string_agg(checksum, chr(44) order by id)) from documents_document;'"
+done
+ssh root@10.35.99.168 'docker exec documents-db-1 dropdb -U paperless paperless_verify'
+```
+
+Erwartet: beide Zeilen liefern **dieselbe** Prüfsumme. Damit ist bewiesen,
+dass der Dump alle 788 Dokumentdatensätze unverfälscht enthält.
+
+`chr(44)` statt eines Kommas in Anführungszeichen: Das Quoting müsste sonst
+durch ssh, `docker exec` und `psql` hindurch und zerbricht dabei.
+
+Die Wegwerf-Datenbank am Ende wirklich löschen — sie liegt sonst neben der
+produktiven auf demselben Postgres.
+
 Erst wenn das steht, darf Task 2 beginnen.
 
 ---
@@ -491,11 +546,17 @@ import json
 m = json.load(open('$HOME/backups/paperless/2026-09-06-post-v3/manifest.json'))
 print('Dokumente:', len([e for e in m if e['model']=='documents.document']))
 "
-ls ~/backups/paperless/2026-09-06-post-v3/ | head
+cd ~/github/homelab-argocd
+./scripts/verify-paperless-backup.py ~/backups/paperless/2026-09-06-post-v3
 ```
 
-Erwartet: `788` und ein Verzeichnis mit `manifest.json`, `version.json` sowie
-den Dokumentdateien.
+Erwartet: `Dokumente: 788` und `Pruefsummen korrekt: 1566`, keine abweichende
+und keine fehlende Datei — dieselbe inhaltliche Prüfung wie in Task 1,
+Step 10, diesmal gegen den v3-Export.
+
+Weicht die Zahl der Prüfsummen leicht ab, ist das für sich kein Fehler: v3
+kann beim Aufstieg Archivfassungen neu erzeugt haben. Eine **abweichende**
+oder **fehlende** Datei ist dagegen immer ein Abbruchgrund.
 
 Das Verzeichnis auf dem Host bleibt liegen — Task 7 überträgt es von dort,
 nicht vom Mac.
