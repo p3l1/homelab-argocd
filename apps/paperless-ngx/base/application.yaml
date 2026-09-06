@@ -31,6 +31,15 @@ spec:
             PAPERLESS_CSRF_TRUSTED_ORIGINS: https://documents.cloud.p3l1.de,https://paperless.homelab.internal
             PAPERLESS_ALLOWED_HOSTS: documents.cloud.p3l1.de,paperless.homelab.internal
             PAPERLESS_TIME_ZONE: Europe/Berlin
+            # Bislang lief genau ein Webserver-Prozess. Eine
+            # KI-Vorschlagsanfrage dauert Minuten und blockierte damit die
+            # gesamte Oberflaeche - jeden Seitenaufruf, jede Suche. Drei
+            # Prozesse: einer darf im Modell haengen, zwei bedienen weiter.
+            PAPERLESS_WEBSERVER_WORKERS: "3"
+            # Zwei Hintergrundaufgaben parallel, je zwei Threads: Das
+            # Produkt bleibt bei den vier Kernen des Pi.
+            PAPERLESS_TASK_WORKERS: "2"
+            PAPERLESS_THREADS_PER_WORKER: "2"
             PAPERLESS_OCR_LANGUAGE: deu+eng
             PAPERLESS_OCR_LANGUAGES: deu eng
             # Ab v3 wird die Engine nicht mehr aus DBHOST abgeleitet; ohne
@@ -122,7 +131,10 @@ spec:
               cpu: 200m
               memory: 512Mi
             limits:
-              memory: 3Gi
+              # 4 statt 3 GiB: Jeder Webserver-Prozess laedt die Anwendung
+              # eigenstaendig in den Speicher, dazu kommt das
+              # Einbettungsmodell. Der Node hat 8 GiB.
+              memory: 4Gi
           service:
             main:
               ports:
