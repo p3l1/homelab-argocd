@@ -1,7 +1,11 @@
 ---
 # Wendet die Pangolin-Blueprints an, sobald sich unter pangolin/blueprints
-# etwas aendert. Ersetzt die GitHub Action: der Lauf passiert hier im
+# etwas aendert. Ersetzt die frühere GitHub Action: der Lauf passiert im
 # Cluster, GitHub bekommt nur den Status zurueck.
+#
+# Pipeline und Aufgabe stehen hier vollstaendig, nicht als Verweis auf
+# Cluster-Objekte: Pipelines-as-Code loest Referenzen aus dem Repository
+# auf, nicht aus dem Cluster.
 apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
@@ -12,10 +16,99 @@ metadata:
     pipelinesascode.tekton.dev/on-path-change: "[pangolin/blueprints/***]"
     pipelinesascode.tekton.dev/max-keep-runs: "5"
 spec:
-  pipelineRef:
-    name: pangolin-blueprints
+  timeouts:
+    pipeline: 10m
   params:
     - name: revision
       value: "{{ revision }}"
-  timeouts:
-    pipeline: 10m
+  pipelineSpec:
+    params:
+      - name: revision
+        type: string
+    tasks:
+      - name: apply
+        params:
+          - name: revision
+            value: $(params.revision)
+        taskSpec:
+          params:
+            - name: revision
+              type: string
+          # Der Namensraum erzwingt PodSecurity "restricted".
+          stepTemplate:
+            securityContext:
+              allowPrivilegeEscalation: false
+              runAsNonRoot: true
+              runAsUser: 65532
+              capabilities:
+                drop: ["ALL"]
+              seccompProfile:
+                type: RuntimeDefault
+          steps:
+            # Zwei Images, weil keines schlank beides mitbringt und apk als
+            # Nicht-root ausfaellt. Sie teilen sich /workspace.
+            - name: fetch
+              image: docker.io/alpine/git:2.49.1
+              script: |
+                #!/bin/sh
+                set -eu
+                echo "==> Hole $(params.revision)"
+                git clone --depth 1 \
+                  https://github.com/p3l1/homelab-argocd.git /workspace/repo
+                cd /workspace/repo && git checkout -q "$(params.revision)" 2>/dev/null || true
+
+            - name: download-cli
+              image: docker.io/curlimages/curl:8.18.0
+              script: |
+                #!/bin/sh
+                set -eu
+                arch=$(uname -m)
+                case "$arch" in
+                  aarch64|arm64) bin=pangolin-cli_linux_arm64 ;;
+                  x86_64)        bin=pangolin-cli_linux_amd64 ;;
+                  *) echo "Nicht unterstuetzte Architektur: $arch" >&2; exit 1 ;;
+                esac
+                echo "==> Lade Pangolin-CLI fuer $arch"
+                curl -fsSL -o /workspace/pangolin \
+                  "https://github.com/fosrl/pangolin-cli/releases/download/0.16.0/${bin}"
+                chmod +x /workspace/pangolin
+
+            - name: apply
+              image: docker.io/alpine/git:2.49.1
+              env:
+                # Die CLI legt unter $HOME Konfiguration und Protokolle an;
+                # als Nicht-root ist / nicht beschreibbar.
+                - name: HOME
+                  value: /workspace
+                - name: PANGOLIN_ENDPOINT
+                  valueFrom:
+                    secretKeyRef:
+                      name: pangolin-credentials
+                      key: PANGOLIN_ENDPOINT
+                - name: PANGOLIN_INTEGRATION_API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: pangolin-credentials
+                      key: PANGOLIN_INTEGRATION_API_KEY
+                - name: PANGOLIN_ORG_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: pangolin-credentials
+                      key: PANGOLIN_ORG_ID
+              script: |
+                #!/bin/sh
+                set -eu
+                cd /workspace/repo/pangolin/blueprints
+                found=0
+                for bp in *.yaml; do
+                  [ -e "$bp" ] || continue
+                  found=1
+                  echo "==> Wende $bp an"
+                  /workspace/pangolin apply blueprint \
+                    --api-key "$PANGOLIN_INTEGRATION_API_KEY" \
+                    --endpoint "$PANGOLIN_ENDPOINT" \
+                    --org "$PANGOLIN_ORG_ID" \
+                    --file "$bp"
+                done
+                [ "$found" -eq 1 ] || { echo "Keine Blueprints gefunden." >&2; exit 1; }
+                echo "==> Fertig"
