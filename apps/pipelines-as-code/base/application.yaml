@@ -25,6 +25,10 @@ spec:
     - repoURL: https://github.com/p3l1/homelab-argocd.git
       targetRevision: main
       path: apps/pipelines-as-code/routes
+    # Angemeldete Repositories, eine Datei je Repository.
+    - repoURL: https://github.com/p3l1/homelab-argocd.git
+      targetRevision: main
+      path: apps/pipelines-as-code/repositories
   ignoreDifferences:
     - group: apiextensions.k8s.io
       kind: CustomResourceDefinition

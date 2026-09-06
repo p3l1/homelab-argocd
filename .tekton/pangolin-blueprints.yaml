@@ -1,0 +1,21 @@
+---
+# Wendet die Pangolin-Blueprints an, sobald sich unter pangolin/blueprints
+# etwas aendert. Ersetzt die GitHub Action: der Lauf passiert hier im
+# Cluster, GitHub bekommt nur den Status zurueck.
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: pangolin-blueprints
+  annotations:
+    pipelinesascode.tekton.dev/on-event: "[push]"
+    pipelinesascode.tekton.dev/on-target-branch: "[main]"
+    pipelinesascode.tekton.dev/on-path-change: "[pangolin/blueprints/***]"
+    pipelinesascode.tekton.dev/max-keep-runs: "5"
+spec:
+  pipelineRef:
+    name: pangolin-blueprints
+  params:
+    - name: revision
+      value: "{{ revision }}"
+  timeouts:
+    pipeline: 10m

@@ -1,0 +1,17 @@
+---
+# Meldet das Repository bei Pipelines-as-Code an. Erst dadurch nimmt der
+# Controller dessen Ereignisse an - unbekannte Repositories weist er ab,
+# was den oeffentlichen Endpunkt zusaetzlich absichert.
+#
+# Liegt bewusst in tekton-pipelines: PaC fuehrt die Laeufe im Namensraum des
+# Repository-Objekts aus, und dort stehen Task, Pipeline und das
+# Pangolin-Secret bereits.
+#
+# Weitere Repositories: eine Datei je Repository in diesem Verzeichnis.
+apiVersion: pipelinesascode.tekton.dev/v1alpha1
+kind: Repository
+metadata:
+  name: homelab-argocd
+  namespace: tekton-pipelines
+spec:
+  url: https://github.com/p3l1/homelab-argocd

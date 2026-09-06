@@ -4,12 +4,16 @@
 
 ```
 Push nach main (pangolin/blueprints/**)
-  └─ GitHub Action baut mit dem Machine Client einen Tunnel zu Pangolin auf
-     └─ ruft die private Ressource unter tekton-webhook.homelab.internal:8080
-        └─ EventListener prüft die HMAC-Signatur
-           └─ erzeugt einen PipelineRun
-              └─ wendet die Blueprints an
+  └─ GitHub stellt das Ereignis an pac.cloud.p3l1.de zu
+     └─ Pipelines-as-Code prüft Signatur und Repository
+        └─ liest .tekton/pangolin-blueprints.yaml
+           └─ erzeugt einen PipelineRun und meldet den Status zurück
 ```
+
+Der frühere Weg über eine GitHub Action und den Machine Client ist damit
+abgelöst. Der EventListener und die private Ressource bleiben bestehen: Sie
+erlauben es, die Pipeline von außerhalb GitHubs anzustoßen, ohne einen
+öffentlichen Endpunkt zu benötigen.
 
 Der Webhook ist **keine öffentliche Ressource**: Er ist nur über einen
 Pangolin-Client erreichbar. Zusätzlich prüft der GitHub-Interceptor eine
