@@ -1,0 +1,11 @@
+{
+  "appName": "tekton-pipelines",
+  "userGivenName": "tekton-pipelines",
+  "destNamespace": "tekton-pipelines",
+  "destServer": "https://kubernetes.default.svc",
+  "srcPath": "apps/tekton-pipelines/base",
+  "srcRepoURL": "https://github.com/p3l1/homelab-argocd.git",
+  "srcTargetRevision": "main",
+  "labels": null,
+  "annotations": null
+}

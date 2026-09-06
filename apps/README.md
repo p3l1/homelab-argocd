@@ -1,27 +1,44 @@
 # Apps
-This directory contains all of the applications you installed by using:
-```bash
-argocd-autopilot app create <APP_NAME> --app <APP_SPECIFIER> -p <PROJECT_NAME>
+
+Jede Anwendung liegt vollständig in diesem Repository — es gibt keine
+separaten Repos mehr.
+
+```
+apps/<name>/
+├── base/
+│   ├── application.yaml   ArgoCD-Application: Upstream-Chart und/oder config/
+│   └── kustomization.yaml
+├── config/                eigene Manifeste (Namespace, Datenbank, Deployment …)
+└── overlays/<projekt>/
+    ├── config.json        von den ApplicationSets der Projekte eingelesen
+    └── kustomization.yaml
 ```
 
-## Application Types
-> If you don't specify the application `--type` argocd-autopilot will try to clone the source repository and infer the application type [automatically](https://argoproj.github.io/argo-cd/user-guide/tool_detection/#tool-detection)
+`<projekt>` ist `infrastructure` oder `apps`; die zugehörigen ApplicationSets
+stehen unter `projects/`.
 
-* ### Directory application
-  Such an application references a specific directory at a given repo URL, path and revision. It will be persisted in the GitOps Repository as a single file at `apps/<APP_NAME>/<PROJECT_NAME>/config.json`.  
-  #### Example:  
-  ```bash
-  argocd-autopilot app create dir-example --app github.com/argoproj-labs/argocd-autopilot/examples/demo-dir/ -p <PROJECT_NAME> --type dir
-  ```
+## Infrastructure
 
-* ### Kustomize application
-  A Kustomize application will have <u>exactly one</u>: `apps/<APP_NAME>/base/kustomization.yaml` file, and one or more `apps/<APP_NAME>/overlays/<PROJECT_NAME>/` folders.
+| App | Chart | Zweck |
+|---|---|---|
+| `metallb` | `0.15.3` | LoadBalancer-Adressen, Pool `10.35.99.230–250` |
+| `cert-manager` | `v1.21.1` | Zertifikate, cluster-lokale CA |
+| `longhorn` | `1.12.1` | verteilter Speicher über die Node-SSDs |
+| `cloudnative-pg` | `0.29.0` | PostgreSQL-Operator |
+| `newt` | `1.5.0` | Pangolin-Tunnel nach außen |
 
-  The `apps/<APP_NAME>/base/kustomization.yaml` file is created the first time you create the application. The `apps/<APP_NAME>/overlays/<PROJECT_NAME>/` folder is created for each project you install this application on. So all overlays of the same application are using the same base `kustomization.yaml`.
-  #### Example:
-  Try running the following command:
-  ```bash
-  argocd-autopilot app create hello-world --app github.com/argoproj-labs/argocd-autopilot/examples/demo-app/ -p <PROJECT_NAME> --type kustomize
-  ```
+Die Reihenfolge steuern Sync-Waves: MetalLB zuerst, danach cert-manager,
+Longhorn, CloudNativePG und zuletzt Newt.
 
-###### * If you did not create a project yet take a look at: [creating a project](https://argocd-autopilot.readthedocs.io/en/stable/Getting-Started/#add-a-project-and-an-application).
+## Apps
+
+| App | Quelle | Zweck |
+|---|---|---|
+| `whoami` | eigene Manifeste | Testdienst für Ingress und DNS |
+| `umami` | Chart `7.11.5` | Web-Analyse, Datenbank über CloudNativePG |
+| `paperless-ngx` | Chart `0.24.1` | Dokumentenverwaltung |
+| `tekton-pipelines` | Chart `1.14.0` | CI |
+| `arcane` | eigene Manifeste | Verwaltung der externen Docker-Hosts |
+
+Secrets liegen SOPS-verschlüsselt unter [`secrets/`](../secrets) und werden
+von Hand angewandt, nicht von ArgoCD.

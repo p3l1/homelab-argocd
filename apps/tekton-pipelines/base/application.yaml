@@ -1,0 +1,22 @@
+# Tekton Pipelines. Loest Woodpecker als CI ab.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tekton-pipelines
+  namespace: argocd
+spec:
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+  project: apps
+  sources:
+    - chart: tekton-pipeline
+      repoURL: https://cdfoundation.github.io/tekton-helm-chart
+      targetRevision: 1.14.0
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: tekton-pipelines

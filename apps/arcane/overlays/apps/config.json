@@ -1,0 +1,11 @@
+{
+  "appName": "arcane",
+  "userGivenName": "arcane",
+  "destNamespace": "arcane",
+  "destServer": "https://kubernetes.default.svc",
+  "srcPath": "apps/arcane/base",
+  "srcRepoURL": "https://github.com/p3l1/homelab-argocd.git",
+  "srcTargetRevision": "main",
+  "labels": null,
+  "annotations": null
+}

@@ -1,0 +1,21 @@
+# Kleiner Testdienst, um Ingress und DNS zu pruefen.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: whoami
+  namespace: argocd
+spec:
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+  project: apps
+  sources:
+    - repoURL: https://github.com/p3l1/homelab-argocd.git
+      targetRevision: main
+      path: apps/whoami/config
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: whoami

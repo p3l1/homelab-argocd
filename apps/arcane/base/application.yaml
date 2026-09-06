@@ -1,0 +1,22 @@
+# Arcane verwaltet die Docker-Hosts, die nicht Teil des Clusters sind.
+# Es gibt kein offizielles Helm-Chart, daher eigene Manifeste.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: arcane
+  namespace: argocd
+spec:
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+  project: apps
+  sources:
+    - repoURL: https://github.com/p3l1/homelab-argocd.git
+      targetRevision: main
+      path: apps/arcane/config
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: arcane

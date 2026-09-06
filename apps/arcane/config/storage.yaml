@@ -1,0 +1,26 @@
+# Zwei getrennte Volumes: die Anwendungsdaten sind klein und aendern sich
+# staendig, die Backups wachsen und sollen unabhaengig davon vergroessert
+# werden koennen.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: arcane-data
+  namespace: arcane
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: arcane-backups
+  namespace: arcane
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 50Gi

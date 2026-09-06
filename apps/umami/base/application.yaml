@@ -1,0 +1,38 @@
+# Web-Analyse. Die Datenbank stellt CloudNativePG bereit, nicht der
+# mitgelieferte PostgreSQL-Subchart.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: umami
+  namespace: argocd
+spec:
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+  project: apps
+  sources:
+    - chart: umami
+      repoURL: https://christianhuth.github.io/helm-charts
+      targetRevision: 7.11.5
+      helm:
+        valuesObject:
+          postgresql:
+            enabled: false
+          mysql:
+            enabled: false
+          umami:
+            database:
+              type: postgresql
+              # Verbindungsdaten aus dem Secret, das CloudNativePG zum
+              # Cluster erzeugt.
+              existingSecret: umami-db-app
+              existingSecretKeyDatabaseUrl: uri
+    - repoURL: https://github.com/p3l1/homelab-argocd.git
+      targetRevision: main
+      path: apps/umami/config
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: umami

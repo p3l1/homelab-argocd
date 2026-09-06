@@ -1,0 +1,53 @@
+# Dokumentenverwaltung. Datenbank ueber CloudNativePG, Redis bringt das
+# Chart selbst mit.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: paperless-ngx
+  namespace: argocd
+spec:
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+  project: apps
+  sources:
+    - chart: paperless-ngx
+      repoURL: https://charts.gabe565.com
+      targetRevision: 0.24.1
+      helm:
+        valuesObject:
+          postgresql:
+            enabled: false
+          persistence:
+            data:
+              enabled: true
+              storageClass: longhorn
+              size: 5Gi
+            media:
+              enabled: true
+              storageClass: longhorn
+              size: 20Gi
+          env:
+            PAPERLESS_DBHOST: paperless-db-rw
+            PAPERLESS_DBNAME: paperless
+            PAPERLESS_DBUSER:
+              valueFrom:
+                secretKeyRef:
+                  name: paperless-db-app
+                  key: username
+            PAPERLESS_DBPASS:
+              valueFrom:
+                secretKeyRef:
+                  name: paperless-db-app
+                  key: password
+            PAPERLESS_TIME_ZONE: Europe/Berlin
+            PAPERLESS_OCR_LANGUAGE: deu+eng
+    - repoURL: https://github.com/p3l1/homelab-argocd.git
+      targetRevision: main
+      path: apps/paperless-ngx/config
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: paperless
