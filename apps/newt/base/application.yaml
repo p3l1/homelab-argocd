@@ -38,6 +38,10 @@ spec:
     - repoURL: https://github.com/p3l1/homelab-argocd.git
       targetRevision: main
       path: apps/newt/config
+      directory:
+        # Die Dienste liegen unter config/services; ohne recurse liest
+        # ArgoCD nur die oberste Ebene und legt sie nicht an.
+        recurse: true
   destination:
     server: https://kubernetes.default.svc
     namespace: newt
