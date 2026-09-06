@@ -1090,351 +1090,131 @@ wird bei Bedarf mit `flush` geräumt und erneut eingelesen.
 
 ---
 
-### Task 8: Die Sicherung, die sich selbst anlegt
+### Task 8: Sicherung und Rückspielprobe, beide in Tekton
 
-Schließt die Lücke zwischen dem, was `BACKUP.md` behauptet, und dem, was
-existiert.
+Schließt die Lücke zwischen dem, was `BACKUP.md` behauptete, und dem, was
+existierte — und ersetzt zugleich den Restore-Test in GitHub Actions.
 
 **Files:**
-- Create: `apps/paperless-ngx/config/backup-cronjob.yaml`
-- Modify: `secrets/paperless-secrets.sops.yaml` (rclone-Schlüssel ergänzen)
+- Create: `apps/paperless-ngx/config/backup-pipeline.yaml`, `backup-schedule.yaml`
+- Create: `apps/paperless-restore-test/` (eigene Anwendung, vier Dateien)
+- Create: `secrets/paperless-restore-secrets.sops.yaml`
+- Modify: `secrets/paperless-secrets.sops.yaml` (rclone-Schlüssel)
+- Delete: `~/github/documents/.github/workflows/backup-restore-test.yml`
 - Modify: `~/github/documents/BACKUP.md`
-- Modify: `~/github/documents/.github/workflows/backup-restore-test.yml`
 
-**Interfaces:**
-- Konsumiert: Secret `paperless-secrets` aus Task 5, den laufenden Dienst aus
-  Task 7.
-- Produziert: täglich um 03:00 Uhr ein `latest-backup.zip` im Scaleway-Bucket,
-  das der wöchentliche GitHub-Workflow erwartet.
+**Warum zwei Anwendungen statt einer Pipeline mit zwei Schritten**
 
-**Stand:** Das Manifest liegt bereits im Repository, aber mit
-`suspend: true` — ohne Zugangsdaten scheiterte sonst jede Nacht ein Lauf.
-Die Schritte 3 bis 5 sowie 10 und 11 sind damit erledigt; offen sind die
-Zugangsdaten, das Scharfschalten und die Abnahme.
+Eine Rückspielprobe belegt nur dann etwas, wenn sie nichts aus der
+Produktionsumgebung braucht. Deshalb liegt sie in einem eigenen Namensraum,
+mit eigener Scaleway-Identität, die den Bucket **nur lesen** darf, und
+bringt Datenbank und Redis als Sidecars selbst mit. Sie kommt weder an die
+Produktionsdatenbank noch an deren Volumes noch an deren Secrets. Gelingt
+sie, ist bewiesen, dass die Sicherung für sich allein genügt.
 
-- [ ] **Step 1: Scaleway-Zugangsdaten ergänzen**
+| | Sicherung | Rückspielprobe |
+|---|---|---|
+| Namensraum | `paperless` | `paperless-restore` |
+| Zugangsdaten | schreibend | eigene, nur lesend |
+| Datenbank | CloudNativePG | Sidecar, wegwerfbar |
+| Volumes | Produktions-PVCs | leerer Workspace |
+| Zeitplan | täglich 03:00 | montags 04:00 |
 
-Zugangsschlüssel, Bucket und Endpunkt aus der Scaleway-Konsole holen — die
-GitHub-Secrets in `p3l1/documents` lassen sich nicht zurücklesen. Dann in
-dieselbe Datei nachtragen; leere Eingaben lassen die vorhandenen Schlüssel
-unberührt:
+- [x] **Step 1: Scaleway-Identitäten anlegen**
+
+Nach dem Muster der bestehenden Databasus-Application: je eine Application
+mit eigener Policy, begrenzt auf das Projekt Homelab.
 
 ```bash
-cd ~/github/homelab-argocd
+scw iam application create name=Paperless description="Paperless Backups"
+scw iam policy create name="Paperless - Object Storage" application-id=<id> \
+  rules.0.project-ids.0=<projekt> \
+  rules.0.permission-set-names.0=ObjectStorageBucketsRead ...
+```
+
+**Die KeyManager-Rechte sind nicht optional.** Der Bucket ist serverseitig
+verschlüsselt; ohne `KeyManagerKeyWrap`/`KeyManagerKeyEncrypt` scheitert
+schon ein `PutObject` mit 403, obwohl alle ObjectStorage-Rechte gesetzt
+sind. Die Databasus-Policy trägt sie deshalb ebenfalls — sie sind nicht
+datenbankspezifisch.
+
+- [x] **Step 2: Die Bucket-Policy ergänzen**
+
+Auf `p3l1-backup` liegt eine S3-Bucket-Policy, und die hat bei Scaleway
+**Vorrang vor IAM**. Wer dort nicht steht, bekommt 403, ganz gleich welche
+IAM-Rechte er hat. Die scw-CLI kann sie nicht anzeigen; sie ist nur über die
+S3-API erreichbar (`GET /<bucket>?policy`).
+
+Beim Ergänzen die vorhandenen Statements **unverändert übernehmen** — darunter
+das „Scaleway secure statement" mit der eigenen Benutzerkennung. Wer es
+verliert, sperrt sich selbst aus.
+
+- [x] **Step 3: Zugangsdaten hinterlegen**
+
+```bash
 ./scripts/secret.sh paperless-secrets paperless \
-  RCLONE_CONFIG_SCW_ACCESS_KEY_ID \
-  RCLONE_CONFIG_SCW_SECRET_ACCESS_KEY \
-  SCW_BUCKET
+  RCLONE_CONFIG_SCW_ACCESS_KEY_ID RCLONE_CONFIG_SCW_SECRET_ACCESS_KEY SCW_BUCKET
+./scripts/secret.sh paperless-restore-secrets paperless-restore \
+  RCLONE_CONFIG_SCW_ACCESS_KEY_ID RCLONE_CONFIG_SCW_SECRET_ACCESS_KEY SCW_BUCKET
 ```
 
-- [ ] **Step 2: Prüfen, dass die alten Schlüssel erhalten sind**
+- [x] **Step 4: Pipelines und Zeitpläne ausrollen**
+
+Drei Stolpersteine, alle beim Ausführen gefunden:
+
+- `/usr/local/bin/document_exporter` ist ein s6-Wrapper und scheitert
+  außerhalb des initialisierten Containers mit `unable to envdir /run/s6`.
+  Stattdessen `python3 manage.py document_exporter` aus
+  `/usr/src/paperless/src`, als Benutzer 1000 — als root gehörten die
+  erzeugten Dateien root.
+- Tekton kennt keinen Zeitplan. Ein CronJob legt den PipelineRun an; die
+  Arbeit und die Historie liegen dann im PipelineRun.
+- Der Trigger braucht eine Shell. `registry.k8s.io/kubectl` und
+  `rancher/kubectl` sind beide distroless (`exec: "sh": not found`), Bitnami
+  hat versionierte Tags zurückgezogen. `docker.io/alpine/k8s` funktioniert.
+
+- [ ] **Step 5: Einen Lauf von Hand auslösen und abnehmen**
 
 ```bash
-export KUBECONFIG=~/.kube/config
-kubectl -n paperless get secret paperless-secrets -o jsonpath='{.data}' | python3 -c "
-import json,sys
-print(sorted(json.load(sys.stdin).keys()))
-"
+kubectl -n paperless create job --from=cronjob/paperless-backup backup-now
+kubectl -n paperless get pipelinerun
+kubectl -n paperless logs <pipelinerun-pod> -c step-upload
 ```
 
-Erwartet: alle sieben Schlüssel — die vier aus Task 5 und die drei neuen.
-Fehlt einer der alten, hat das Skript die Datei nicht als Grundlage genommen;
-dann aus `sops -d` wiederherstellen, bevor es weitergeht.
+Erwartet: Der PipelineRun endet `Succeeded`, im Upload-Log die Größe der
+Sicherung und keine rclone-Fehler.
 
-- [x] **Step 3: Den CronJob anlegen**
-
-`apps/paperless-ngx/config/backup-cronjob.yaml`:
-
-```yaml
-# Taeglich um 03:00: Export in die export-PVC, Upload nach Scaleway.
-# Beide Volumes sind ReadWriteOnce und haengen am Paperless-Pod, deshalb
-# muss der Job auf demselben Node landen - das erzwingt die podAffinity.
-apiVersion: batch/v1
-kind: CronJob
-metadata:
-  name: paperless-backup
-  namespace: paperless
-spec:
-  schedule: "0 3 * * *"
-  concurrencyPolicy: Forbid
-  successfulJobsHistoryLimit: 3
-  failedJobsHistoryLimit: 3
-  jobTemplate:
-    spec:
-      backoffLimit: 1
-      template:
-        spec:
-          restartPolicy: Never
-          affinity:
-            podAffinity:
-              requiredDuringSchedulingIgnoredDuringExecution:
-                - labelSelector:
-                    matchLabels:
-                      app.kubernetes.io/name: paperless
-                  topologyKey: kubernetes.io/hostname
-          initContainers:
-            - name: export
-              image: ghcr.io/paperless-ngx/paperless-ngx:3.1.3
-              command:
-                - sh
-                - -c
-                - |
-                  set -e
-                  # document_exporter legt sein Ziel nicht an, sondern
-                  # bricht mit "That path doesn't exist" ab.
-                  mkdir -p /usr/src/paperless/export/backup
-                  exec document_exporter /usr/src/paperless/export/backup \
-                    --zip --zip-name latest-backup --delete --no-progress-bar
-              env:
-                - name: PAPERLESS_DBENGINE
-                  value: postgresql
-                - name: PAPERLESS_DBHOST
-                  value: paperless-db-rw
-                - name: PAPERLESS_DBNAME
-                  value: paperless
-                - name: PAPERLESS_DBUSER
-                  valueFrom:
-                    secretKeyRef:
-                      name: paperless-db-app
-                      key: username
-                - name: PAPERLESS_DBPASS
-                  valueFrom:
-                    secretKeyRef:
-                      name: paperless-db-app
-                      key: password
-                - name: PAPERLESS_SECRET_KEY
-                  valueFrom:
-                    secretKeyRef:
-                      name: paperless-secrets
-                      key: PAPERLESS_SECRET_KEY
-                - name: PAPERLESS_REDIS
-                  value: redis://valkey:6379
-              volumeMounts:
-                - name: media
-                  mountPath: /usr/src/paperless/media
-                - name: data
-                  mountPath: /usr/src/paperless/data
-                - name: export
-                  mountPath: /usr/src/paperless/export
-              resources:
-                requests:
-                  cpu: 100m
-                  memory: 256Mi
-                limits:
-                  memory: 1Gi
-          containers:
-            - name: upload
-              image: docker.io/rclone/rclone:1.71.0
-              command:
-                - sh
-                - -c
-                - |
-                  set -e
-                  rclone copyto \
-                    /export/backup/latest-backup.zip \
-                    "scw:${SCW_BUCKET}/latest-backup.zip"
-                  rclone copyto \
-                    /export/backup/latest-backup.zip \
-                    "scw:${SCW_BUCKET}/daily/paperless-$(date +%F).zip"
-                  rclone delete --min-age 14d "scw:${SCW_BUCKET}/daily"
-              env:
-                - name: RCLONE_CONFIG_SCW_TYPE
-                  value: s3
-                - name: RCLONE_CONFIG_SCW_PROVIDER
-                  value: Other
-                - name: RCLONE_CONFIG_SCW_REGION
-                  value: fr-par
-                - name: RCLONE_CONFIG_SCW_ENDPOINT
-                  value: s3.fr-par.scw.cloud
-                - name: RCLONE_CONFIG_SCW_ACCESS_KEY_ID
-                  valueFrom:
-                    secretKeyRef:
-                      name: paperless-secrets
-                      key: RCLONE_CONFIG_SCW_ACCESS_KEY_ID
-                - name: RCLONE_CONFIG_SCW_SECRET_ACCESS_KEY
-                  valueFrom:
-                    secretKeyRef:
-                      name: paperless-secrets
-                      key: RCLONE_CONFIG_SCW_SECRET_ACCESS_KEY
-                - name: SCW_BUCKET
-                  valueFrom:
-                    secretKeyRef:
-                      name: paperless-secrets
-                      key: SCW_BUCKET
-              volumeMounts:
-                - name: export
-                  mountPath: /export
-              resources:
-                requests:
-                  cpu: 100m
-                  memory: 128Mi
-                limits:
-                  memory: 512Mi
-          volumes:
-            - name: media
-              persistentVolumeClaim:
-                claimName: paperless-ngx-media
-            - name: data
-              persistentVolumeClaim:
-                claimName: paperless-ngx-data
-            - name: export
-              persistentVolumeClaim:
-                claimName: paperless-ngx-export
-```
-
-`--delete` räumt den vorherigen Lauf aus dem Exportverzeichnis, sonst wächst
-die PVC mit jeder Nacht.
-
-- [x] **Step 4: Vor dem Committen lokal prüfen**
+- [ ] **Step 6: Die Rückspielprobe auslösen und abnehmen**
 
 ```bash
-cd ~/github/homelab-argocd
-kubectl apply --dry-run=client -f apps/paperless-ngx/config/backup-cronjob.yaml
+kubectl -n paperless-restore create job \
+  --from=cronjob/paperless-restore-check restore-now
+kubectl -n paperless-restore logs <pod> -c step-restore
 ```
 
-Erwartet: `cronjob.batch/paperless-backup created (dry run)`.
+Erwartet: `Rueckspielprobe bestanden` und eine Dokumentenzahl, die zur
+Produktion passt.
 
-- [x] **Step 5: Den Selektor der podAffinity gegen die Wirklichkeit prüfen**
+- [x] **Step 7: Die Altlasten in `p3l1/documents` beseitigen**
 
-```bash
-export KUBECONFIG=~/.kube/config
-kubectl -n paperless get pods -l app.kubernetes.io/name=paperless \
-  -o custom-columns=NAME:.metadata.name,NODE:.spec.nodeName --no-headers
-```
+Der Workflow `backup-restore-test.yml` ist entfernt. Er lief seit
+mindestens August jede Woche und schlug **jede Woche fehl**: Er
+referenzierte `SCALEWAY_ACCESS_KEY`, `SCALEWAY_SECRET_KEY` und
+`SCALEWAY_BUCKET_NAME`, aber das Repository hat keine Secrets — und die
+Organisation auch nicht. Dazu die falsche Region und ein
+`latest-backup.zip`, das nichts erzeugte.
 
-Erwartet: genau der Paperless-Pod mit seinem Node. Kommt nichts zurück, trägt
-das Chart ein anderes Label — dann mit
-`kubectl -n paperless get pod <name> --show-labels` das richtige ablesen und
-im `matchLabels` des CronJob eintragen. Ein Selektor, der nichts trifft, lässt
-den Job dauerhaft `Pending` bleiben.
+`BACKUP.md` beschreibt jetzt beide Pipelines.
 
-- [x] **Step 6: Committen und schieben**
+- [ ] **Step 8: Das Umzugsgut aus der export-PVC räumen**
 
-```bash
-cd ~/github/homelab-argocd
-git add apps/paperless-ngx/config/backup-cronjob.yaml secrets/paperless-secrets.sops.yaml
-git commit -S -m "feat(paperless): back up to Scaleway nightly
-
-BACKUP.md described a backup to S3 that never existed: no cron, no
-timer, no upload tooling on the host, and the last export was from
-April. The weekly restore test pulled a latest-backup.zip that nobody
-ever put there.
-
-Both volumes are ReadWriteOnce and already mounted by the deployment, so
-podAffinity pins the job to the same node instead of moving them to
-ReadWriteMany."
-git push origin main
-```
-
-- [ ] **Step 6b: Den CronJob scharfschalten**
-
-`suspend: true` in `apps/paperless-ngx/config/backup-cronjob.yaml` auf
-`false` setzen, committen, schieben. Erst jetzt, mit hinterlegten
-Zugangsdaten, kann ein nächtlicher Lauf gelingen.
+Erst wenn die Rückspielprobe grün ist. Bis dahin ist `v3-final` die einzige
+Kopie im Cluster.
 
 ```bash
-kubectl -n paperless get cronjob paperless-backup \
-  -o custom-columns=NAME:.metadata.name,SUSPEND:.spec.suspend,SCHEDULE:.spec.schedule
-```
-
-Erwartet: `SUSPEND` steht auf `false`.
-
-- [ ] **Step 7: Einen Lauf von Hand auslösen**
-
-Nicht bis 03:00 Uhr warten:
-
-```bash
-export KUBECONFIG=~/.kube/config
-kubectl -n paperless create job --from=cronjob/paperless-backup backup-probe
-kubectl -n paperless wait --for=condition=complete job/backup-probe --timeout=30m
-kubectl -n paperless logs job/backup-probe --all-containers --tail 30
-```
-
-Erwartet: der Job endet `Complete`, im Log des Init-Containers der
-abgeschlossene Export, im Upload-Container keine Fehlermeldung von rclone.
-
-Bleibt der Pod `Pending`, greift die podAffinity nicht — Step 5.
-
-- [ ] **Step 8: Abnahme — die Datei liegt im Bucket**
-
-```bash
-kubectl -n paperless run rclone-check --rm -i --restart=Never \
-  --image=docker.io/rclone/rclone:1.71.0 \
-  --overrides='{"spec":{"containers":[{"name":"rclone-check","image":"docker.io/rclone/rclone:1.71.0","command":["sh","-c","rclone ls scw:$SCW_BUCKET"],"envFrom":[{"secretRef":{"name":"paperless-secrets"}}],"env":[{"name":"RCLONE_CONFIG_SCW_TYPE","value":"s3"},{"name":"RCLONE_CONFIG_SCW_PROVIDER","value":"Other"},{"name":"RCLONE_CONFIG_SCW_REGION","value":"fr-par"},{"name":"RCLONE_CONFIG_SCW_ENDPOINT","value":"s3.fr-par.scw.cloud"}]}]}}'
-```
-
-Erwartet: `latest-backup.zip` mit rund 1 GB und ein Eintrag unter `daily/`.
-
-- [ ] **Step 9: Probejob aufräumen**
-
-```bash
-kubectl -n paperless delete job backup-probe
-```
-
-- [x] **Step 10: Die Altlasten in `p3l1/documents` beseitigen**
-
-In `BACKUP.md` den Abschnitt „Automation" ersetzen: Die Sicherung läuft nicht
-mehr auf dem Docker-Host, sondern als CronJob `paperless-backup` im Namensraum
-`paperless` des Clusters, täglich um 03:00 Uhr, mit 14 Tagen Aufbewahrung
-unter `daily/` und einem stets aktuellen `latest-backup.zip`. Der Verweis auf
-`docker compose exec webserver document_exporter` beschreibt dann den
-Handbetrieb, nicht den Regelfall.
-
-In `.github/workflows/backup-restore-test.yml` die festgenagelte Fassung
-richtigstellen:
-
-```bash
-cd ~/github/documents
-sed -i '' 's|PAPERLESS_VERSION: "2.17.1"|PAPERLESS_VERSION: "3.1.3"|' .github/workflows/backup-restore-test.yml
-grep -n "PAPERLESS_VERSION" .github/workflows/backup-restore-test.yml
-```
-
-Erwartet: `PAPERLESS_VERSION: "3.1.3"`.
-
-- [x] **Step 11: Committen**
-
-```bash
-cd ~/github/documents
-git add BACKUP.md .github/workflows/backup-restore-test.yml
-git commit -S -m "docs: point backup at the cluster cronjob
-
-The backup now runs as a CronJob in the cluster, not on this host. The
-restore test was pinned to 2.17.1 and pulled a latest-backup.zip that
-nothing produced; both are fixed."
-git push origin main
-```
-
-- [ ] **Step 12: Den Restore-Test laufen lassen**
-
-```bash
-cd ~/github/documents
-gh workflow run backup-restore-test.yml
-sleep 30 && gh run list --workflow=backup-restore-test.yml --limit 1
-```
-
-Erwartet: der Lauf startet und endet grün. Das ist die eigentliche Abnahme
-des ganzen Vorhabens — sie beweist, dass die Sicherung nicht nur entsteht,
-sondern sich auch zurückspielen lässt.
-
-- [ ] **Step 13: Das Umzugsgut aus der export-PVC räumen**
-
-Erst jetzt, nachdem der Restore-Test grün ist. Bis dahin bleibt `v3-final`
-liegen: Solange nicht bewiesen ist, dass die neue Sicherung trägt, ist es die
-einzige Kopie im Cluster.
-
-```bash
-export KUBECONFIG=~/.kube/config
-kubectl -n paperless exec deploy/paperless-ngx -- df -h /usr/src/paperless/export
 kubectl -n paperless exec deploy/paperless-ngx -- rm -rf /usr/src/paperless/export/v3-final
 kubectl -n paperless exec deploy/paperless-ngx -- df -h /usr/src/paperless/export
 ```
-
-Erwartet: rund 1 GB weniger belegt. Die Kopie auf dem Mac unter
-`~/backups/paperless/2026-09-06-post-v3/` bleibt erhalten, ebenso die auf dem
-Docker-Host.
-
-Ohne diesen Schritt liegen dauerhaft das Umzugsgut und die nächtliche ZIP
-nebeneinander in derselben 10-GiB-PVC.
 
 ---
 
