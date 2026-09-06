@@ -20,7 +20,9 @@ private-resources:
     destination: el-pangolin-blueprints.tekton-pipelines.svc.cluster.local
     site: intent-anniella-pulchra
     tcp-ports: "8080"
-    alias: tekton.homelab.private
+    # Nicht tekton.homelab.internal - der Name gehoert der Traefik-Route im
+    # LAN; zwei Ziele unter einem Namen waeren nur verwirrend.
+    alias: tekton-webhook.homelab.internal
     # Admin darf hier nicht stehen - die Rolle hat ohnehin Zugriff und
     # Pangolin weist sie ausdruecklich zurueck.
     roles:

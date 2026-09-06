@@ -5,7 +5,7 @@
 ```
 Push nach main (pangolin/blueprints/**)
   └─ GitHub Action baut mit dem Machine Client einen Tunnel zu Pangolin auf
-     └─ ruft die private Ressource unter tekton.homelab.private:8080
+     └─ ruft die private Ressource unter tekton-webhook.homelab.internal:8080
         └─ EventListener prüft die HMAC-Signatur
            └─ erzeugt einen PipelineRun
               └─ wendet die Blueprints an

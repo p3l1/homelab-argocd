@@ -61,7 +61,7 @@ vom Namensraum, in dem sie läuft.
 Für dieses Repository existiert der Client **`homelab-argocd CI`**
 (`fine-mastigoproctus-giganteus`, clientId 17). Er ist der privaten Ressource
 `tekton-webhook` zugeordnet und damit der einzige Weg, den EventListener zu
-erreichen — der Alias `tekton.homelab.private` löst nur innerhalb des Tunnels
+erreichen — der Alias `tekton-webhook.homelab.internal` löst nur innerhalb des Tunnels
 auf.
 
 Angelegt wurde er über die API; `pick-client-defaults` liefert dafür

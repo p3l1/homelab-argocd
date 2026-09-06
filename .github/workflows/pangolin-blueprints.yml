@@ -22,7 +22,7 @@ concurrency:
 
 env:
   # Die private Ressource, nur durch den Tunnel erreichbar.
-  WEBHOOK_URL: http://tekton.homelab.private:8080
+  WEBHOOK_URL: http://tekton-webhook.homelab.internal:8080
 
 jobs:
   trigger:
