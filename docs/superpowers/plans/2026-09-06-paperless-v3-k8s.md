@@ -345,7 +345,7 @@ verlangt beziehungsweise die währenddessen nicht offen bleiben sollten.
 - Konsumiert: laufende 2.20.15 aus Task 2.
 - Produziert: laufende 3.1.3, Voraussetzung für den Export in Task 4.
 
-- [ ] **Step 1: Die drei Änderungen eintragen**
+- [x] **Step 1: Die drei Änderungen eintragen**
 
 ```bash
 cd ~/github/documents
@@ -364,7 +364,7 @@ Ohne `PAPERLESS_DBENGINE` leitet v3 die Datenbank nicht mehr aus
 `PAPERLESS_DBHOST` ab und fällt auf SQLite zurück — die Installation käme
 scheinbar leer hoch.
 
-- [ ] **Step 2: Prüfen, dass die Einrückung stimmt**
+- [x] **Step 2: Prüfen, dass die Einrückung stimmt**
 
 ```bash
 cd ~/github/documents && python3 -c "
@@ -390,7 +390,7 @@ tika    : docker.io/apache/tika:3.3.1.0
 Steht bei `DBENGINE` `None`, hat `sed` die Zeile nicht an der richtigen Stelle
 eingefügt — von Hand nachziehen, bevor es weitergeht.
 
-- [ ] **Step 3: Committen und schieben**
+- [x] **Step 3: Committen und schieben**
 
 ```bash
 cd ~/github/documents
@@ -406,7 +406,7 @@ cluster already uses."
 git push origin main
 ```
 
-- [ ] **Step 4: Ausrollen abwarten**
+- [x] **Step 4: Ausrollen abwarten**
 
 ```bash
 for i in $(seq 1 30); do
@@ -417,7 +417,7 @@ for i in $(seq 1 30); do
 done
 ```
 
-- [ ] **Step 5: Den Neuaufbau des Suchindex abwarten**
+- [x] **Step 5: Den Neuaufbau des Suchindex abwarten**
 
 v3 ersetzt Whoosh durch Tantivy und baut den Index beim ersten Start neu auf.
 Auf dem Pi dauert das bei 788 Dokumenten spürbar — der Container meldet
@@ -441,7 +441,7 @@ sehen — dort steht, woran es liegt:
 ssh root@10.35.99.168 'docker logs --tail 100 documents-webserver-1'
 ```
 
-- [ ] **Step 6: Abnahme**
+- [x] **Step 6: Abnahme**
 
 ```bash
 ssh root@10.35.99.168 'docker exec documents-webserver-1 cat /usr/src/paperless/src/paperless/version.py | head -3'
@@ -550,9 +550,15 @@ cd ~/github/homelab-argocd
 ./scripts/verify-paperless-backup.py ~/backups/paperless/2026-09-06-post-v3
 ```
 
-Erwartet: `Dokumente: 788` und `Pruefsummen korrekt: 1566`, keine abweichende
-und keine fehlende Datei — dieselbe inhaltliche Prüfung wie in Task 1,
-Step 10, diesmal gegen den v3-Export.
+Erwartet: `Dokumente: 788`, `Verfahren: sha256` und
+`Pruefsummen korrekt: 1566`, keine abweichende und keine fehlende Datei —
+dieselbe inhaltliche Prüfung wie in Task 1, Step 10, diesmal gegen den
+v3-Export.
+
+**`sha256`, nicht `md5`:** Die Migration `documents.0016_sha256_checksums`
+rechnet beim Aufstieg alle Prüfsummen um. Das Skript wählt das Verfahren
+anhand der Länge des hinterlegten Werts und kommt mit beiden Fassungen
+zurecht; steht dort trotzdem `md5`, stammt der Export nicht aus v3.
 
 Weicht die Zahl der Prüfsummen leicht ab, ist das für sich kein Fehler: v3
 kann beim Aufstieg Archivfassungen neu erzeugt haben. Eine **abweichende**
