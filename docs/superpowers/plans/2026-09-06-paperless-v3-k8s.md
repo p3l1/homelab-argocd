@@ -208,7 +208,7 @@ Der Pflichtzwischenschritt. Klein, aber ohne ihn verweigert v3 den Dienst.
 - Konsumiert: die Sicherung aus Task 1 als Rückweg.
 - Produziert: einen laufenden Stack auf 2.20.15, Voraussetzung für Task 3.
 
-- [ ] **Step 1: Fassung anheben**
+- [x] **Step 1: Fassung anheben**
 
 ```bash
 cd ~/github/documents
@@ -218,7 +218,7 @@ git diff compose.yaml
 
 Erwartet: genau eine geänderte Zeile.
 
-- [ ] **Step 2: Committen und schieben**
+- [x] **Step 2: Committen und schieben**
 
 ```bash
 cd ~/github/documents
@@ -230,7 +230,7 @@ from 2.20.15, not from 2.20.14."
 git push origin main
 ```
 
-- [ ] **Step 3: Warten, bis Komodo ausgerollt hat**
+- [x] **Step 3: Warten, bis Komodo ausgerollt hat**
 
 ```bash
 for i in $(seq 1 30); do
@@ -243,11 +243,25 @@ done
 
 Erwartet: innerhalb weniger Minuten `…paperless-ngx:2.20.15`.
 
-Bleibt es bei 2.20.14, hat der Webhook nicht gegriffen. Dann in der
-Komodo-Oberfläche den Stack `documents` von Hand ausrollen, statt auf dem Host
-einzugreifen.
+**Wenn nichts passiert:** Der Webhook stand ursprünglich auf
+`content_type: form`, Komodo erwartet JSON. Er war damit seit jeher
+wirkungslos — GitHub bekommt `200 OK` und meldet ihn als gesund, während
+Komodo den Body verwirft. Prüfen lässt sich beides:
 
-- [ ] **Step 4: Abnahme**
+```bash
+gh api repos/p3l1/documents/hooks --jq '.[0].config.content_type'
+ssh root@10.35.99.168 'docker logs --tail 30 komodo-core-1 2>&1 | grep -i webhook | tail -3'
+```
+
+Erwartet: `json`. Steht dort `form`, in den Repository-Einstellungen unter
+Settings → Webhooks den Komodo-Hook auf `application/json` umstellen. Im Log
+zeigt sich der Fehlerfall als `Failed to parse github request body`.
+
+Den Hook nicht per `gh api` umstellen: Ein PATCH ersetzt das ganze
+`config`-Objekt, und das Secret ist nicht auslesbar — es ginge dabei
+verloren.
+
+- [x] **Step 4: Abnahme**
 
 ```bash
 ssh root@10.35.99.168 'docker ps --filter name=documents-webserver-1 --format "{{.Status}}"'
