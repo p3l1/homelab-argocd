@@ -1,7 +1,7 @@
 # Paperless-ngx: Aufstieg auf v3 und Umzug in den Cluster
 
 Datum: 2026-09-06
-Status: Entwurf
+Status: freigegeben
 
 ## Ziel
 
