@@ -1,43 +1,54 @@
 #!/usr/bin/env bash
 #
-# Zeigt den Zustand des Clusters. Fragt den ersten Server ab, damit kein
-# kubeconfig auf dem Mac noetig ist.
+# Zustand des Clusters auf einen Blick: Nodes, ArgoCD-Anwendungen, Speicher
+# und die Erreichbarkeit der Dienste.
 #
 #   ./cluster-status.sh
 
-set -euo pipefail
+set -uo pipefail
 
-cd "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-
-FIRST=$(grep -A3 "^        kube-01:" inventory/hosts.yml 2>/dev/null \
-        | awk '/ansible_host/ {print $2}' || true)
-VIP=$(awk '/^api_endpoint:/ {print $2}' inventory/group_vars/all/main.yml)
-PORT=$(awk '/^api_port:/ {print $2}' inventory/group_vars/all/main.yml)
-
-[[ -n "$FIRST" ]] || { echo "kube-01 nicht im Inventory gefunden." >&2; exit 1; }
-
-hr() { printf '\033[1m--- %s ---\033[0m\n' "$1"; }
-
-hr "API-VIP $VIP:$PORT"
-if nc -z -G 3 "$VIP" "$PORT" 2>/dev/null; then
-  echo "  erreichbar"
-else
-  echo "  ANTWORTET NICHT"
-fi
+hr() { printf '\n\033[1m── %s ──\033[0m\n' "$1"; }
+kubectl version --request-timeout=5s >/dev/null 2>&1 \
+  || { echo "Kein Zugriff auf den Cluster." >&2; exit 1; }
 
 hr "Nodes"
-ssh -n -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=8 \
-  "pi@${FIRST}" 'kubectl get nodes -o wide' 2>&1 || echo "  Abfrage fehlgeschlagen"
+kubectl get nodes --no-headers 2>/dev/null \
+  | awk '{printf "  %-9s %-7s %-22s %s\n",$1,$2,$3,$5}'
 
-hr "Nicht laufende Pods"
-ssh -n -o BatchMode=yes -o ConnectTimeout=8 "pi@${FIRST}" \
-  'kubectl get pods -A --field-selector=status.phase!=Running,status.phase!=Succeeded 2>&1 | head -20' \
-  2>&1 || true
+hr "ArgoCD"
+tot=$(kubectl -n argocd get applications --no-headers 2>/dev/null | wc -l | tr -d ' ')
+ok=$(kubectl -n argocd get applications --no-headers 2>/dev/null \
+     | awk '$2=="Synced" && $3=="Healthy"' | wc -l | tr -d ' ')
+printf '  %s von %s Synced/Healthy\n' "$ok" "$tot"
+kubectl -n argocd get applications --no-headers 2>/dev/null \
+  | awk '!($2=="Synced" && $3=="Healthy"){printf "  offen: %-20s %-11s %s\n",$1,$2,$3}'
 
-hr "kube-vip"
-ssh -n -o BatchMode=yes -o ConnectTimeout=8 "pi@${FIRST}" \
-  'kubectl -n kube-system get ds kube-vip-ds -o wide 2>&1' 2>&1 || true
+hr "Pods"
+bad=$(kubectl get pods -A --field-selector=status.phase!=Running,status.phase!=Succeeded \
+      --no-headers 2>/dev/null | wc -l | tr -d ' ')
+printf '  %s laufend, %s auffaellig\n' \
+  "$(kubectl get pods -A --no-headers 2>/dev/null | wc -l | tr -d ' ')" "$bad"
+[ "$bad" -gt 0 ] && kubectl get pods -A \
+  --field-selector=status.phase!=Running,status.phase!=Succeeded --no-headers 2>/dev/null \
+  | awk '{printf "  %-14s %-38s %s\n",$1,$2,$4}' | head -8
 
-hr "etcd-Mitglieder"
-ssh -n -o BatchMode=yes -o ConnectTimeout=8 "pi@${FIRST}" \
-  'kubectl get nodes -l node-role.kubernetes.io/control-plane=true --no-headers 2>/dev/null | wc -l | xargs -I{} echo "  {} Control-Plane-Nodes"' 2>&1 || true
+hr "Speicher"
+kubectl get sc --no-headers 2>/dev/null | awk '{printf "  StorageClass %s\n",$1}'
+printf '  Volumes: %s gebunden\n' \
+  "$(kubectl get pvc -A --no-headers 2>/dev/null | grep -c Bound)"
+
+hr "Dienste"
+GW=$(kubectl -n traefik get svc traefik \
+     -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
+if [ -z "$GW" ]; then
+  echo "  Traefik hat keine Adresse."
+else
+  echo "  Gateway: $GW"
+  kubectl get httproute -A -o jsonpath='{range .items[*]}{range .spec.hostnames[*]}{@}{"\n"}{end}{end}' \
+    2>/dev/null | sort -u | while read -r h; do
+    [ -z "$h" ] && continue
+    code=$(curl -sk --max-time 6 --resolve "$h:443:$GW" \
+           -o /dev/null -w '%{http_code}' "https://$h/" 2>/dev/null)
+    printf '  %-32s HTTP %s\n' "$h" "${code:-keine Antwort}"
+  done
+fi
