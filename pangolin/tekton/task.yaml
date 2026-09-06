@@ -1,0 +1,79 @@
+---
+# Wendet die Blueprints aus pangolin/blueprints auf Pangolin an.
+#
+# Die CLI wird als Binary geladen statt ueber ein Image: ghcr.io/fosrl/cli
+# steht bei 0.6.2, waehrend die CLI selbst bei 0.16.0 ist und "apply
+# blueprint" dort noch nicht kennt.
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: pangolin-apply-blueprints
+  namespace: tekton-pipelines
+spec:
+  params:
+    - name: repo-url
+      type: string
+      default: https://github.com/p3l1/homelab-argocd.git
+    - name: revision
+      type: string
+      default: main
+    - name: cli-version
+      type: string
+      default: "0.16.0"
+    - name: blueprint-dir
+      type: string
+      default: pangolin/blueprints
+  steps:
+    - name: fetch-and-apply
+      image: docker.io/library/alpine:3.22
+      env:
+        - name: PANGOLIN_ENDPOINT
+          valueFrom:
+            secretKeyRef:
+              name: pangolin-credentials
+              key: PANGOLIN_ENDPOINT
+        - name: PANGOLIN_INTEGRATION_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: pangolin-credentials
+              key: PANGOLIN_INTEGRATION_API_KEY
+        - name: PANGOLIN_ORG_ID
+          valueFrom:
+            secretKeyRef:
+              name: pangolin-credentials
+              key: PANGOLIN_ORG_ID
+      script: |
+        #!/bin/sh
+        set -eu
+        apk add --no-cache git curl >/dev/null
+
+        arch=$(uname -m)
+        case "$arch" in
+          aarch64|arm64) bin=pangolin-cli_linux_arm64 ;;
+          x86_64)        bin=pangolin-cli_linux_amd64 ;;
+          *) echo "Nicht unterstuetzte Architektur: $arch" >&2; exit 1 ;;
+        esac
+
+        echo "==> Lade Pangolin-CLI $(params.cli-version) fuer $arch"
+        curl -fsSL -o /tmp/pangolin \
+          "https://github.com/fosrl/pangolin-cli/releases/download/$(params.cli-version)/${bin}"
+        chmod +x /tmp/pangolin
+
+        echo "==> Hole $(params.revision) aus $(params.repo-url)"
+        git clone --depth 1 --branch "$(params.revision)" \
+          "$(params.repo-url)" /tmp/repo >/dev/null 2>&1
+
+        cd "/tmp/repo/$(params.blueprint-dir)"
+        found=0
+        for bp in *.yaml; do
+          [ -e "$bp" ] || continue
+          found=1
+          echo "==> Wende $bp an"
+          /tmp/pangolin apply blueprint \
+            --api-key "$PANGOLIN_INTEGRATION_API_KEY" \
+            --endpoint "$PANGOLIN_ENDPOINT" \
+            --org "$PANGOLIN_ORG_ID" \
+            --file "$bp"
+        done
+        [ "$found" -eq 1 ] || { echo "Keine Blueprints gefunden." >&2; exit 1; }
+        echo "==> Fertig"

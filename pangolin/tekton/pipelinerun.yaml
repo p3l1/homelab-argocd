@@ -1,0 +1,15 @@
+---
+# Vorlage fuer einen Lauf. Mit generateName statt name, damit sich mehrere
+# Laeufe nicht ins Gehege kommen:
+#
+#   kubectl create -f pangolin/tekton/pipelinerun.yaml
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: pangolin-blueprints-
+  namespace: tekton-pipelines
+spec:
+  pipelineRef:
+    name: pangolin-blueprints
+  timeouts:
+    pipeline: 10m
