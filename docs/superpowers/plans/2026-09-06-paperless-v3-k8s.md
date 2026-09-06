@@ -686,7 +686,7 @@ Die vier PVC-Namen bleiben unverändert (`paperless-ngx-data`, `-media`,
 ArgoCD sie beim Wechsel nicht, und `export` wächst durch dieselbe Änderung von
 5 auf 10 GiB.
 
-- [ ] **Step 1: Den bestehenden Zustand festhalten**
+- [x] **Step 1: Den bestehenden Zustand festhalten**
 
 ```bash
 export KUBECONFIG=~/.kube/config
@@ -697,7 +697,7 @@ kubectl -n paperless get deploy paperless-ngx -o jsonpath='{.spec.template.spec.
 Erwartet: vier PVCs (`consume` 5Gi, `data` 5Gi, `export` 5Gi, `media` 20Gi)
 und Image `…paperless-ngx:2.20.14`.
 
-- [ ] **Step 2: Die erste Quelle in der Application ersetzen**
+- [x] **Step 2: Die erste Quelle in der Application ersetzen**
 
 In `apps/paperless-ngx/base/application.yaml` den gesamten ersten
 `sources`-Eintrag (von `- chart: paperless-ngx` bis einschließlich der letzten
@@ -792,7 +792,7 @@ unverändert:
 Auch den Kommentarkopf der Datei anpassen: Er nennt bislang das Chart als
 Quelle für Redis, was seit dem Valkey-Wechsel nicht mehr stimmt.
 
-- [ ] **Step 3: Vor dem Committen lokal rendern**
+- [x] **Step 3: Vor dem Committen lokal rendern**
 
 ```bash
 cd ~/github/homelab-argocd
@@ -837,7 +837,7 @@ nicht committen — ArgoCD würde beim Sync die alte PVC prunen und eine neue
 anlegen. Der Service muss `paperless-ngx` auf Port 8000 bleiben, sonst laufen
 HTTPRoute und Newt-`ExternalName` ins Leere.
 
-- [ ] **Step 4: Committen und schieben**
+- [x] **Step 4: Committen und schieben**
 
 ```bash
 cd ~/github/homelab-argocd
@@ -854,7 +854,48 @@ pruned on the switch, and grows export from 5 to 10 GiB for the import."
 git push origin main
 ```
 
-- [ ] **Step 5: Sync abwarten und prüfen, dass nichts geprunt wurde**
+- [x] **Step 5: Das alte Deployment löschen**
+
+Der Sync scheitert sonst, und zwar dauerhaft:
+
+```
+Deployment.apps "paperless-ngx" is invalid: spec.selector: Invalid value:
+{"matchLabels":{"app.kubernetes.io/instance":"paperless-ngx",
+"app.kubernetes.io/name":"paperless"}}: field is immutable
+```
+
+Das alte Chart setzt `app.kubernetes.io/name: paperless-ngx`, das neue
+`paperless`. Der Selektor eines Deployments ist in Kubernetes unveränderlich —
+ArgoCD versucht es in einer Schleife erneut und scheitert jedes Mal. Der
+Render-Vergleich in Step 3 deckt das nicht auf, weil er PVC-Namen, Service
+und Image prüft, nicht die Selektoren.
+
+Vor dem Löschen sicherstellen, dass die Volumes nicht am Deployment hängen:
+
+```bash
+kubectl -n paperless get pvc -o json | python3 -c "
+import json,sys
+for i in json.load(sys.stdin)['items']:
+    o = i['metadata'].get('ownerReferences') or []
+    print(f\"  {i['metadata']['name']}: owner={[x['kind']+'/'+x['name'] for x in o] or 'keiner'}\")
+"
+kubectl -n paperless delete deployment paperless-ngx
+kubectl -n paperless get pvc
+```
+
+Erwartet: Die vier `paperless-ngx-*`-PVCs melden `owner=keiner` und stehen
+nach dem Löschen unverändert da. Nur dann löschen — hätten sie einen Owner,
+verschwänden sie mit.
+
+- [x] **Step 6: Sync anstoßen und prüfen, dass nichts geprunt wurde**
+
+Nach einem gescheiterten Sync läuft ArgoCD nicht von selbst weiter; der
+Vorgang bleibt auf `Failed` stehen und braucht einen Anstoß:
+
+```bash
+kubectl -n argocd patch application paperless-ngx --type merge \
+  -p '{"operation":{"sync":{"revision":"HEAD"}}}'
+```
 
 ```bash
 export KUBECONFIG=~/.kube/config
@@ -875,7 +916,7 @@ Application `Synced/Healthy`.
 Greift ArgoCD nicht von selbst: `kubectl -n argocd patch application
 paperless-ngx --type merge -p '{"operation":{"sync":{}}}'`.
 
-- [ ] **Step 6: Abnahme**
+- [x] **Step 7: Abnahme**
 
 ```bash
 kubectl -n paperless get pods
