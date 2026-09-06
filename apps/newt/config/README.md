@@ -22,3 +22,4 @@ läuft.
 | `newt-umami-service` | `umami.umami` | 3000 |
 | `newt-arcane-service` | `arcane.arcane` | 3552 |
 | `newt-whoami-service` | `whoami.whoami` | 80 |
+| `newt-tekton-service` | `tekton-dashboard.tekton-pipelines` | 9097 |

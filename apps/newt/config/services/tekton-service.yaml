@@ -1,0 +1,11 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: newt-tekton-service
+  namespace: newt
+spec:
+  type: ExternalName
+  externalName: tekton-dashboard.tekton-pipelines.svc.cluster.local
+  ports:
+    - port: 9097

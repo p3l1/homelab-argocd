@@ -67,6 +67,24 @@ public-resources:
           interval: 30
           timeout: 5
 
+  tekton:
+    name: Tekton Dashboard
+    protocol: http
+    full-domain: tekton.cloud.p3l1.de
+    auth:
+      sso-enabled: true
+    targets:
+      - site: intent-anniella-pulchra
+        method: http
+        hostname: newt-tekton-service.newt.svc.cluster.local
+        port: 9097
+        healthcheck:
+          hostname: newt-tekton-service.newt.svc.cluster.local
+          port: 9097
+          path: /
+          interval: 30
+          timeout: 5
+
   arcane:
     name: Arcane
     protocol: http
