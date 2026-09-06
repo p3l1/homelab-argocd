@@ -1,0 +1,11 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: newt-paperless-mcp-service
+  namespace: newt
+spec:
+  type: ExternalName
+  externalName: paperless-mcp.paperless-mcp.svc.cluster.local
+  ports:
+    - port: 3000

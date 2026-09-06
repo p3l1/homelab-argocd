@@ -1,0 +1,86 @@
+---
+# paperless-ngx-mcp als HTTP-Server. Das Paket gibt es nur auf npm, kein
+# fertiges Image - deshalb npx mit fest gepinnter Fassung statt eines
+# eigenen Builds samt Registry.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: paperless-mcp
+  namespace: paperless-mcp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: paperless-mcp
+  template:
+    metadata:
+      labels:
+        app: paperless-mcp
+    spec:
+      # Nicht auf den LLM-Pi: Der traegt dedicated=llm und soll es bleiben.
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: homelab.p3l1.de/workload
+                    operator: NotIn
+                    values: ["llm"]
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: mcp
+          image: docker.io/library/node:24-alpine
+          # npx legt seinen Zwischenspeicher unter HOME ab; ohne
+          # beschreibbares HOME bricht es als Nicht-root ab.
+          env:
+            - { name: HOME, value: /tmp }
+            - { name: NPM_CONFIG_CACHE, value: /tmp/.npm }
+            - name: PAPERLESS_URL
+              valueFrom:
+                secretKeyRef: { name: paperless-mcp-secrets, key: PAPERLESS_URL }
+            # Damit die Links, die der Assistent baut, im Browser
+            # funktionieren - der Cluster-Name taete das nicht.
+            - name: PAPERLESS_PUBLIC_URL
+              valueFrom:
+                secretKeyRef: { name: paperless-mcp-secrets, key: PAPERLESS_PUBLIC_URL }
+            - name: PAPERLESS_API_TOKEN
+              valueFrom:
+                secretKeyRef: { name: paperless-mcp-secrets, key: PAPERLESS_API_TOKEN }
+          command: ["npx"]
+          args: ["-y", "paperless-ngx-mcp@3.1.1", "--http", "--port", "3000"]
+          ports:
+            - containerPort: 3000
+              name: http
+          resources:
+            requests: { cpu: 50m, memory: 128Mi }
+            limits: { memory: 512Mi }
+          # npx laedt das Paket beim Start aus dem Netz; das braucht
+          # laenger als die uebliche Anlaufzeit.
+          startupProbe:
+            tcpSocket: { port: http }
+            periodSeconds: 5
+            failureThreshold: 60
+          livenessProbe:
+            tcpSocket: { port: http }
+            periodSeconds: 30
+          readinessProbe:
+            tcpSocket: { port: http }
+            periodSeconds: 15
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: paperless-mcp
+  namespace: paperless-mcp
+spec:
+  selector:
+    app: paperless-mcp
+  ports:
+    - port: 3000
+      targetPort: http
+      name: http

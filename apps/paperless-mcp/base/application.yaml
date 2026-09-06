@@ -1,0 +1,23 @@
+# MCP-Server fuer Paperless: Gibt KI-Assistenten Zugriff auf Dokumente,
+# Schlagworte und Korrespondenten. Nur ueber einen Pangolin-Client
+# erreichbar, nicht aus dem Netz - siehe pangolin/blueprints/homelab.yaml.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: paperless-mcp
+  namespace: argocd
+spec:
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+  project: apps
+  sources:
+    - repoURL: https://github.com/p3l1/homelab-argocd.git
+      targetRevision: main
+      path: apps/paperless-mcp/config
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: paperless-mcp
