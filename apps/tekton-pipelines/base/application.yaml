@@ -17,6 +17,12 @@ spec:
     - chart: tekton-pipeline
       repoURL: https://cdfoundation.github.io/tekton-helm-chart
       targetRevision: 1.14.0
+      helm:
+        valuesObject:
+          featureFlags:
+            # Der Namensraum erzwingt PodSecurity "restricted"; ohne diesen
+            # Schalter starten Tektons eigene Hilfscontainer nicht.
+            set-security-context: "true"
   # Tektons Webhook traegt zur Laufzeit caBundle und Konversionsdaten in die
   # CRDs ein. Das weicht zwangslaeufig vom Repo ab und ist kein Driftfehler.
   ignoreDifferences:

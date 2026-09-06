@@ -23,10 +23,51 @@ spec:
     - name: blueprint-dir
       type: string
       default: pangolin/blueprints
+  # Der Namensraum erzwingt PodSecurity "restricted".
+  stepTemplate:
+    securityContext:
+      allowPrivilegeEscalation: false
+      runAsNonRoot: true
+      runAsUser: 65532
+      capabilities:
+        drop: ["ALL"]
+      seccompProfile:
+        type: RuntimeDefault
   steps:
-    - name: fetch-and-apply
-      image: docker.io/library/alpine:3.22
+    # Zwei Schritte, weil kein schlankes Image beides mitbringt und apk als
+    # Nicht-root ausfaellt. Sie teilen sich /workspace.
+    - name: fetch
+      image: docker.io/alpine/git:2.49.1
+      script: |
+        #!/bin/sh
+        set -eu
+        echo "==> Hole $(params.revision) aus $(params.repo-url)"
+        git clone --depth 1 --branch "$(params.revision)" \
+          "$(params.repo-url)" /workspace/repo
+
+    - name: download-cli
+      image: docker.io/curlimages/curl:8.18.0
+      script: |
+        #!/bin/sh
+        set -eu
+        arch=$(uname -m)
+        case "$arch" in
+          aarch64|arm64) bin=pangolin-cli_linux_arm64 ;;
+          x86_64)        bin=pangolin-cli_linux_amd64 ;;
+          *) echo "Nicht unterstuetzte Architektur: $arch" >&2; exit 1 ;;
+        esac
+        echo "==> Lade Pangolin-CLI $(params.cli-version) fuer $arch"
+        curl -fsSL -o /workspace/pangolin \
+          "https://github.com/fosrl/pangolin-cli/releases/download/$(params.cli-version)/${bin}"
+        chmod +x /workspace/pangolin
+
+    - name: apply
+      image: docker.io/alpine/git:2.49.1
       env:
+        # Die CLI legt unter $HOME Konfiguration und Protokolle an; als
+        # Nicht-root ist / nicht beschreibbar.
+        - name: HOME
+          value: /workspace
         - name: PANGOLIN_ENDPOINT
           valueFrom:
             secretKeyRef:
@@ -45,31 +86,13 @@ spec:
       script: |
         #!/bin/sh
         set -eu
-        apk add --no-cache git curl >/dev/null
-
-        arch=$(uname -m)
-        case "$arch" in
-          aarch64|arm64) bin=pangolin-cli_linux_arm64 ;;
-          x86_64)        bin=pangolin-cli_linux_amd64 ;;
-          *) echo "Nicht unterstuetzte Architektur: $arch" >&2; exit 1 ;;
-        esac
-
-        echo "==> Lade Pangolin-CLI $(params.cli-version) fuer $arch"
-        curl -fsSL -o /tmp/pangolin \
-          "https://github.com/fosrl/pangolin-cli/releases/download/$(params.cli-version)/${bin}"
-        chmod +x /tmp/pangolin
-
-        echo "==> Hole $(params.revision) aus $(params.repo-url)"
-        git clone --depth 1 --branch "$(params.revision)" \
-          "$(params.repo-url)" /tmp/repo >/dev/null 2>&1
-
-        cd "/tmp/repo/$(params.blueprint-dir)"
+        cd "/workspace/repo/$(params.blueprint-dir)"
         found=0
         for bp in *.yaml; do
           [ -e "$bp" ] || continue
           found=1
           echo "==> Wende $bp an"
-          /tmp/pangolin apply blueprint \
+          /workspace/pangolin apply blueprint \
             --api-key "$PANGOLIN_INTEGRATION_API_KEY" \
             --endpoint "$PANGOLIN_ENDPOINT" \
             --org "$PANGOLIN_ORG_ID" \
