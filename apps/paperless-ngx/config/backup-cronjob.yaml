@@ -1,14 +1,14 @@
 # Taeglich um 03:00: Export in die export-PVC, Upload nach Scaleway.
-#
-# suspend: true, bis die Scaleway-Zugangsdaten im Secret liegen — ein Lauf
-# ohne sie scheitert jede Nacht. Zum Scharfschalten auf false setzen.
+# Ziel ist der Bucket p3l1-backup in nl-ams: latest-backup.zip fuer den
+# woechentlichen Restore-Test, dazu eine datierte Fassung mit 14 Tagen
+# Aufbewahrung.
 apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: paperless-backup
   namespace: paperless
 spec:
-  suspend: true
+  suspend: false
   schedule: "0 3 * * *"
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 3
