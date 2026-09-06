@@ -1,0 +1,11 @@
+{
+  "appName": "ollama",
+  "userGivenName": "ollama",
+  "destNamespace": "ollama",
+  "destServer": "https://kubernetes.default.svc",
+  "srcPath": "apps/ollama/base",
+  "srcRepoURL": "https://github.com/p3l1/homelab-argocd.git",
+  "srcTargetRevision": "main",
+  "labels": null,
+  "annotations": null
+}

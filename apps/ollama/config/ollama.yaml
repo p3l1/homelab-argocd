@@ -1,0 +1,111 @@
+---
+# Modelle liegen auf Longhorn, nicht im Pod: Ein erneuter Download kostet
+# auf dem Pi mehr als der Speicherplatz.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ollama-models
+  namespace: ollama
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama
+  namespace: ollama
+spec:
+  replicas: 1
+  # Das Modell haelt mehrere GB im Speicher; zwei Pods nebeneinander waeren
+  # auf einem Pi das Ende. Beim Rollout erst der alte weg, dann der neue.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: ollama
+  template:
+    metadata:
+      labels:
+        app: ollama
+    spec:
+      # Nur auf dem dafuer freigeraeumten Pi 5. Das Label statt des
+      # Hostnamens, damit die Zuordnung umziehen kann, ohne dass dieses
+      # Manifest sich aendert.
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: homelab.p3l1.de/workload
+                    operator: In
+                    values: ["llm"]
+      # Der Node traegt dedicated=llm:NoSchedule, damit nichts anderes
+      # dorthin geplant wird. Ollama muss ihn deshalb ausdruecklich dulden.
+      tolerations:
+        - key: dedicated
+          operator: Equal
+          value: llm
+          effect: NoSchedule
+      containers:
+        - name: ollama
+          image: docker.io/ollama/ollama:0.12.3
+          ports:
+            - containerPort: 11434
+              name: http
+          env:
+            - { name: OLLAMA_HOST, value: "0.0.0.0:11434" }
+            # Ein Modell, eine Anfrage zur Zeit: Vier ARM-Kerne ohne GPU
+            # bringen nichts durch Parallelitaet, sie verlieren nur.
+            - { name: OLLAMA_MAX_LOADED_MODELS, value: "1" }
+            - { name: OLLAMA_NUM_PARALLEL, value: "1" }
+            # Modell im Speicher halten: Das Laden dauert auf dem Pi
+            # laenger als die meisten Antworten.
+            - { name: OLLAMA_KEEP_ALIVE, value: "30m" }
+            - { name: OLLAMA_MODELS, value: /models }
+          volumeMounts:
+            - { name: models, mountPath: /models }
+          resources:
+            requests:
+              cpu: "1"
+              memory: 2Gi
+            limits:
+              # Der Node hat 8 GiB; der Rest bleibt fuer System und
+              # Longhorn. Ein 1B-Modell braucht rund 2 GiB.
+              memory: 5Gi
+          # Ollama antwortet auf / mit "Ollama is running", sobald der
+          # Server steht - unabhaengig davon, ob ein Modell geladen ist.
+          startupProbe:
+            httpGet: { path: /, port: http }
+            periodSeconds: 5
+            failureThreshold: 60
+          livenessProbe:
+            httpGet: { path: /, port: http }
+            periodSeconds: 30
+            timeoutSeconds: 10
+          readinessProbe:
+            httpGet: { path: /, port: http }
+            periodSeconds: 15
+            timeoutSeconds: 10
+      volumes:
+        - name: models
+          persistentVolumeClaim:
+            claimName: ollama-models
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama
+  namespace: ollama
+spec:
+  selector:
+    app: ollama
+  ports:
+    - port: 11434
+      targetPort: http
+      name: http
