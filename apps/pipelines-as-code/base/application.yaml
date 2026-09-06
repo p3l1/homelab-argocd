@@ -1,0 +1,36 @@
+# Pipelines-as-Code: liest Pipeline-Definitionen aus .tekton/ im jeweiligen
+# Repository, reagiert auf Pushes und Pull Requests und meldet den Status
+# zurueck an GitHub.
+#
+# Der Webhook-Endpunkt ist oeffentlich - anders koennte GitHub keine Events
+# zustellen. GitHub signiert sie per HMAC, der Controller prueft das.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: pipelines-as-code
+  namespace: argocd
+spec:
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+  project: apps
+  sources:
+    - repoURL: https://github.com/p3l1/homelab-argocd.git
+      targetRevision: main
+      path: apps/pipelines-as-code/config
+    - repoURL: https://github.com/p3l1/homelab-argocd.git
+      targetRevision: main
+      path: apps/pipelines-as-code/routes
+  ignoreDifferences:
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+      jqPathExpressions:
+        - .spec.conversion.webhook.clientConfig.caBundle
+        - .spec.preserveUnknownFields
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: pipelines-as-code

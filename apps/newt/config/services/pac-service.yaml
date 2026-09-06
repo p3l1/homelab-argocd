@@ -1,0 +1,11 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: newt-pac-service
+  namespace: newt
+spec:
+  type: ExternalName
+  externalName: pipelines-as-code-controller.pipelines-as-code.svc.cluster.local
+  ports:
+    - port: 8080

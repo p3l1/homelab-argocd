@@ -1,0 +1,11 @@
+{
+  "appName": "pipelines-as-code",
+  "userGivenName": "pipelines-as-code",
+  "destNamespace": "default",
+  "destServer": "https://kubernetes.default.svc",
+  "srcPath": "apps/pipelines-as-code/base",
+  "srcRepoURL": "https://github.com/p3l1/homelab-argocd.git",
+  "srcTargetRevision": "main",
+  "labels": null,
+  "annotations": null
+}

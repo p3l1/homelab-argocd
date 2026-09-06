@@ -1,0 +1,18 @@
+---
+# Intern erreichbar; nach aussen fuehrt die oeffentliche Pangolin-Ressource.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: pipelines-as-code
+  namespace: pipelines-as-code
+spec:
+  parentRefs:
+    - name: traefik-gateway
+      namespace: traefik
+      sectionName: websecure
+  hostnames:
+    - pac.homelab.internal
+  rules:
+    - backendRefs:
+        - name: pipelines-as-code-controller
+          port: 8080

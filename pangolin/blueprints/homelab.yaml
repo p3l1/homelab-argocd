@@ -93,6 +93,27 @@ public-resources:
           interval: 30
           timeout: 5
 
+  pac:
+    name: Pipelines-as-Code
+    protocol: http
+    full-domain: pac.cloud.p3l1.de
+    auth:
+      # Muss ohne Anmeldung erreichbar sein: GitHub stellt die Events
+      # unbeaufsichtigt zu. Der Controller prueft stattdessen die
+      # HMAC-Signatur, mit der GitHub jeden Aufruf unterschreibt.
+      sso-enabled: false
+    targets:
+      - site: intent-anniella-pulchra
+        method: http
+        hostname: newt-pac-service.newt.svc.cluster.local
+        port: 8080
+        healthcheck:
+          hostname: newt-pac-service.newt.svc.cluster.local
+          port: 8080
+          path: /
+          interval: 30
+          timeout: 5
+
   arcane:
     name: Arcane
     protocol: http
