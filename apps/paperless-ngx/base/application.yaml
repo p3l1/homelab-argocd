@@ -22,14 +22,28 @@ spec:
           postgresql:
             enabled: false
           persistence:
+            # Alle vier Volumes brauchen accessMode, sonst bricht das Chart
+            # beim Rendern ab - export und consume sind per Vorgabe aktiv.
             data:
               enabled: true
+              accessMode: ReadWriteOnce
               storageClass: longhorn
               size: 5Gi
             media:
               enabled: true
+              accessMode: ReadWriteOnce
               storageClass: longhorn
               size: 20Gi
+            consume:
+              enabled: true
+              accessMode: ReadWriteOnce
+              storageClass: longhorn
+              size: 5Gi
+            export:
+              enabled: true
+              accessMode: ReadWriteOnce
+              storageClass: longhorn
+              size: 5Gi
           env:
             PAPERLESS_DBHOST: paperless-db-rw
             PAPERLESS_DBNAME: paperless

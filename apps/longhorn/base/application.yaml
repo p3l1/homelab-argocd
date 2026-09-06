@@ -22,6 +22,10 @@ spec:
       targetRevision: 1.12.1
       helm:
         valuesObject:
+          preUpgradeChecker:
+            # Das Chart empfiehlt das ausdruecklich fuer GitOps: der Job ist
+            # ein Helm-Hook, auf dessen Abschluss ArgoCD sonst endlos wartet.
+            jobEnabled: false
           defaultSettings:
             # Die Control-Plane traegt keine Workloads, also auch keine Repliken.
             taintToleration: ""
