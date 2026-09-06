@@ -133,3 +133,5 @@ public-resources:
           timeout: 5
 
 # Von Pipelines-as-Code ausgeloest - Aenderung an dieser Datei startet die Pipeline.
+
+# Testlauf nach Installation der GitHub App.
