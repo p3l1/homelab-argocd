@@ -47,6 +47,15 @@ spec:
             type: LoadBalancer
             annotations:
               metallb.io/loadBalancerIPs: 10.35.99.230
+  # Der Chart liefert die CRDs von Traefik Hub mit; der API-Server ergaenzt
+  # darin Felder, die zwangslaeufig vom Repo abweichen.
+  ignoreDifferences:
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+      jqPathExpressions:
+        - .spec.conversion.webhook.clientConfig.caBundle
+        - .spec.preserveUnknownFields
+        - .status
   destination:
     server: https://kubernetes.default.svc
     namespace: traefik
