@@ -17,6 +17,14 @@ spec:
     - chart: tekton-pipeline
       repoURL: https://cdfoundation.github.io/tekton-helm-chart
       targetRevision: 1.14.0
+  # Tektons Webhook traegt zur Laufzeit caBundle und Konversionsdaten in die
+  # CRDs ein. Das weicht zwangslaeufig vom Repo ab und ist kein Driftfehler.
+  ignoreDifferences:
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+      jqPathExpressions:
+        - .spec.conversion.webhook.clientConfig.caBundle
+        - .spec.preserveUnknownFields
   destination:
     server: https://kubernetes.default.svc
     namespace: tekton-pipelines
