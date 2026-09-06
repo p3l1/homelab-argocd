@@ -19,17 +19,20 @@ spec:
       targetRevision: 7.11.5
       helm:
         valuesObject:
+          image:
+            # Die versionierten Tags des Charts sind nur amd64 gebaut; auf
+            # den Pi endet das in "exec format error". Nur -latest bringt
+            # ein arm64-Manifest mit.
+            tag: postgresql-latest
           postgresql:
             enabled: false
           mysql:
             enabled: false
-          umami:
-            database:
-              type: postgresql
-              # Verbindungsdaten aus dem Secret, das CloudNativePG zum
-              # Cluster erzeugt.
-              existingSecret: umami-db-app
-              existingSecretKeyDatabaseUrl: uri
+          database:
+            # CloudNativePG legt zum Cluster das Secret umami-db-app an und
+            # hinterlegt die fertige Verbindungszeichenfolge unter 'uri'.
+            existingSecret: umami-db-app
+            databaseUrlKey: uri
     - repoURL: https://github.com/p3l1/homelab-argocd.git
       targetRevision: main
       path: apps/umami/config
