@@ -86,7 +86,12 @@ spec:
         pg_isready -h 127.0.0.1 -U paperless
 
         echo "==> Entpacke"
-        mkdir -p "$W/restore" /tmp/pl/media /tmp/pl/data
+        # index/ muss existieren: Der Importer raeumt den Suchindex weg,
+        # bevor er einliest, und scheitert sonst mit FileNotFoundError.
+        mkdir -p "$W/restore" /tmp/pl/data/index \
+          /tmp/pl/media/documents/originals \
+          /tmp/pl/media/documents/archive \
+          /tmp/pl/media/documents/thumbnails
         python3 -m zipfile -e "$W/latest-backup.zip" "$W/restore"
 
         echo "==> Schema anlegen"
