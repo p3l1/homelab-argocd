@@ -1,6 +1,9 @@
 # Oberflaeche fuer Tekton: Pipeline-Laeufe, Aufgaben und Protokolle im
-# Browser. Die Manifeste kommen als Kustomize direkt aus dem Upstream-Repo,
-# auf einen Tag festgelegt - der Chart existiert nicht als Helm-Paket.
+# Browser.
+#
+# Das Release-Manifest liegt hier im Repo statt als Verweis auf das
+# Upstream-Repo: dessen config/ ist eine Bauvorlage fuer ko, das Image steht
+# dort als ko://-Platzhalter und der Namensraum fehlt in der Kustomization.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -15,13 +18,10 @@ spec:
       - CreateNamespace=true
       - ServerSideApply=true
   project: apps
-  sources:
-    - repoURL: https://github.com/tektoncd/dashboard.git
-      targetRevision: v0.72.0
-      path: config
-    - repoURL: https://github.com/p3l1/homelab-argocd.git
-      targetRevision: main
-      path: apps/tekton-dashboard/config
+  source:
+    repoURL: https://github.com/p3l1/homelab-argocd.git
+    targetRevision: main
+    path: apps/tekton-dashboard/config
   destination:
     server: https://kubernetes.default.svc
     namespace: tekton-pipelines
