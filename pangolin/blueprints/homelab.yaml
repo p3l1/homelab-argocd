@@ -21,8 +21,10 @@ private-resources:
     site: intent-anniella-pulchra
     tcp-ports: "8080"
     alias: tekton.homelab.private
+    # Admin darf hier nicht stehen - die Rolle hat ohnehin Zugriff und
+    # Pangolin weist sie ausdruecklich zurueck.
     roles:
-      - Admin
+      - Member
 
 public-resources:
   argocd:
