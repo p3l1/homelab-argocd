@@ -299,17 +299,16 @@ k3s mitgelieferte Traefik ist dafür in `server_config_yaml` abgeschaltet.
 | Arcane | `https://arcane.homelab.internal` |
 | whoami | `https://whoami.homelab.internal` |
 
-Die DNS-Einträge legt `external-dns` selbsttätig im UniFi-Router an — dessen
-Network Integration API ist auf dem Express vorhanden. Dafür braucht es einen
-API-Schlüssel aus **Settings → Control Plane → Integrations**:
+Die DNS-Einträge stehen derzeit **von Hand** im Router, unter Settings →
+Routing & Firewall → DNS → Local DNS Records, alle fünf auf `10.35.99.230`.
 
-```bash
-./scripts/secret.sh unifi-credentials external-dns UNIFI_HOST UNIFI_API_KEY
-```
-
-`UNIFI_HOST` ist `https://10.35.99.1`. `domainFilters` beschränkt external-dns
-auf `homelab.internal`, `txtOwnerId` markiert die eigenen Einträge — alles
-Übrige im Router bleibt unberührt.
+Automatisieren ließe sich das mit `external-dns` und dem UniFi-Webhook; die
+Application liegt unter `apps/external-dns`, ist aber **zurückgestellt**. Der
+Webhook verlangt einen API-Schlüssel und lehnt Benutzername und Passwort
+ausdrücklich ab — solche Schlüssel gibt es erst ab UniFi OS 4.1 / Network 9.0,
+der Express läuft auf 4.0.17. Nach einem Update des Routers beschreibt
+[`apps/external-dns/README.md`](../apps/external-dns/README.md) den Weg
+zurück.
 
 Nach außen führt der Newt-Tunnel. Die `ExternalName`-Dienste unter
 `apps/newt/config/services` geben Pangolin je Anwendung einen Namen,
