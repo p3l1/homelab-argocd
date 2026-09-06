@@ -33,15 +33,24 @@ spec:
           initContainers:
             - name: export
               image: ghcr.io/paperless-ngx/paperless-ngx:3.1.3
+              # Als paperless (1000), sonst gehoerten die erzeugten Dateien
+              # root und der regulaere Pod kaeme nicht mehr an sie heran.
+              securityContext:
+                runAsUser: 1000
+                runAsGroup: 1000
+              workingDir: /usr/src/paperless/src
               command:
                 - sh
                 - -c
                 - |
                   set -e
-                  # document_exporter legt sein Ziel nicht an, sondern
-                  # bricht mit "That path doesn't exist" ab.
+                  # Nicht der Wrapper /usr/local/bin/document_exporter: der
+                  # haengt an s6 und scheitert ausserhalb des initialisierten
+                  # Containers mit "unable to envdir /run/s6".
+                  # document_exporter legt sein Ziel zudem nicht selbst an.
                   mkdir -p /usr/src/paperless/export/backup
-                  exec document_exporter /usr/src/paperless/export/backup \
+                  exec python3 manage.py document_exporter \
+                    /usr/src/paperless/export/backup \
                     --zip --zip-name latest-backup --delete --no-progress-bar
               env:
                 - name: PAPERLESS_DBENGINE
