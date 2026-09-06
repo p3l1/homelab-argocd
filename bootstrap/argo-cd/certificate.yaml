@@ -9,5 +9,7 @@ spec:
   dnsNames:
     - argocd.p3l1.de
   issuerRef:
-    name: letsencrypt-live
+    # Cluster-lokale CA aus apps/cert-manager/config/pki.yaml. Fuer ein
+    # oeffentlich gueltiges Zertifikat braeuchte es einen ACME-Issuer.
+    name: homelab-ca
     kind: ClusterIssuer

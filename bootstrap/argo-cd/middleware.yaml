@@ -1,0 +1,12 @@
+---
+# Von argocd-http referenziert. Ohne diese Middleware bliebe die
+# IngressRoute ohne Wirkung.
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: redirect-http-https
+  namespace: argocd
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true

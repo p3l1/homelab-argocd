@@ -19,5 +19,9 @@ kind: Kustomization
 namespace: argocd
 resources:
 - https://github.com/argoproj-labs/argocd-autopilot/manifests/ha
+# ingress.yaml und certificate.yaml brauchen die CRDs von Traefik und
+# cert-manager. Beim ersten Anwenden gibt es die noch nicht - ArgoCD zieht
+# sie nach, sobald die Infrastruktur steht.
 - ./ingress.yaml
+- ./middleware.yaml
 - ./certificate.yaml
