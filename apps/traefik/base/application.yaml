@@ -1,0 +1,52 @@
+# Traefik als Gateway-API-Controller. Der in k3s mitgelieferte Traefik ist
+# dafuer in der Serverkonfiguration abgeschaltet.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: traefik
+  namespace: argocd
+  annotations:
+    # Nach cert-manager, das die Wildcard ausstellt, und nach MetalLB.
+    argocd.argoproj.io/sync-wave: "-6"
+spec:
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+  project: infrastructure
+  sources:
+    - chart: traefik
+      repoURL: https://traefik.github.io/charts
+      targetRevision: 41.4.0
+      helm:
+        values: |
+          providers:
+            kubernetesGateway:
+              enabled: true
+          # Der Chart legt sonst nur den web-Listener an. Sobald listeners
+          # gesetzt ist, muss web hier mitdefiniert werden.
+          gateway:
+            listeners:
+              web:
+                port: 8000
+                protocol: HTTP
+                namespacePolicy:
+                  from: All
+              websecure:
+                port: 8443
+                protocol: HTTPS
+                mode: Terminate
+                namespacePolicy:
+                  from: All
+                certificateRefs:
+                  - name: wildcard-homelab-internal-tls
+          service:
+            type: LoadBalancer
+            annotations:
+              metallb.io/loadBalancerIPs: 10.35.99.230
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: traefik

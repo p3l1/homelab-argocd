@@ -1,0 +1,11 @@
+{
+  "appName": "traefik",
+  "userGivenName": "traefik",
+  "destNamespace": "default",
+  "destServer": "https://kubernetes.default.svc",
+  "srcPath": "apps/traefik/base",
+  "srcRepoURL": "https://github.com/p3l1/homelab-argocd.git",
+  "srcTargetRevision": "main",
+  "labels": null,
+  "annotations": null
+}

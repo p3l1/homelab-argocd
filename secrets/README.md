@@ -28,5 +28,6 @@ einzugeben.
 |---|---|
 | `arcane-secrets.sops.yaml` | `ENCRYPTION_KEY` und `JWT_SECRET` für Arcane |
 | `newt-credentials.sops.yaml` | Zugangsdaten für den Pangolin-Tunnel |
+| `unifi-credentials.sops.yaml` | API-Schlüssel des Routers für external-dns |
 
 `newt-credentials` fehlt noch — die Werte kommen aus Pangolin.

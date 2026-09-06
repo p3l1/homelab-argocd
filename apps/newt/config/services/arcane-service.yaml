@@ -1,0 +1,11 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: newt-arcane-service
+  namespace: newt
+spec:
+  type: ExternalName
+  externalName: arcane.arcane.svc.cluster.local
+  ports:
+    - port: 3552

@@ -1,0 +1,11 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: newt-umami-service
+  namespace: newt
+spec:
+  type: ExternalName
+  externalName: umami.umami.svc.cluster.local
+  ports:
+    - port: 3000

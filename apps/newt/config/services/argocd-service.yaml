@@ -1,0 +1,11 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: newt-argocd-service
+  namespace: newt
+spec:
+  type: ExternalName
+  externalName: argocd-server.argocd.svc.cluster.local
+  ports:
+    - port: 443

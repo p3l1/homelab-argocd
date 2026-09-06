@@ -1,0 +1,11 @@
+{
+  "appName": "external-dns",
+  "userGivenName": "external-dns",
+  "destNamespace": "default",
+  "destServer": "https://kubernetes.default.svc",
+  "srcPath": "apps/external-dns/base",
+  "srcRepoURL": "https://github.com/p3l1/homelab-argocd.git",
+  "srcTargetRevision": "main",
+  "labels": null,
+  "annotations": null
+}

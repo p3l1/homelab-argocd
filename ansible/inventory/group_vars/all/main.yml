@@ -39,6 +39,9 @@ server_config_yaml: |
   disable:
     - servicelb
     - local-storage
+    # Der mitgelieferte Traefik weicht der gepflegten Fassung aus
+    # apps/traefik, die als Gateway-API-Controller laeuft.
+    - traefik
   write-kubeconfig-mode: "0644"
   node-taint:
     - "CriticalAddonsOnly=true:NoExecute"

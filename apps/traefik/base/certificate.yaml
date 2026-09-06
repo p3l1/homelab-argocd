@@ -1,0 +1,18 @@
+# Wildcard fuer die internen Hosts. Liegt im Traefik-Namensraum, weil
+# certificateRefs eines Gateway keine Namensraumgrenzen ueberschreiten.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: wildcard-homelab-internal
+  namespace: traefik
+spec:
+  secretName: wildcard-homelab-internal-tls
+  duration: 2160h  # 90d
+  renewBefore: 720h  # 30d
+  dnsNames:
+    - homelab.internal
+    - "*.homelab.internal"
+  issuerRef:
+    name: homelab-ca
+    kind: ClusterIssuer
+    group: cert-manager.io
