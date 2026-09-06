@@ -10,6 +10,20 @@
 # unabhaengig davon, in welchem Namensraum sie laeuft.
 #
 # Angewendet von der Tekton-Pipeline in pangolin/tekton, nicht von ArgoCD.
+# Nur ueber einen Pangolin-Client erreichbar, nicht aus dem Netz. Der
+# Machine Client "homelab-argocd CI" nutzt den Alias, um aus GitHub Actions
+# die Blueprint-Pipeline anzustossen.
+private-resources:
+  tekton-webhook:
+    name: Tekton Webhook
+    mode: host
+    destination: el-pangolin-blueprints.tekton-pipelines.svc.cluster.local
+    site: intent-anniella-pulchra
+    tcp-ports: "8080"
+    alias: tekton.homelab.private
+    roles:
+      - Admin
+
 public-resources:
   argocd:
     name: ArgoCD

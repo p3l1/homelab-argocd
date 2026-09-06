@@ -1,0 +1,103 @@
+---
+# Nimmt den Aufruf aus GitHub Actions entgegen und startet die
+# Blueprint-Pipeline. Erreichbar ausschliesslich ueber die private
+# Pangolin-Ressource - kein oeffentlicher Endpunkt.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tekton-triggers-sa
+  namespace: tekton-pipelines
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: tekton-triggers-role
+  namespace: tekton-pipelines
+rules:
+  - apiGroups: [triggers.tekton.dev]
+    resources: [eventlisteners, triggerbindings, triggertemplates, triggers, interceptors, clustertriggerbindings, clusterinterceptors]
+    verbs: [get, list, watch]
+  - apiGroups: [""]
+    resources: [configmaps, secrets, serviceaccounts]
+    verbs: [get, list, watch]
+  - apiGroups: [""]
+    resources: [events]
+    verbs: [create, patch]
+  - apiGroups: [tekton.dev]
+    resources: [pipelineruns, taskruns]
+    verbs: [create, get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: tekton-triggers-binding
+  namespace: tekton-pipelines
+subjects:
+  - kind: ServiceAccount
+    name: tekton-triggers-sa
+    namespace: tekton-pipelines
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: tekton-triggers-role
+---
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerTemplate
+metadata:
+  name: pangolin-blueprints
+  namespace: tekton-pipelines
+spec:
+  params:
+    - name: revision
+      default: main
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1
+      kind: PipelineRun
+      metadata:
+        generateName: pangolin-blueprints-
+        namespace: tekton-pipelines
+      spec:
+        pipelineRef:
+          name: pangolin-blueprints
+        params:
+          - name: revision
+            value: $(tt.params.revision)
+        timeouts:
+          pipeline: 10m
+---
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerBinding
+metadata:
+  name: pangolin-blueprints
+  namespace: tekton-pipelines
+spec:
+  params:
+    - name: revision
+      value: $(body.ref)
+---
+apiVersion: triggers.tekton.dev/v1beta1
+kind: EventListener
+metadata:
+  name: pangolin-blueprints
+  namespace: tekton-pipelines
+spec:
+  serviceAccountName: tekton-triggers-sa
+  triggers:
+    - name: github-push
+      interceptors:
+        # Gemeinsames Geheimnis mit GitHub Actions. Die Ressource ist zwar
+        # privat, aber ein Aufruf soll nicht allein durch Erreichbarkeit
+        # genuegen.
+        - ref:
+            name: github
+          params:
+            - name: secretRef
+              value:
+                secretName: tekton-webhook-secret
+                secretKey: secret
+            - name: eventTypes
+              value: [push]
+      bindings:
+        - ref: pangolin-blueprints
+      template:
+        ref: pangolin-blueprints

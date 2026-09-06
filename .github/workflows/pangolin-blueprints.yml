@@ -1,0 +1,56 @@
+---
+# Stoesst nach einem Push die Tekton-Pipeline an, die die Blueprints anwendet.
+#
+# Der Webhook liegt als private Pangolin-Ressource im Cluster und ist aus dem
+# Netz nicht erreichbar. Der Machine Client "homelab-argocd CI" baut den
+# Tunnel auf, danach steht der Dienst unter seinem Alias bereit.
+name: Pangolin-Blueprints anwenden
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - pangolin/blueprints/**
+      - .github/workflows/pangolin-blueprints.yml
+  workflow_dispatch:
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Olm installieren
+        run: |
+          curl -fsSL -o /tmp/olm \
+            "https://github.com/fosrl/olm/releases/download/${OLM_VERSION}/olm_linux_amd64"
+          chmod +x /tmp/olm
+        env:
+          OLM_VERSION: "1.9.1"
+
+      - name: Tunnel aufbauen
+        run: |
+          sudo /tmp/olm \
+            --id "${{ secrets.PANGOLIN_OLM_ID }}" \
+            --secret "${{ secrets.PANGOLIN_OLM_SECRET }}" \
+            --endpoint "${{ secrets.PANGOLIN_ENDPOINT }}" &
+          # Der Tunnel braucht einen Moment, bis der Alias aufloest.
+          for i in $(seq 1 30); do
+            getent hosts tekton.homelab.private >/dev/null 2>&1 && break
+            sleep 2
+          done
+          getent hosts tekton.homelab.private \
+            || { echo "Alias loest nicht auf - Tunnel steht nicht." >&2; exit 1; }
+
+      - name: Pipeline anstossen
+        run: |
+          payload=$(printf '{"ref":"%s"}' "${GITHUB_REF_NAME}")
+          sig="sha256=$(printf '%s' "$payload" \
+            | openssl dgst -sha256 -hmac "${{ secrets.TEKTON_WEBHOOK_SECRET }}" \
+            | awk '{print $2}')"
+          code=$(curl -sS -o /tmp/out -w '%{http_code}' \
+            -X POST "http://tekton.homelab.private:8080" \
+            -H "Content-Type: application/json" \
+            -H "X-GitHub-Event: push" \
+            -H "X-Hub-Signature-256: ${sig}" \
+            -d "$payload")
+          cat /tmp/out
+          [ "$code" = "202" ] || { echo "EventListener antwortete mit ${code}" >&2; exit 1; }
