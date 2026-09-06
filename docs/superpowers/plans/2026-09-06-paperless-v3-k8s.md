@@ -60,7 +60,7 @@ unumkehrbaren Datenbankumbau in Task 3.
   `export/` (Verzeichnis-Export), `paperless-2.20.14.dump` (pg_dump, Format
   `custom`) und `data.tar.gz`. Task 3 greift im Rückweg darauf zurück.
 
-- [ ] **Step 1: Referenzzahl und Ausgangsversion festhalten**
+- [x] **Step 1: Referenzzahl und Ausgangsversion festhalten**
 
 ```bash
 ssh root@10.35.99.168 'docker exec documents-webserver-1 python3 manage.py shell -c \
@@ -74,7 +74,7 @@ Weicht die Zahl ab, ist seit der Planung konsumiert worden. Das ist kein
 Fehler — die neue Zahl wird ab hier zur Referenz und ersetzt die 788 in allen
 folgenden Abnahmen.
 
-- [ ] **Step 2: Freien Speicher prüfen**
+- [x] **Step 2: Freien Speicher prüfen**
 
 ```bash
 ssh root@10.35.99.168 'df -h /opt | tail -1'
@@ -82,16 +82,36 @@ ssh root@10.35.99.168 'df -h /opt | tail -1'
 
 Erwartet: mindestens 5 GB frei. Der Export wird rund 1 GB groß.
 
-- [ ] **Step 3: Export erzeugen**
+- [x] **Step 3: Zielverzeichnis anlegen**
+
+`document_exporter` legt sein Ziel **nicht** selbst an, sondern bricht mit
+`CommandError: That path doesn't exist` ab. Anlegen und dabei gleich dem
+Benutzer übereignen, dem der übrige Export-Baum gehört:
+
+```bash
+ssh root@10.35.99.168 'docker exec documents-webserver-1 mkdir -p /usr/src/paperless/export/pre-v3'
+ssh root@10.35.99.168 'chown 1000:1000 /opt/paperless/export/pre-v3 && ls -ldn /opt/paperless/export/pre-v3'
+```
+
+Erwartet: `drwxr-xr-x 2 1000 1000 … /opt/paperless/export/pre-v3`.
+
+`docker exec` läuft als root, das Verzeichnis gehörte sonst root — anders als
+alles andere unter `/opt/paperless/export`.
+
+- [x] **Step 4: Export erzeugen**
 
 ```bash
 ssh root@10.35.99.168 'docker exec documents-webserver-1 \
-  document_exporter /usr/src/paperless/export/pre-v3 --no-progress-bar'
+  document_exporter /usr/src/paperless/export/pre-v3 --no-progress-bar'; echo "exit=$?"
 ```
 
-Läuft einige Minuten. Erwartet: Abschluss ohne Traceback.
+Läuft einige Minuten. Erwartet: `exit=0` und kein Traceback.
 
-- [ ] **Step 4: Export gegen die Referenz prüfen**
+Den Exit-Code ausdrücklich ausgeben und **nicht** durch `| tail` schicken —
+eine Pipe maskiert ihn, und ein gescheiterter Export sähe dann aus wie ein
+gelungener.
+
+- [x] **Step 5: Export gegen die Referenz prüfen**
 
 ```bash
 ssh root@10.35.99.168 'python3 -c "
@@ -107,44 +127,70 @@ Erwartet: `788` — dieselbe Zahl wie in Step 1.
 Weicht sie ab, nicht weitermachen. Der Export ist unvollständig, und alles
 Folgende baut darauf auf.
 
-- [ ] **Step 5: Datenbank und data-Verzeichnis sichern**
+- [x] **Step 6: Datenbank und data-Verzeichnis sichern**
 
 ```bash
 ssh root@10.35.99.168 'mkdir -p /opt/paperless/backup && \
   docker exec documents-db-1 pg_dump -U paperless -Fc paperless \
-    > /opt/paperless/backup/paperless-2.20.14.dump && \
-  tar -C /opt/paperless -czf /opt/paperless/backup/data.tar.gz data'
+    > /opt/paperless/backup/paperless-2.20.14.dump'
+ssh root@10.35.99.168 'tar -C /opt/paperless -czf /opt/paperless/backup/data.tar.gz data'
 ssh root@10.35.99.168 'ls -lh /opt/paperless/backup/'
 ```
 
-Erwartet: Der Dump ist mehrere MB groß, `data.tar.gz` rund 100 MB. Eine
-Dump-Datei von wenigen hundert Byte bedeutet, dass `pg_dump` gescheitert ist.
+Erwartet: Dump rund 2 MB (`custom`-Format ist gzip-komprimiert),
+`data.tar.gz` rund 50 MB aus 104 MB Rohdaten.
 
-- [ ] **Step 6: Alles auf den Mac holen**
+- [x] **Step 7: Prüfen, dass der Dump zurückspielbar ist**
+
+Die Größe allein sagt nichts. `pg_restore --list` liest das Inhaltsverzeichnis
+und beweist damit, dass die Datei nicht abgeschnitten ist:
 
 ```bash
-mkdir -p ~/backups/paperless/2026-09-06-pre-v3
-rsync -a --info=progress2 \
-  root@10.35.99.168:/opt/paperless/export/pre-v3/ \
-  ~/backups/paperless/2026-09-06-pre-v3/export/
-rsync -a --info=progress2 \
-  root@10.35.99.168:/opt/paperless/backup/ \
-  ~/backups/paperless/2026-09-06-pre-v3/
+ssh root@10.35.99.168 'docker exec -i documents-db-1 pg_restore --list \
+  < /opt/paperless/backup/paperless-2.20.14.dump' | head -12
+ssh root@10.35.99.168 'docker exec -i documents-db-1 pg_restore --list \
+  < /opt/paperless/backup/paperless-2.20.14.dump' | grep -c "TABLE DATA"
 ```
 
-- [ ] **Step 7: Abnahme — die Sicherung liegt außerhalb des Hosts**
+Erwartet: ein Kopf mit `Format: CUSTOM` und `TOC Entries: 850`, dann rund 72
+Tabellen mit Daten. Eine Fehlermeldung statt des Inhaltsverzeichnisses
+bedeutet, dass der Dump unbrauchbar ist — dann nicht weitermachen.
+
+- [x] **Step 8: Alles auf den Mac holen**
+
+```bash
+mkdir -p ~/backups/paperless/2026-09-06-pre-v3/export
+rsync -a root@10.35.99.168:/opt/paperless/export/pre-v3/ \
+  ~/backups/paperless/2026-09-06-pre-v3/export/; echo "exit=$?"
+rsync -a root@10.35.99.168:/opt/paperless/backup/ \
+  ~/backups/paperless/2026-09-06-pre-v3/; echo "exit=$?"
+```
+
+Ohne `--info=progress2`: Auf dem Mac liegt `openrsync`, das sich als
+rsync 2.6.9 ausgibt und die `--info`-Familie nicht kennt. Es bricht sonst mit
+einer Usage-Meldung ab.
+
+- [x] **Step 9: Abnahme — die Sicherung liegt außerhalb des Hosts**
 
 ```bash
 du -sh ~/backups/paperless/2026-09-06-pre-v3/*
 python3 -c "
-import json
-m = json.load(open('$HOME/backups/paperless/2026-09-06-pre-v3/export/manifest.json'))
+import json, pathlib
+m = json.load(open(pathlib.Path.home()/'backups/paperless/2026-09-06-pre-v3/export/manifest.json'))
 print('Dokumente:', len([e for e in m if e['model']=='documents.document']))
+"
+ssh root@10.35.99.168 'find /opt/paperless/export/pre-v3 -type f | wc -l'
+find ~/backups/paperless/2026-09-06-pre-v3/export -type f | wc -l
+python3 -c "
+p = '$HOME/backups/paperless/2026-09-06-pre-v3/paperless-2.20.14.dump'
+h = open(p,'rb').read(5)
+print('Magic:', h, '-> gueltig' if h == b'PGDMP' else '-> DEFEKT')
 "
 ```
 
-Erwartet: `export/` rund 1 GB, `paperless-2.20.14.dump` mehrere MB,
-`data.tar.gz` rund 100 MB, und wieder `788`.
+Erwartet: `export/` rund 934 MB, `paperless-2.20.14.dump` 2,3 MB,
+`data.tar.gz` 52 MB, `Dokumente: 788`, beide Dateizahlen `2356`, und
+`Magic: b'PGDMP' -> gueltig`.
 
 Erst wenn das steht, darf Task 2 beginnen.
 
@@ -382,12 +428,22 @@ den Commit aus Task 2 rückgängig machen.
   überträgt, und eine Kopie unter `~/backups/paperless/2026-09-06-post-v3/`
   auf dem Mac.
 
-- [ ] **Step 1: Export aus v3 erzeugen**
+- [ ] **Step 1: Zielverzeichnis anlegen und exportieren**
+
+Wie in Task 1: `document_exporter` legt sein Ziel nicht selbst an, und
+`docker exec` läuft als root — deshalb das `chown` auf den Benutzer, dem der
+übrige Export-Baum gehört.
 
 ```bash
+ssh root@10.35.99.168 'docker exec documents-webserver-1 mkdir -p /usr/src/paperless/export/v3-final'
+ssh root@10.35.99.168 'chown 1000:1000 /opt/paperless/export/v3-final'
 ssh root@10.35.99.168 'docker exec documents-webserver-1 \
-  document_exporter /usr/src/paperless/export/v3-final --no-progress-bar'
+  document_exporter /usr/src/paperless/export/v3-final --no-progress-bar'; echo "exit=$?"
 ```
+
+Erwartet: `exit=0`. Die Meldung `No passphrase was given, sensitive fields
+will be in plaintext` ist normal — die Installation nutzt keine
+Verschlüsselung.
 
 - [ ] **Step 2: Gegen die Referenz prüfen**
 
@@ -405,13 +461,13 @@ Erwartet: `788`.
 
 ```bash
 mkdir -p ~/backups/paperless/2026-09-06-post-v3
-rsync -a --info=progress2 \
-  root@10.35.99.168:/opt/paperless/export/v3-final/ \
-  ~/backups/paperless/2026-09-06-post-v3/
+rsync -a root@10.35.99.168:/opt/paperless/export/v3-final/ \
+  ~/backups/paperless/2026-09-06-post-v3/; echo "exit=$?"
 du -sh ~/backups/paperless/2026-09-06-post-v3
 ```
 
-Erwartet: rund 1 GB.
+Erwartet: `exit=0` und rund 1 GB. Kein `--info=progress2` — siehe Task 1,
+Step 8.
 
 - [ ] **Step 4: Abnahme**
 
@@ -964,13 +1020,15 @@ spec:
             - name: export
               image: ghcr.io/paperless-ngx/paperless-ngx:3.1.3
               command:
-                - document_exporter
-                - /usr/src/paperless/export/backup
-                - --zip
-                - --zip-name
-                - latest-backup
-                - --delete
-                - --no-progress-bar
+                - sh
+                - -c
+                - |
+                  set -e
+                  # document_exporter legt sein Ziel nicht an, sondern
+                  # bricht mit "That path doesn't exist" ab.
+                  mkdir -p /usr/src/paperless/export/backup
+                  exec document_exporter /usr/src/paperless/export/backup \
+                    --zip --zip-name latest-backup --delete --no-progress-bar
               env:
                 - name: PAPERLESS_DBENGINE
                   value: postgresql
