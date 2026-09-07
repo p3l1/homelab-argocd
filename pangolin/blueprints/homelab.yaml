@@ -36,14 +36,18 @@ private-resources:
 
   mcp-documents:
     name: Paperless MCP
-    mode: host
-    destination: newt-paperless-mcp-service.newt.svc.cluster.local
+    # Private HTTP wie bei Paperless: echter Name mit gueltigem Zertifikat,
+    # aber nur mit aktivem Pangolin-Client erreichbar, nie aus dem Netz. Der
+    # MCP-Server traegt einen Token mit vollem Zugriff und hat keine Anmeldung.
+    mode: http
+    full-domain: mcp-documents.cloud.p3l1.de
+    ssl: true
     site: intent-anniella-pulchra
-    tcp-ports: "3000"
-    # Der MCP-Server traegt einen API-Token mit vollem Zugriff auf alle 789
-    # Dokumente und hat selbst keine Anmeldung. Deshalb privat: nur ueber
-    # einen Pangolin-Client erreichbar, nie aus dem Netz.
-    alias: mcp-documents.homelab.internal
+    # scheme/destination-port beschreiben den Weg zum Ziel, nicht den zum
+    # Client - der laeuft ueber ssl.
+    scheme: http
+    destination: newt-paperless-mcp-service.newt.svc.cluster.local
+    destination-port: 3000
     # Ohne machines-Liste haben nur Admins Zugriff. Soll ein bestimmter
     # Client heran, gehoert dessen niceId hierher - und zwar in diese
     # Datei, denn jeder Lauf setzt die Zuordnungen daraus neu.
