@@ -48,6 +48,19 @@ Neustart des Pods, die übrigen Dateien nicht.
 `custom_components` (65 MB, von HACS verwaltet) und `deps`. Das ist
 Laufzeitzustand und liegt im Longhorn-Volume.
 
+Dazu gehört seit 2026.8 auch die **HTTP-Konfiguration**: Home Assistant hat
+den `http:`-Abschnitt nach `.storage/http` übernommen und liest ihn seitdem
+von dort — ein `http:` in der YAML bleibt wirkungslos. Dort stehen die
+vertrauenswürdigen Proxys: `10.42.0.0/16` für das Pod-Netz und
+`10.35.99.0/24`, weil `hostNetwork` die Adresse des Nodes durchreicht, auf
+dem Traefik oder Newt läuft, und nicht die des Pods.
+
+Geändert wird das unter Einstellungen → System → Netzwerk. Die Datei von Hand
+zu bearbeiten geht schief: Home Assistant schreibt seinen Stand beim Beenden
+zurück. Der Ablauf ist zweistufig — die neue Fassung landet erst als
+`pending`, ein Neustart probiert sie aus, und erst das Festschreiben macht sie
+zu `stable`. Nur `stable` benutzt der Wiederherstellungsmodus.
+
 ## Datenbank
 
 Der Recorder liegt auf CloudNativePG (`home-assistant-db`, zwei Instanzen).

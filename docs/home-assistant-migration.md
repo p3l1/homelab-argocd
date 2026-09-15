@@ -105,6 +105,26 @@ verwaist. Der Schlüssel der alten Fabric steckt nicht mehr in `chip.json`; die
 18 Geräte lassen sich daraus nicht zurückholen. Sie müssen neu angelernt
 werden.
 
+## Der Reverse Proxy steht nicht mehr in der YAML
+
+Der erste Zugriff über Traefik endete mit `400 Bad Request` und
+„Received X-Forwarded-For header from an untrusted proxy 10.35.99.214".
+
+Zwei Dinge dahinter:
+
+- Durch `hostNetwork` sieht Home Assistant nicht die Adresse des Traefik-Pods,
+  sondern die des Nodes, auf dem er läuft. Zum Pod-Netz muss deshalb
+  `10.35.99.0/24` dazu.
+- Home Assistant 2026.8 hat den `http:`-Abschnitt nach `.storage/http`
+  übernommen (`"yaml_migration_done": true`) und liest die YAML dafür nicht
+  mehr. Der Abschnitt wurde deshalb aus `configuration.yaml` entfernt.
+
+Geändert wird das über die WebSocket-API bzw. Einstellungen → System →
+Netzwerk: `http/config/configure` legt die Fassung als `pending` ab und
+startet neu, `http/config/promote` macht sie zu `stable`. Die Datei direkt zu
+bearbeiten funktioniert nicht — beim Beenden schreibt Home Assistant seinen
+eigenen Stand zurück.
+
 ## Piper entfällt
 
 Das Add-on war installiert, der Wyoming-Eintrag in HA steht aber auf
