@@ -20,10 +20,13 @@ scene ui: !include scenes.yaml
 
 http:
   use_x_forwarded_for: true
-  # Traefik und Newt sprechen HA aus dem Pod-Netz an. Der alte Eintrag
-  # 10.35.99.168 war der Reverse Proxy des abgeloesten Pi 5.
+  # Zwei Netze, weil der Pod hostNetwork nutzt: Erreicht ihn ein Traefik-
+  # oder Newt-Pod von einem anderen Node, ersetzt die Node-Adresse die des
+  # Pods. Der alte Eintrag 10.35.99.168 war der Reverse Proxy des
+  # abgeloesten Pi 5.
   trusted_proxies:
     - 10.42.0.0/16
+    - 10.35.99.0/24
 
 # Der Recorder liegt jetzt auf CloudNativePG. HA_DB_URL kommt aus dem
 # uri-Schluessel des von CNPG erzeugten Secrets home-assistant-db-app.
