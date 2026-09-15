@@ -25,6 +25,31 @@ scene ui: !include scenes.yaml
 # stehen deshalb im Volume, nicht hier. Zu aendern unter Einstellungen ->
 # System -> Netzwerk.
 
+# Anmeldung ueber Pocket ID. Stand bisher als Config-Entry in .storage und
+# damit ausserhalb des Repositories; als YAML gehoert sie hierher. Die
+# Umwandlung ist verlustfrei - der UI-Weg reicht dieselben Felder durch.
+auth_oidc:
+  client_id: !secret oidc_client_id
+  client_secret: !secret oidc_client_secret
+  discovery_url: !secret oidc_discovery_url
+  display_name: Pocket ID
+  features:
+    automatic_user_linking: true
+    automatic_person_creation: true
+    include_groups_scope: true
+    # Pangolin reicht kein X-Forwarded-Proto: https durch, und die
+    # Komponente baut die redirect_uri aus der Adresse der Anfrage. Ohne
+    # diesen Schalter meldet Pocket ID "redirect_uri http://... is not
+    # registered for this client".
+    force_https: true
+  claims:
+    display_name: name
+    username: preferred_username
+    groups: groups
+  roles:
+    admin: home_assistant_admins
+    user: home_assistant_users
+
 # Der Recorder liegt jetzt auf CloudNativePG. HA_DB_URL kommt aus dem
 # uri-Schluessel des von CNPG erzeugten Secrets home-assistant-db-app.
 recorder:
