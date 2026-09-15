@@ -92,6 +92,11 @@ spec:
                 print(f"FEHLER: {key} fehlt - der Git-Zweig wuerde nicht geladen")
                 sys.exit(1)
         print("==> Konfiguration ist lesbar")
+      env:
+        # configuration.yaml zieht die Datenbankadresse mit !env_var aus der
+        # Umgebung. Geprueft wird die Struktur, nicht der Inhalt.
+        - name: HA_DB_URL
+          value: postgresql://pruefung@example.invalid/pruefung
       computeResources:
         requests: { cpu: 200m, memory: 256Mi }
         limits: { memory: 1Gi }
