@@ -13,8 +13,8 @@ Die Entwurfsentscheidungen stehen in
 | API-VIP (kube-vip) | — | — | `10.35.99.210` |
 | Server, etcd, getaintet | 3× Pi 4 | `kube-01` – `kube-03` | `.211` – `.213` |
 | Agent | 1× Pi 4 | `kube-04` | `.214` |
-| Agent | 2× Pi 5 | `kube-05`, `kube-06` | `.215` – `.216` |
-| reserviert, derzeit Docker | 2× Pi 5 | `kube-07`, `kube-08` | `.217` – `.218` |
+| Agent | 3× Pi 5 | `kube-05`, `kube-06`, `kube-08` | `.215` – `.216`, `.218` |
+| reserviert, derzeit Docker | 1× Pi 5 | `kube-07` | `.217` |
 | MetalLB-Pool | — | — | `.230` – `.250` |
 
 Ausgespart bleiben `.1` (Gateway) sowie `.100` und `.200` — die gehören dem
@@ -388,11 +388,11 @@ ansible-playbook playbooks/reset.yml
 Longhorn-Daten unter `/var/lib/longhorn` bleiben erhalten und müssen bewusst
 gelöscht werden.
 
-### Die beiden reservierten Pi aufnehmen
+### Den reservierten Pi aufnehmen
 
-Sind die Docker-Aufgaben auf `kube-07` und `kube-08` migriert, wandern die
-beiden Hosts in `inventory/hosts.yml` aus `reserved` in die Gruppe `agent`.
-Danach Schritt 1 bis 3 für sie durchlaufen.
+Sind die Docker-Aufgaben auf `kube-07` migriert, wandert der Host in
+`inventory/hosts.yml` aus `reserved` in die Gruppe `agent`. Danach Schritt 1
+bis 3 für ihn durchlaufen.
 
 ## Probelauf ohne Änderungen
 
