@@ -23,7 +23,8 @@ IMAGE_URL="https://downloads.raspberrypi.com/raspios_lite_arm64_latest"
 CACHE_DIR="${HOME}/.cache/homelab-images"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 KEY_DIR="${SCRIPT_DIR}/../files/ssh"
-NODE_USER="philipp"
+NODE_USER="pi"
+NODE_PASSWORD="pi"
 TIMEZONE="Europe/Berlin"
 KEYMAP="de"
 
@@ -135,9 +136,9 @@ if $CONFIG_ONLY; then
     || die "Auf $DEVICE liegt kein Raspberry-Pi-OS-Abbild. Ohne --config-only aufrufen."
 fi
 
-# Zufaelliges Passwort: die Anmeldung laeuft ausschliesslich ueber die
-# SSH-Schluessel, custom.toml verlangt aber ein gesetztes Passwort.
-PW_HASH="$(openssl passwd -6 "$(openssl rand -base64 32)")"
+# Bekanntes Passwort, damit sudo und die lokale Konsole benutzbar bleiben.
+# Ueber SSH greift es nicht - dort ist die Passwortanmeldung abgeschaltet.
+PW_HASH="$(openssl passwd -6 "$NODE_PASSWORD")"
 
 # authorized_keys als TOML-Array
 KEY_LIST=""
