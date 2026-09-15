@@ -15,11 +15,21 @@
     ip4: "{{ node_address }}/{{ node_network_prefix }}"
     gw4: "{{ node_network_gateway }}"
     dns4: "{{ node_network_dns }}"
-    method6: disabled
+    method6: "{{ node_ipv6 | bool | ternary('auto', 'disabled') }}"
     autoconnect: true
     state: present
   ignore_unreachable: true
   register: node_base_nmcli
+
+# Das Anlegen aktiviert das Profil, das Aendern nicht: Wird method6
+# nachtraeglich umgestellt, bleibt die Schnittstelle ohne IPv6 stehen, bis
+# die Verbindung neu hochgezogen wird.
+- name: Reactivate the profile after a change
+  ansible.builtin.command:
+    cmd: nmcli connection up {{ node_network_conn_name }}
+  when: node_base_nmcli is changed
+  changed_when: true
+  ignore_unreachable: true
 
 - name: Follow the node to its address
   ansible.builtin.set_fact:

@@ -1,0 +1,15 @@
+[Unit]
+Description=Bluetooth-Funk entsperren
+# systemd-rfkill stellt beim Start den zuletzt gespeicherten Zustand wieder
+# her. Der USB-Adapter kam darueber gesperrt hoch, und BlueZ meldete dann
+# "Operation not possible due to RF-kill".
+After=systemd-rfkill.service bluetooth.service
+Wants=bluetooth.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=true
+ExecStart=/usr/sbin/rfkill unblock bluetooth
+
+[Install]
+WantedBy=multi-user.target

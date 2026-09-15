@@ -15,7 +15,7 @@
 
 - name: Install packages
   ansible.builtin.apt:
-    name: "{{ node_base_packages }}"
+    name: "{{ node_base_packages + (node_bluetooth | bool | ternary(['bluez', 'rfkill'], [])) }}"
     state: present
     update_cache: true
     cache_valid_time: 3600
@@ -36,6 +36,38 @@
     - led.yml
   loop_control:
     loop_var: include_item
+
+- name: Set up Bluetooth where it is wanted
+  when: node_bluetooth | bool
+  block:
+    - name: Enable bluetooth
+      ansible.builtin.systemd:
+        name: bluetooth
+        state: started
+        enabled: true
+
+    - name: Install the unit that unblocks the radios
+      ansible.builtin.copy:
+        src: bluetooth-unblock.service
+        dest: /etc/systemd/system/bluetooth-unblock.service
+        mode: "0644"
+
+    - name: Enable unblocking at boot
+      ansible.builtin.systemd:
+        name: bluetooth-unblock
+        state: started
+        enabled: true
+        daemon_reload: true
+
+    - name: Confirm every adapter is unblocked
+      ansible.builtin.shell:
+        cmd: |
+          set -o pipefail
+          rfkill --output TYPE,SOFT --noheadings | awk '$1 == "bluetooth" && $2 != "unblocked"'
+        executable: /bin/bash
+      register: node_bluetooth_blocked
+      changed_when: false
+      failed_when: node_bluetooth_blocked.stdout | length > 0
 
 - name: Allow sudo via forwarded SSH agent
   ansible.builtin.include_tasks: sudo_agent.yml

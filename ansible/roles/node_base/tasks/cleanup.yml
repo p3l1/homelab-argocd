@@ -7,17 +7,22 @@
 # fuer RWX-Volumes braucht.
 - name: Remove packages a cluster node does not need
   ansible.builtin.apt:
-    name: "{{ node_base_remove_packages }}"
+    name: "{{ node_base_remove_packages | difference(node_bluetooth | bool | ternary(['bluez'], [])) }}"
     state: absent
     purge: true
     autoremove: true
 
-- name: Disable the radios in firmware
+# state je Overlay: Auf dem Home-Assistant-Node muss disable-bt wieder
+# verschwinden, sonst bleibt das Onboard-Funkmodul des Pi 5 als Reserve
+# hinter dem USB-Adapter unerreichbar.
+- name: Set the radio overlays in firmware
   ansible.builtin.lineinfile:
     path: /boot/firmware/config.txt
     line: "{{ overlay_item }}"
     regexp: "^{{ overlay_item | regex_escape }}$"
-    state: present
+    state: >-
+      {{ 'absent' if (node_bluetooth | bool and overlay_item == 'dtoverlay=disable-bt')
+         else 'present' }}
     insertafter: EOF
   loop: "{{ node_base_disable_overlays }}"
   loop_control:
@@ -27,18 +32,24 @@
 - name: Collect service state
   ansible.builtin.service_facts:
 
+- name: Name the services that must not run here
+  ansible.builtin.set_fact:
+    node_base_unwanted_services: >-
+      {{ (['avahi-daemon', 'wpa_supplicant']
+          + ([] if node_bluetooth | bool else ['bluetooth'])) | join('|') }}
+
 - name: Confirm no unwanted service is still running
   ansible.builtin.assert:
     that: >-
       ansible_facts.services
       | dict2items
-      | selectattr('key', 'search', 'avahi-daemon|bluetooth|wpa_supplicant')
+      | selectattr('key', 'search', node_base_unwanted_services)
       | selectattr('value.state', 'eq', 'running')
       | list | length == 0
     fail_msg: >-
       Es laufen noch Dienste, die entfernt sein sollten:
       {{ ansible_facts.services | dict2items
-         | selectattr('key', 'search', 'avahi-daemon|bluetooth|wpa_supplicant')
+         | selectattr('key', 'search', node_base_unwanted_services)
          | selectattr('value.state', 'eq', 'running')
          | map(attribute='key') | join(', ') }}
     success_msg: Keine ueberfluessigen Dienste mehr aktiv.

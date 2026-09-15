@@ -14,6 +14,15 @@ node_base_packages:
 #   -e node_sudo_via_ssh_agent=false
 node_sudo_via_ssh_agent: true
 
+# Matter spricht ausschliesslich IPv6. Ohne diese Zeile setzt network.yml
+# method6 auf disabled - dann hat eth0 nicht einmal eine Link-Local-Adresse
+# und der Matter-Server erreicht kein einziges Geraet.
+node_ipv6: false
+
+# Home Assistant spricht Bluetooth-Geraete ueber BlueZ auf seinem Node an.
+# Nur dort bleibt der Funk an; ueberall sonst raeumt cleanup.yml ihn weg.
+node_bluetooth: false
+
 # Funk und Zeroconf braucht ein Cluster-Node nicht. nfs-common und das daran
 # haengende rpcbind bleiben - Longhorn braucht sie fuer RWX-Volumes.
 node_base_remove_packages:
