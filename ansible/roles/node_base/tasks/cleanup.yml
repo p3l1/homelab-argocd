@@ -42,3 +42,27 @@
          | selectattr('value.state', 'eq', 'running')
          | map(attribute='key') | join(', ') }}
     success_msg: Keine ueberfluessigen Dienste mehr aktiv.
+
+# Liegt die custom.toml noch da, kam sie nach dem Erstboot auf die Karte und
+# wurde nie ausgewertet. Der init=-Hook zeigt dann bei jedem Start weiter auf
+# firstboot statt auf systemd.
+- name: Remove the unused first-boot configuration
+  ansible.builtin.file:
+    path: /boot/firmware/custom.toml
+    state: absent
+
+# Eigenes Backup statt backup: true - dessen Zeitstempel enthaelt ':' und
+# '@', die auf der FAT32-Bootpartition nicht erlaubt sind.
+- name: Back up cmdline.txt before touching it
+  ansible.builtin.copy:
+    src: /boot/firmware/cmdline.txt
+    dest: /boot/firmware/cmdline.bak
+    remote_src: true
+    force: false
+
+- name: Drop the firstboot hook from cmdline.txt
+  ansible.builtin.replace:
+    path: /boot/firmware/cmdline.txt
+    regexp: '\s*init=/usr/lib/raspberrypi-sys-mods/firstboot\S*'
+    replace: ''
+  notify: Reboot node
