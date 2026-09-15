@@ -159,6 +159,19 @@ Zwei Vorkehrungen sind eingebaut: Der PAM-Eintrag ist `sufficient`, nicht
 Passwort. Und schlägt die Änderung fehl, stellt ein `rescue`-Block die
 gesicherte `/etc/pam.d/sudo` wieder her.
 
+`become` ruft `sudo` von sich aus mit `-n` auf; `pam_ssh_agent_auth` kommt
+dann gar nicht zum Zug und der Lauf scheitert mit "Missing sudo password".
+Ohne `--ask-become-pass` geht es daher nur so:
+
+```bash
+ANSIBLE_BECOME_FLAGS='-H -S' ansible-playbook playbooks/site.yml --limit kube-08
+```
+
+Den PAM-Eintrag haben derzeit allein `kube-04` und `kube-08`. Auf den übrigen
+Nodes läuft `sudo` ohne `-n` in einen Timeout, statt sauber nach dem Passwort
+zu fragen — dort bleibt `--ask-become-pass` der Weg, bis `bootstrap.yml` den
+Eintrag nachgezogen hat.
+
 Die akzeptierten Schlüssel liegen in `/etc/security/sudo_authorized_keys` und
 gehören root. Unter `~/.ssh/authorized_keys` könnte sich sonst jeder, der
 Zugriff auf das Konto hat, selbst `sudo`-Rechte eintragen.
