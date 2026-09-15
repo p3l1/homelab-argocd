@@ -1,0 +1,33 @@
+---
+# Holt nach, was die custom.toml beim Erstboot setzen sollte. Laeuft auch auf
+# bereits eingerichteten Nodes idempotent durch.
+- name: Generate the locale
+  community.general.locale_gen:
+    name: "{{ node_locale }}"
+    state: present
+
+- name: Set the system locale
+  ansible.builtin.copy:
+    content: |
+      # Von Ansible verwaltet - Rolle node_base, locale.yml
+      LANG={{ node_locale }}
+    dest: /etc/default/locale
+    owner: root
+    group: root
+    mode: "0644"
+
+# Greift erst nach einem Neustart des Konsolendienstes - fuer einen Node ohne
+# Tastatur belanglos, fuer den Notfall am Monitor nicht.
+- name: Set the console keymap
+  ansible.builtin.copy:
+    content: |
+      # Von Ansible verwaltet - Rolle node_base, locale.yml
+      XKBMODEL="pc105"
+      XKBLAYOUT="{{ node_keymap }}"
+      XKBVARIANT=""
+      XKBOPTIONS=""
+    dest: /etc/default/keyboard
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload console setup

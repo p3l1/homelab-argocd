@@ -19,6 +19,7 @@ node_network_dns:
   - 1.1.1.1
 node_timezone: Europe/Berlin
 node_locale: de_DE.UTF-8
+node_keymap: de
 
 # --- k3s ------------------------------------------------------------------
 k3s_version: v1.36.4+k3s1

@@ -40,3 +40,8 @@
 - name: Allow sudo via forwarded SSH agent
   ansible.builtin.include_tasks: sudo_agent.yml
   when: node_sudo_via_ssh_agent | bool
+
+# Ganz zum Schluss: die apt-Laeufe weiter oben setzen /etc/default/locale
+# ueber update-locale auf den Stand des Abbilds zurueck.
+- name: Set locale and keymap
+  ansible.builtin.include_tasks: locale.yml

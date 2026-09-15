@@ -4,6 +4,11 @@
     name: ssh
     state: restarted
 
+- name: Reload console setup
+  ansible.builtin.systemd:
+    name: console-setup
+    state: restarted
+
 # Die Overlays greifen erst nach einem Neustart.
 - name: Reboot node
   ansible.builtin.reboot:
