@@ -10,6 +10,9 @@ configMapGenerator:
       usernameSecret:
         key: git_username
         name: autopilot-secret
+  # Erlaubt helmCharts in Kustomizations. apps/umami/chart braucht das, um
+  # das Chart zu inflaten und einen Wert nachzupatchen, den es nicht anbietet.
+  - kustomize.buildOptions=--enable-helm
   name: argocd-cm
 - behavior: merge
   literals:
