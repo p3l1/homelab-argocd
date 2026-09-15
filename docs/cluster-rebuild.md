@@ -143,26 +143,16 @@ Adresse.
 
 ### sudo über den SSH-Agent statt Passwort
 
-Optional kann `sudo` sich über den weitergereichten SSH-Agent
-authentifizieren — dann genügt der gesteckte YubiKey und es braucht kein
-Passwort mehr. Die Rolle bringt das mit, **standardmäßig abgeschaltet**.
+`sudo` authentifiziert sich über den weitergereichten SSH-Agent — der
+gesteckte YubiKey genügt, ein Passwort braucht es nicht. Die Rolle richtet
+das **standardmäßig** ein; abschalten lässt es sich mit
+`-e node_sudo_via_ssh_agent=false`.
 
-Erst prüfen, was der aktuelle Stand ist:
-
-```bash
-ansible-playbook playbooks/check-sudo-agent.yml --limit kube-05 --ask-become-pass
-```
-
-Dann auf **einem** Node aktivieren und erneut prüfen:
+Nachprüfen, ob der Agent tatsächlich akzeptiert wird:
 
 ```bash
-ansible-playbook playbooks/bootstrap.yml --limit kube-05 \
-  --ask-become-pass -e node_sudo_via_ssh_agent=true
 ansible-playbook playbooks/check-sudo-agent.yml --limit kube-05
 ```
-
-Erst wenn das sauber durchläuft, die Einstellung dauerhaft in
-`inventory/group_vars/all/main.yml` setzen.
 
 Zwei Vorkehrungen sind eingebaut: Der PAM-Eintrag ist `sufficient`, nicht
 `required` — scheitert die Agent-Prüfung, fragt PAM wie bisher nach dem

@@ -6,7 +6,7 @@
 #   ./bootstrap-node.sh kube-04
 #   ./bootstrap-node.sh kube-01 kube-02 kube-03
 #   ./bootstrap-node.sh all
-#   ./bootstrap-node.sh all -- -e node_sudo_via_ssh_agent=true
+#   ./bootstrap-node.sh all -- -e node_sudo_via_ssh_agent=false
 #   ./bootstrap-node.sh all --dry-run
 #
 # Ein frisch aufgesetzter Node haengt am DHCP und wird ueber
