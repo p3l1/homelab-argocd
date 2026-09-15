@@ -1,3 +1,6 @@
 keys/
 .token
 .DS_Store
+
+# "kustomize build --enable-helm" packt Charts lokal aus; ArgoCD holt sie selbst.
+apps/*/chart/charts/

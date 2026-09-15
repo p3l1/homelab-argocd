@@ -1,0 +1,50 @@
+# Das Chart rendert extraEnv nur als Literalwert, nie als secretKeyRef. Der
+# 2FA-Schluessel darf aber nicht ins oeffentliche Repo - deshalb inflatet
+# Kustomize das Chart und haengt die Variable per Patch nach.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+helmCharts:
+  - name: umami
+    repo: https://christianhuth.github.io/helm-charts
+    version: 7.11.5
+    # Muss "umami" bleiben: umami.fullname leitet daraus alle Ressourcennamen ab.
+    releaseName: umami
+    valuesInline:
+      image:
+        # Die versionierten Tags des Charts sind nur amd64 gebaut; auf
+        # den Pi endet das in "exec format error". Nur -latest bringt
+        # ein arm64-Manifest mit.
+        tag: postgresql-latest
+      postgresql:
+        enabled: false
+      mysql:
+        enabled: false
+      database:
+        # CloudNativePG legt zum Cluster das Secret umami-db-app an und
+        # hinterlegt die fertige Verbindungszeichenfolge unter 'uri'.
+        existingSecret: umami-db-app
+        databaseUrlKey: uri
+      umami:
+        appSecret:
+          # Ohne existingSecret erzeugt das Chart den Wert per randAlphaNum
+          # bei jedem Render - ArgoCD wuerde ihn rotieren und damit alle
+          # Sitzungen entwerten.
+          existingSecret: umami-secrets
+        # Leer statt "0": umami prueft nur auf Truthiness, und "0" ist in
+        # JavaScript wahr. Nur die fehlende Variable schaltet wirklich ab.
+        logQuery: ""
+        # In umami 3.x wirkungslos - das Skript liegt unter /script.js.
+        trackerScriptName: ""
+patches:
+  - target:
+      kind: Deployment
+      name: umami
+    patch: |
+      - op: add
+        path: /spec/template/spec/containers/0/env/-
+        value:
+          name: TWO_FACTOR_ENCRYPTION_KEY
+          valueFrom:
+            secretKeyRef:
+              name: umami-secrets
+              key: two-factor-encryption-key

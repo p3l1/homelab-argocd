@@ -32,6 +32,6 @@ einzugeben.
 | `home-assistant-api.sops.yaml` | Token, mit dem die Tekton-Pipeline den Reload auslöst |
 | `unifi-credentials.sops.yaml` | API-Schlüssel des Routers für external-dns |
 | `paperless-secrets.sops.yaml` | Secret Key und Mail-Zugang für Paperless |
-| `umami-admin.sops.yaml` | Passwort des umami-Admin-Kontos |
+| `umami-secrets.sops.yaml` | Admin-Passwort, `APP_SECRET` und 2FA-Schlüssel für Umami |
 
 `newt-credentials` fehlt noch — die Werte kommen aus Pangolin.
