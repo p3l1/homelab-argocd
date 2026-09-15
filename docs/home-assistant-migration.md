@@ -85,6 +85,72 @@ Wort —, und `states.old_state_id` zeigt auf dieselbe Tabelle. Das Skript
 stellt die Fremdschlüssel für die Dauer der Transaktion zurück und zieht
 anschließend die Sequenzen nach.
 
+## Warum 196 Entitäten nicht verfügbar sind
+
+Nach dem Umzug meldeten 196 von 411 Entitäten `unavailable`. Im Backup waren
+es 203 — der Umzug hat die Lage also nicht verschlechtert. Aufgeschlüsselt
+nach Integration:
+
+| Anzah| Integration | Ursache |
+|---:|---|---|
+| 143 | `matter` | verwaiste Fabric, siehe unten |
+| 18 | `homekit_controller` | drei von vier Eve Thermo außer Bluetooth-Reichweite |
+| 6 | `hassio` | Supervisor gibt es im Container nicht, bewusst deaktiviert |
+| 6 | ohne Eintrag | Reste gelöschter Integrationen |
+| 6 | `unifi` | Geräte, die gerade nicht im Netz sind |
+| 5 | `xiaomi_ble` | BLE-Sensoren außer Reichweite |
+| 4 | `mobile_app` | Telefone ohne Verbindung |
+| 3 | `fritz`, 3 `plant`, 2 Pi-Hardware | teils offline, teils bewusst abgeschaltet |
+
+Zwei davon lohnen den genaueren Blick, und beide gehen auf denselben Abend
+zurück: Am **6. September um 23:35** gingen 143 Matter-Entitäten und drei der
+vier Thermostate gleichzeitig auf `unavailable` — sichtbar in der Historie,
+also lange vor dem Umzug.
+
+### Die Eve Thermostate hängen an Bluetooth, nicht an Thread
+
+Naheliegend wäre Thread gewesen. Die Pairings sagen etwas anderes: In allen
+vier Config-Entries steht `"Connection": "BLE"`. Ein Scan über die
+`bluetooth`-Integration findet 35 Geräte, darunter genau eines der vier:
+
+```
+DA:16:85:02:E0:A2  rssi=-52  Eve Thermo BD54     gefunden
+C5:4C:3A:8D:E0:4C                                fehlt
+E0:A3:95:97:30:6A                                fehlt
+FC:EC:0C:83:9B:11                                fehlt
+```
+
+Der Adapter steckt am Rack, wo vorher der Pi 5 stand. Drei Thermostate liegen
+außerhalb seiner Reichweite oder haben leere Batterien. Abhilfe: Batterien
+prüfen, und falls die Reichweite das Problem ist, einen ESPHome-Bluetooth-Proxy
+in ihre Nähe stellen — die `bluetooth`-Integration nimmt dessen Funde
+entgegen, ohne dass sich an der Einrichtung hier etwas ändert.
+
+### Das Thread-Netz steht, aber die Zugangsdaten sind veraltet
+
+Der Node kennt die Route ins Thread-Netz — sie kommt per Router Advertisement
+von den beiden Apple-TV-Border-Routern:
+
+```
+fd2a:dd59:adbf::/64 proto ra  nexthop via fe80::...  dev eth0  (3 Border Router)
+```
+
+Über mDNS melden beide dasselbe Netz, das auch in Home Assistant steht:
+`MyHome2132015047`, Extended PAN ID `daae142a100f44d6`. Name und PAN-ID passen
+also — der **Netzwerkschlüssel** nicht mehr. Deshalb scheitert das Teilen der
+Zugangsdaten mit „Thread network credentials does not match with any of the
+active thread networks around". Der Datensatz in Home Assistant stammt vom
+26. Mai und kam aus der iOS-App.
+
+Zu beheben in der **Home-Assistant-App auf dem iPhone**: Einstellungen →
+Geräte & Dienste → Thread → *Zugangsdaten des Thread-Netzwerks importieren*.
+Das holt den aktuellen Schlüssel aus dem Apple-Schlüsselbund. Der umgekehrte
+Weg — Home Assistants Datensatz in den Schlüsselbund schreiben — ist der, der
+die Fehlermeldung erzeugt.
+
+Das muss **vor** dem Neuanlernen der Matter-Geräte geschehen: Ohne gültigen
+Schlüssel kann der Matter-Server kein Thread-Gerät in Betrieb nehmen.
+
 ## Matter war schon vorher kaputt
 
 Der Matter-Server lud nach dem Einspielen null Knoten, obwohl im
