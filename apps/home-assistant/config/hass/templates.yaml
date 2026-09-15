@@ -1,0 +1,27 @@
+# ABOUTME: Template sensors and binary sensors
+# ABOUTME: Extracts and formats top 3 pending todos from the todo list
+# ABOUTME: Motion sensor for triggering HomePod sensor data collection
+
+- sensor:
+    - name: "Top 3 Todos"
+      unique_id: top_3_todos_text
+      unit_of_measurement: "items"
+      state: >
+        {% set response = state_attr('sensor.todos_raw', 'response_json') %}
+        {% if response is defined and response %}
+          {% set items = response | selectattr('status', 'eq', 'needs_action') | map(attribute='summary') | list %}
+          {% if items %}
+            {{ items[:3] | join('; ') }}
+          {% else %}
+            Keine
+          {% endif %}
+        {% else %}
+          Keine
+        {% endif %}
+      icon: mdi:format-list-checkbox
+
+- binary_sensor:
+    - name: "HomePod Sensor Trigger Motion"
+      unique_id: homepod_sensor_trigger_motion
+      device_class: motion
+      state: "{{ is_state('input_boolean.homepod_sensor_trigger', 'on') }}"

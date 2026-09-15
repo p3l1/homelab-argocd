@@ -1,0 +1,11 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: newt-home-assistant-service
+  namespace: newt
+spec:
+  type: ExternalName
+  externalName: home-assistant.home-assistant.svc.cluster.local
+  ports:
+    - port: 8123

@@ -52,6 +52,21 @@ private-resources:
     # Client heran, gehoert dessen niceId hierher - und zwar in diese
     # Datei, denn jeder Lauf setzt die Zuordnungen daraus neu.
 
+  home-assistant:
+    name: Home Assistant
+    # Privat wie Paperless MCP: echter Name mit gueltigem Zertifikat, aber
+    # nur mit aktivem Pangolin-Client erreichbar. Kein vorgeschaltetes SSO -
+    # Home Assistant meldet selbst an, ueber Pocket ID via auth_oidc, und
+    # die Companion-App wie auch die Webhooks kaemen an einer zweiten
+    # Anmeldeseite nicht vorbei.
+    mode: http
+    full-domain: home.cloud.p3l1.de
+    ssl: true
+    site: intent-anniella-pulchra
+    scheme: http
+    destination: newt-home-assistant-service.newt.svc.cluster.local
+    destination-port: 8123
+
 public-resources:
   argocd:
     name: ArgoCD

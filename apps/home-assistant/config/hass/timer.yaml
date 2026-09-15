@@ -1,0 +1,8 @@
+# ABOUTME: Countdown timers for household appliance tracking
+# ABOUTME: Timers fire timer.finished event on completion
+
+waschmaschine_erinnerung:
+  name: "Waschmaschine Erinnerung"
+  icon: mdi:bell-ring
+  duration: "00:10:00"
+  restore: true

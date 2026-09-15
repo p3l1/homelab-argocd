@@ -1,0 +1,538 @@
+- id: '1777935936967'
+  alias: Licht im Flur einschalten
+  description: 'Bewegungsmelder schaltet Flurlicht ein mit intelligenter Helligkeit:
+    Tagsüber 100%, nach Sonnenuntergang 50%, nachts 10%
+
+    '
+  triggers:
+  - trigger: state
+    entity_id: binary_sensor.hue_motion_sensor_1_bewegung
+    to: 'on'
+  conditions: []
+  actions:
+  - choose:
+    - conditions:
+      - condition: time
+        after: '22:00:00'
+        before: 07:00:00
+      sequence:
+      - action: light.turn_on
+        target:
+          entity_id: light.flur
+        data:
+          brightness_pct: 10
+    - conditions:
+      - condition: sun
+        after: sunset
+      - condition: time
+        before: '22:00:00'
+      sequence:
+      - action: light.turn_on
+        target:
+          entity_id: light.flur
+        data:
+          brightness_pct: 50
+    default:
+    - action: light.turn_on
+      target:
+        entity_id: light.flur
+      data:
+        brightness_pct: 100
+  - delay:
+      minutes: 1
+  - action: light.turn_off
+    target:
+      entity_id: light.flur
+    data: {}
+  mode: single
+- id: '1777946320699'
+  alias: Alle Lampen vom Bett ausschalten
+  description: Alle Lichter per Bett-Schalter ausschalten
+  triggers:
+  - trigger: state
+    entity_id: event.bilresa_dual_button_taste_2_3
+  conditions:
+  - condition: template
+    value_template: '{{ trigger.to_state.attributes.event_type == ''multi_press_1''
+      }}'
+  actions:
+  - action: light.turn_off
+    metadata: {}
+    target:
+      area_id:
+      - wohnzimmer
+      - fernseher
+      - schreibtisch
+      - flur
+      - kuche
+      - bett
+    data: {}
+  mode: single
+- id: '1777946400001'
+  alias: Bett Licht Ein
+  description: Bettlampe einschalten
+  triggers:
+  - trigger: state
+    entity_id: event.bilresa_dual_button_taste_1_3
+  conditions:
+  - condition: template
+    value_template: '{{ trigger.to_state.attributes.event_type == ''multi_press_1''
+      }}'
+  actions:
+  - action: light.turn_on
+    metadata: {}
+    target:
+      entity_id: light.bettlampe
+    data:
+      brightness_pct: 100
+  mode: single
+- id: '1777946400002'
+  alias: Küche Licht Ein
+  description: Küchenlicht einschalten
+  triggers:
+  - trigger: state
+    entity_id: event.bilresa_dual_button_taste_1
+  conditions:
+  - condition: template
+    value_template: '{{ trigger.to_state.attributes.event_type == ''multi_press_1''
+      }}'
+  actions:
+  - action: light.turn_on
+    metadata: {}
+    target:
+      entity_id:
+      - light.kuche_links
+      - light.kuche_rechts
+    data:
+      brightness_pct: 100
+  mode: single
+- id: '1777946400003'
+  alias: Küche Licht Aus
+  description: Küchenlicht ausschalten
+  triggers:
+  - trigger: state
+    entity_id: event.bilresa_dual_button_taste_2
+  conditions:
+  - condition: template
+    value_template: '{{ trigger.to_state.attributes.event_type == ''multi_press_1''
+      }}'
+  actions:
+  - action: light.turn_off
+    metadata: {}
+    target:
+      entity_id:
+      - light.kuche_links
+      - light.kuche_rechts
+    data: {}
+  mode: single
+- id: '1777946400004'
+  alias: Flur Licht Ein
+  description: Flurlicht per Schalter einschalten
+  triggers:
+  - trigger: state
+    entity_id: event.bilresa_dual_button_taste_1_2
+  conditions:
+  - condition: template
+    value_template: '{{ trigger.to_state.attributes.event_type == ''multi_press_1''
+      }}'
+  actions:
+  - action: light.turn_on
+    metadata: {}
+    target:
+      entity_id: light.flur
+    data:
+      brightness_pct: 100
+  mode: single
+- id: '1777946400005'
+  alias: Flur Licht Aus
+  description: Flurlicht per Schalter ausschalten
+  triggers:
+  - trigger: state
+    entity_id: event.bilresa_dual_button_taste_2_2
+  conditions:
+  - condition: template
+    value_template: '{{ trigger.to_state.attributes.event_type == ''multi_press_1''
+      }}'
+  actions:
+  - action: light.turn_off
+    metadata: {}
+    target:
+      entity_id: light.flur
+    data: {}
+  mode: single
+- id: '1777946400007'
+  alias: 'Licht: Kino-Modus beim TV einschalten'
+  description: 'Schaltet Sofa- und Küchenlichter aus und dimmt alle anderen eingeschalteten
+    Lichter auf 10%, sobald der Fernseher eingeschaltet wird.
+
+    '
+  triggers:
+  - trigger: state
+    entity_id: media_player.fernseher
+    from: 'off'
+  conditions: []
+  mode: single
+  actions:
+  - action: light.turn_off
+    target:
+      entity_id:
+      - light.sofa_mitte
+      - light.sofa_oben
+      - light.sofa_unten
+      - light.kuche_links
+      - light.kuche_rechts
+      - light.deckenlampe_bett
+      - light.deckenlampe_schreibtisch
+  - if:
+    - condition: state
+      entity_id: light.schreibtischlampe
+      state: 'on'
+    then:
+    - action: light.turn_on
+      target:
+        entity_id: light.schreibtischlampe
+      data:
+        brightness_pct: 10
+  - if:
+    - condition: state
+      entity_id: light.bettlampe
+      state: 'on'
+    then:
+    - action: light.turn_on
+      target:
+        entity_id: light.bettlampe
+      data:
+        brightness_pct: 10
+  - if:
+    - condition: state
+      entity_id: light.flur
+      state: 'on'
+    then:
+    - action: light.turn_on
+      target:
+        entity_id: light.flur
+      data:
+        brightness_pct: 10
+- id: '1778123456789'
+  alias: 'Morgenroutine: KI-Briefing mit Kalender, Wetter und Müll'
+  description: '8:30 Uhr morgens: Abrufen von Terminen, Wettervorhersage und Müllkalender,
+    dann mit Claude ein kurzes Briefing generieren und über Sonos abspielen.
+
+    '
+  triggers:
+  - trigger: time
+    at: 08:30:00
+  conditions: []
+  actions:
+  - variables:
+      calendar_allgemein: '{{ state_attr(''calendar.allgemein'', ''message'') | default(''Keine'',
+        true) }}'
+      calendar_uni: '{{ state_attr(''calendar.uni'', ''message'') | default(''Keine'',
+        true) }}'
+      calendar_ksj: '{{ state_attr(''calendar.ksj'', ''message'') | default(''Keine'',
+        true) }}'
+      weather_info: '{{ states(''weather.forecast_home'') }}, {{ state_attr(''weather.forecast_home'',
+        ''temperature'') | float(0) }}°C'
+      trash_info: '{{ state_attr(''calendar.abfallplaner'', ''message'') | default(''Keine'',
+        true) }}'
+      current_date: '{{ now().strftime(''%A, %-d. %B'') }}'
+      current_hour: '{{ now().hour }}'
+      top_3_todos: '{{ states(''sensor.top_3_todos_text'') | default(''Keine'', true)
+        }}'
+  - action: conversation.process
+    data:
+      text: 'Erstelle ein deutsches Morgenbriefing mit zeitgerechter Begrüßung (max
+        4 Sätze).
+
+        KONTEXT: - Aktuelle Uhrzeit: {{ current_hour }}:00 Uhr - Heutiges Datum: {{
+        current_date }} - Wetter: {{ weather_info }}
+
+        TERMINE (nur Event-Namen und Zeiten, KEINE Adressen): - Allgemein: {{ calendar_allgemein
+        }} - Uni: {{ calendar_uni }} - KSJ: {{ calendar_ksj }}
+
+        MÜLL: {% if trash_info != "Keine" %}{{ trash_info }} rausbringen{% else %}Keine{%
+        endif %}
+
+        TOP 3 TODOS: {{ top_3_todos }}
+
+        GREETING REGELN: - Vor 12 Uhr: "Guten Morgen" - 12-17 Uhr: "Guten Tag" - Nach
+        17 Uhr: "Guten Abend"
+
+        REGELN: 1. Starte mit: "<Greeting>, Philipp! Heute ist der {{ current_date
+        }}." 2. Nenne nur Event-Namen und Zeiten, KEINE Adressen oder Ort-Details
+        3. Ignoriere alle "Keine" Einträge, sprich sie nicht 4. Wetter mit aktueller
+        Temperatur nennen 5. Müll-Info nur wenn nicht "Keine" 6. Nenne die top 3 Todos
+
+        Beispiel: "Guten Morgen, Philipp! Heute ist der Donnerstag, 8. Mai. Du hast
+        um 10 Uhr Meeting mit Jan und um 14 Uhr Uni-Vorlesung. Das Wetter wird 18
+        Grad und bewölkt. Denk daran Bioabfall und Papier rauszubringen."
+
+        '
+      agent_id: conversation.claude_conversation_2
+    response_variable: briefing
+  - action: tts.speak
+    target:
+      entity_id:
+      - tts.openai_tts
+    data:
+      message: '{{ briefing.response.speech.plain.speech }}'
+      media_player_entity_id: media_player.sonos
+  mode: single
+- id: '1777946400006'
+  alias: Alle Lichter Aus (Flur lang)
+  description: Alle Lichter per langem Druck auf Aus-Taste im Flur ausschalten
+  triggers:
+  - trigger: state
+    entity_id: event.bilresa_dual_button_taste_2_2
+  conditions:
+  - condition: template
+    value_template: '{{ trigger.to_state.attributes.event_type == ''long_release''
+      }}'
+  actions:
+  - action: light.turn_off
+    metadata: {}
+    target:
+      area_id:
+      - wohnzimmer
+      - fernseher
+      - schreibtisch
+      - flur
+      - kuche
+      - bett
+    data: {}
+  mode: single
+- id: waschmaschine_fertig_ansage
+  alias: 'Waschmaschine: Fertig-Ansage und Erinnerung starten'
+  description: Spielt TTS-Ansage wenn Waschmaschinen-Timer abläuft und startet Erinnerungsschleife
+  mode: single
+  triggers:
+  - trigger: event
+    event_type: timer.finished
+    event_data:
+      entity_id: timer.waschmaschine
+  actions:
+  - action: input_boolean.turn_off
+    target:
+      entity_id: input_boolean.waschmaschine_abgeholt
+  - action: tts.speak
+    target:
+      entity_id: tts.google_ubersetzer_en_com_google_translate_en_com
+    data:
+      media_player_entity_id: media_player.sonos
+      message: Die Wäsche ist fertig. Bitte entnehmen.
+      language: de
+  - action: notify.notify
+    data:
+      title: Waschmaschine fertig
+      message: Die Wäsche ist fertig. Bitte entnehmen.
+  - action: timer.start
+    target:
+      entity_id: timer.waschmaschine_erinnerung
+- id: waschmaschine_erinnerung_wiederholen
+  alias: 'Waschmaschine: Erinnerung wiederholen bis quittiert'
+  description: Wiederholt TTS-Erinnerung alle 10 Minuten solange Wäsche nicht entnommen
+    wurde
+  mode: single
+  triggers:
+  - trigger: event
+    event_type: timer.finished
+    event_data:
+      entity_id: timer.waschmaschine_erinnerung
+  conditions:
+  - condition: state
+    entity_id: input_boolean.waschmaschine_abgeholt
+    state: 'off'
+  actions:
+  - action: tts.speak
+    target:
+      entity_id: tts.google_ubersetzer_en_com_google_translate_en_com
+    data:
+      media_player_entity_id: media_player.sonos
+      message: Die Wäsche wartet noch. Bitte entnehmen.
+      language: de
+  - action: notify.notify
+    data:
+      title: Wäsche wartet
+      message: Die Wäsche wartet noch. Bitte entnehmen.
+  - action: timer.start
+    target:
+      entity_id: timer.waschmaschine_erinnerung
+- id: waschmaschine_licht_erinnerung
+  alias: 'Waschmaschine: Licht blinken nach 30 Minuten'
+  description: Lässt Sofa-Licht grün blinken wenn Wäsche nach 30 Minuten nicht entnommen
+    wurde
+  mode: single
+  triggers:
+  - trigger: event
+    event_type: timer.finished
+    event_data:
+      entity_id: timer.waschmaschine
+  actions:
+  - delay: 00:30:00
+  - condition: state
+    entity_id: input_boolean.waschmaschine_abgeholt
+    state: 'off'
+  - action: script.turn_on
+    target:
+      entity_id: script.waschmaschine_licht_blinken
+- id: nfc_klopapier_bad_decrement
+  alias: 'NFC: Klopapier Bad -1'
+  description: NFC-Tag im Bad scannt und verringert Klopapier-Zaehler um 1
+  triggers:
+  - trigger: tag
+    tag_id: badezimmer_toilettenpapier
+  conditions: []
+  actions:
+  - action: counter.decrement
+    target:
+      entity_id: counter.klopapier_bad
+  mode: single
+- id: webhook_sofa_mitte_turkis_blinken
+  alias: 'Webhook: Sofa mitte türkis blinken'
+  description: Lässt Sofa mitte beim Webhook-Aufruf drei Mal türkis blinken
+  triggers:
+  - webhook_id: sofa-mitte-turkis-blinken
+    allowed_methods:
+    - POST
+    - GET
+    local_only: false
+    trigger: webhook
+  conditions: []
+  actions:
+  - action: notify.mobile_app_iphone_von_philipp
+    data:
+      title: Ticket verkauft
+      message: Ein Ticket wurde verkauft!
+  - action: scene.create
+    data:
+      scene_id: sofa_mitte_vor_blinken
+      snapshot_entities:
+      - light.kajplats_gu10_cws_470lm_3
+    enabled: false
+  - repeat:
+      count: 3
+      sequence:
+      - action: light.turn_on
+        target:
+          entity_id: light.kajplats_gu10_cws_470lm_3
+        data:
+          hs_color:
+          - 180
+          - 100
+          brightness: 255
+      - delay:
+          milliseconds: 500
+      - action: light.turn_off
+        target:
+          entity_id: light.kajplats_gu10_cws_470lm_3
+      - delay:
+          milliseconds: 500
+    enabled: false
+  - action: scene.turn_on
+    target:
+      entity_id: scene.sofa_mitte_vor_blinken
+    enabled: false
+  mode: single
+- id: waschmaschine_gestartet
+  alias: 'Waschmaschine: Gestartet'
+  description: Erkennt automatisch den Start der Waschmaschine via Stromverbrauch
+  triggers:
+  - trigger: numeric_state
+    entity_id: sensor.grillplats_plug_leistung
+    above: 2
+    for:
+      minutes: 1
+  conditions:
+  - condition: state
+    entity_id: input_boolean.waschmaschine_lauft
+    state: 'off'
+  actions:
+  - action: input_boolean.turn_on
+    target:
+      entity_id: input_boolean.waschmaschine_lauft
+  - action: input_boolean.turn_off
+    target:
+      entity_id: input_boolean.waschmaschine_abgeholt
+  - action: notify.notify
+    data:
+      title: Waschmaschine gestartet
+      message: Die Waschmaschine wurde gestartet.
+  mode: single
+- id: waschmaschine_fertig_strom
+  alias: 'Waschmaschine: Fertig'
+  description: Erkennt automatisch das Ende des Waschvorgangs via Stromverbrauch
+  triggers:
+  - trigger: numeric_state
+    entity_id: sensor.grillplats_plug_leistung
+    below: 2
+    for:
+      minutes: 3
+  conditions:
+  - condition: state
+    entity_id: input_boolean.waschmaschine_lauft
+    state: 'on'
+  actions:
+  - action: input_boolean.turn_off
+    target:
+      entity_id: input_boolean.waschmaschine_lauft
+  - action: input_boolean.turn_off
+    target:
+      entity_id: input_boolean.waschmaschine_abgeholt
+  - action: tts.speak
+    target:
+      entity_id: tts.google_ubersetzer_en_com_google_translate_en_com
+    data:
+      media_player_entity_id: media_player.sonos
+      message: Die Wäsche ist fertig. Bitte entnehmen.
+      language: de
+  - action: notify.notify
+    data:
+      title: Waschmaschine fertig
+      message: Die Wäsche ist fertig. Bitte entnehmen.
+  - action: timer.start
+    target:
+      entity_id: timer.waschmaschine_erinnerung
+  mode: single
+- id: waschmaschine_laufzeit_reset
+  alias: 'Waschmaschine: Laufzeit zurücksetzen'
+  triggers:
+  - trigger: state
+    entity_id: input_boolean.waschmaschine_lauft
+    to: 'on'
+  actions:
+  - action: counter.reset
+    target:
+      entity_id: counter.waschmaschine_laufzeit
+  mode: single
+- id: waschmaschine_laufzeit_zaehlen
+  alias: 'Waschmaschine: Laufzeit zählen'
+  triggers:
+  - trigger: time_pattern
+    minutes: /1
+  conditions:
+  - condition: state
+    entity_id: input_boolean.waschmaschine_lauft
+    state: 'on'
+  actions:
+  - action: counter.increment
+    target:
+      entity_id: counter.waschmaschine_laufzeit
+- id: waschmaschine_entnommen_sensor
+  alias: 'Waschmaschine: Wäsche entnommen (Schubladensensor)'
+  description: Erkennt automatisch die Entnahme der Wäsche über den Schubladensensor.
+    Sensor ist invertiert - technisch geschlossen (off) bedeutet Schublade physisch
+    offen.
+  triggers:
+  - trigger: state
+    entity_id: binary_sensor.myggbett_door_window_sensor_tur_3
+    to: 'off'
+  conditions:
+  - condition: state
+    entity_id: input_boolean.waschmaschine_abgeholt
+    state: 'off'
+  actions:
+  - action: script.turn_on
+    target:
+      entity_id: script.waschmaschine_quittieren
+  mode: single
+  mode: single

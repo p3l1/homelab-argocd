@@ -1,0 +1,14 @@
+# ABOUTME: REST sensors for fetching data from Home Assistant API
+# ABOUTME: Fetches todo items from the todo.todo entity
+
+- resource: http://localhost:8123/api/todo/items/todo.todo
+  headers:
+    # Nicht "Bearer !secret ha_token": in Anfuehrungszeichen bleibt der
+    # Tag unausgewertet. Der Header steht deshalb vollstaendig im Secret.
+    Authorization: !secret ha_auth_header
+  method: GET
+  scan_interval: 300
+  sensor:
+    - name: "Todos Raw"
+      unique_id: todos_raw
+      value_template: "{{ value_json | length }}"

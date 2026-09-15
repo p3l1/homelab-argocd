@@ -1,0 +1,54 @@
+trigger_morning_briefing:
+  alias: Morning Briefing abspielen
+  description: Triggered the AI-generated morning briefing with calendar, weather,
+    and todos
+  icon: mdi:speaker-note
+  sequence:
+  - action: automation.trigger
+    target:
+      entity_id: automation.morgenroutine_ki_briefing_mit_kalender_wetter_und_mull
+    data:
+      skip_condition: true
+waschmaschine_quittieren:
+  alias: Wäsche entnommen
+  icon: mdi:check-circle
+  sequence:
+  - action: input_boolean.turn_on
+    target:
+      entity_id: input_boolean.waschmaschine_abgeholt
+  - action: timer.cancel
+    target:
+      entity_id: timer.waschmaschine_erinnerung
+  - action: script.turn_off
+    target:
+      entity_id: script.waschmaschine_licht_blinken
+  - action: light.turn_off
+    target:
+      entity_id: light.kajplats_gu10_cws_470lm
+waschmaschine_licht_blinken:
+  alias: 'Waschmaschine: Licht grün blinken'
+  icon: mdi:lightbulb-alert
+  mode: restart
+  sequence:
+  - repeat:
+      until:
+      - condition: state
+        entity_id: input_boolean.waschmaschine_abgeholt
+        state: 'on'
+      sequence:
+      - action: light.turn_on
+        target:
+          entity_id: light.kajplats_gu10_cws_470lm
+        data:
+          hs_color:
+          - 120
+          - 100
+          brightness_pct: 100
+      - delay: 00:00:01
+      - action: light.turn_off
+        target:
+          entity_id: light.kajplats_gu10_cws_470lm
+      - delay: 00:00:01
+  - action: light.turn_off
+    target:
+      entity_id: light.kajplats_gu10_cws_470lm

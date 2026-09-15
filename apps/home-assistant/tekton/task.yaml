@@ -1,0 +1,112 @@
+---
+# Prueft die YAML-Konfiguration aus apps/home-assistant/config/hass und
+# laedt sie anschliessend im laufenden Home Assistant neu.
+#
+# Geprueft wird mit Home Assistants eigenem YAML-Lader, nicht mit
+# "--script check_config": Der Lader loest !include, !include_dir_merge_named
+# und !secret genauso auf wie HA selbst und findet damit fehlende Dateien,
+# falsche Tags und doppelte Schluessel. Die vollstaendige Pruefung laedt
+# zusaetzlich jede Integration samt Abhaengigkeiten - das dauert auf einem
+# Pi Minuten und braucht Netz zu PyPI.
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: home-assistant-config
+  namespace: tekton-pipelines
+spec:
+  description: >
+    Prueft die Home-Assistant-Konfiguration und loest einen Reload aus.
+  params:
+    - name: repo-url
+      type: string
+      default: https://github.com/p3l1/homelab-argocd.git
+    - name: revision
+      type: string
+      default: main
+    - name: config-path
+      type: string
+      default: apps/home-assistant/config/hass
+    - name: ha-url
+      type: string
+      default: http://home-assistant.home-assistant.svc.cluster.local:8123
+  # Der Namensraum erzwingt PodSecurity "restricted".
+  stepTemplate:
+    securityContext:
+      allowPrivilegeEscalation: false
+      runAsNonRoot: true
+      runAsUser: 65532
+      capabilities:
+        drop: ["ALL"]
+      seccompProfile:
+        type: RuntimeDefault
+  steps:
+    - name: fetch
+      image: docker.io/alpine/git:2.49.1
+      script: |
+        #!/bin/sh
+        set -eu
+        echo "==> Hole $(params.revision) aus $(params.repo-url)"
+        git clone --depth 1 --branch "$(params.revision)" \
+          "$(params.repo-url)" /workspace/repo
+
+    - name: check
+      image: ghcr.io/home-assistant/home-assistant:2026.8.3
+      script: |
+        #!/usr/bin/env python3
+        import pathlib, shutil, sys
+        from homeassistant.util.yaml import loader
+
+        src = pathlib.Path("/workspace/repo/$(params.config-path)")
+        cfg = pathlib.Path("/workspace/check")
+        # Nachbauen, wie es im Pod liegt: configuration.yaml in /config,
+        # der Rest darunter in iac/.
+        (cfg / "iac").mkdir(parents=True, exist_ok=True)
+        for f in src.glob("*.yaml"):
+            shutil.copy(f, cfg / "iac" / f.name)
+        shutil.copy(src / "configuration.yaml", cfg / "configuration.yaml")
+        (cfg / "themes").mkdir(exist_ok=True)
+        for name, empty in (("automations.yaml", "[]"), ("scenes.yaml", "[]"),
+                            ("scripts.yaml", "{}")):
+            (cfg / name).write_text(empty)
+        # Platzhalter: geprueft wird die Struktur, nicht der Inhalt der
+        # Geheimnisse.
+        (cfg / "secrets.yaml").write_text(
+            "ha_token: pruefung\nha_auth_header: Bearer pruefung\n")
+
+        try:
+            config = loader.load_yaml(str(cfg / "configuration.yaml"))
+        except Exception as err:
+            print(f"FEHLER: {err}")
+            sys.exit(1)
+        keys = sorted(config)
+        print(f"==> {len(keys)} Abschnitte gelesen: {', '.join(keys)}")
+        for key in ("automation git", "script git", "scene git"):
+            if key not in config:
+                print(f"FEHLER: {key} fehlt - der Git-Zweig wuerde nicht geladen")
+                sys.exit(1)
+        print("==> Konfiguration ist lesbar")
+      computeResources:
+        requests: { cpu: 200m, memory: 256Mi }
+        limits: { memory: 1Gi }
+
+    - name: reload
+      image: docker.io/curlimages/curl:8.18.0
+      script: |
+        #!/bin/sh
+        set -eu
+        code=$(curl -s -o /workspace/out -w '%{http_code}' -X POST \
+          -H "Authorization: Bearer ${HA_TOKEN}" \
+          -H "Content-Type: application/json" \
+          "$(params.ha-url)/api/services/homeassistant/reload_all" -d '{}')
+        echo "==> HTTP $code"
+        cat /workspace/out
+        test "$code" = "200"
+      env:
+        - name: HA_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: home-assistant-api
+              key: HA_TOKEN
+      computeResources:
+        requests: { cpu: 50m, memory: 64Mi }
+        limits: { memory: 128Mi }

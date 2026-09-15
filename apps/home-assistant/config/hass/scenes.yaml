@@ -1,0 +1,90 @@
+- id: '1778972897234'
+  name: Abendlicht
+  entities:
+    light.kajplats_gu10_cws_470lm:
+      min_color_temp_kelvin: 1801
+      max_color_temp_kelvin: 6535
+      supported_color_modes:
+      - color_temp
+      - hs
+      - xy
+      color_mode: hs
+      brightness: 255
+      color_temp_kelvin:
+      hs_color:
+      - 8.504
+      - 66.142
+      rgb_color:
+      - 255
+      - 110
+      - 86
+      xy_color:
+      - 0.587
+      - 0.327
+      friendly_name: Sofa oben
+      supported_features: 32
+      state: 'on'
+    light.kajplats_gu10_cws_470lm_2:
+      min_color_temp_kelvin: 1801
+      max_color_temp_kelvin: 6535
+      supported_color_modes:
+      - color_temp
+      - hs
+      - xy
+      color_mode: color_temp
+      brightness: 128
+      color_temp_kelvin: 1801
+      hs_color:
+      - 29.751
+      - 100
+      rgb_color:
+      - 255
+      - 126
+      - 0
+      xy_color:
+      - 0.614
+      - 0.373
+      friendly_name: Sofa unten
+      supported_features: 32
+      state: 'on'
+    light.bettlampe:
+      min_color_temp_kelvin: 2000
+      max_color_temp_kelvin: 6535
+      effect_list:
+      - 'off'
+      - candle
+      - fire
+      - prism
+      - sparkle
+      - opal
+      - glisten
+      supported_color_modes:
+      - color_temp
+      - xy
+      effect: 'off'
+      color_mode: xy
+      brightness: 133
+      color_temp_kelvin:
+      hs_color:
+      - 9.231
+      - 66.275
+      rgb_color:
+      - 255
+      - 112
+      - 86
+      xy_color:
+      - 0.589
+      - 0.329
+      mode: normal
+      dynamics: none
+      friendly_name: Bettlampe
+      supported_features: 44
+      state: 'on'
+  metadata:
+    light.kajplats_gu10_cws_470lm:
+      entity_only: true
+    light.kajplats_gu10_cws_470lm_2:
+      entity_only: true
+    light.bettlampe:
+      entity_only: true
+  icon: mdi:weather-sunset

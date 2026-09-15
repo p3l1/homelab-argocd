@@ -39,6 +39,7 @@ Longhorn, CloudNativePG und zuletzt Newt.
 | `paperless-ngx` | Chart `0.24.1` | Dokumentenverwaltung |
 | `tekton-pipelines` | Chart `1.14.0` | CI |
 | `arcane` | eigene Manifeste | Verwaltung der externen Docker-Hosts |
+| `home-assistant` | eigene Manifeste | Hausautomation, fest auf dem Node mit dem Funkadapter |
 
 Secrets liegen SOPS-verschlüsselt unter [`secrets/`](../secrets) und werden
 von Hand angewandt, nicht von ArgoCD.

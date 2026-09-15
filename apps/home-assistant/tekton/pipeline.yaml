@@ -1,0 +1,18 @@
+---
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: home-assistant-config
+  namespace: tekton-pipelines
+spec:
+  params:
+    - name: revision
+      type: string
+      default: main
+  tasks:
+    - name: apply
+      taskRef:
+        name: home-assistant-config
+      params:
+        - name: revision
+          value: $(params.revision)

@@ -15,9 +15,9 @@ docs/       Runbooks und Entwurfsdokumente
 
 ## Cluster
 
-Sechs Raspberry Pi mit Raspberry Pi OS Lite arm64 und k3s: drei Server mit
-embedded etcd, drei Agents. Die API liegt unter der schwebenden Adresse
-`10.35.99.210`. Zwei weitere Pi sind reserviert.
+Acht Raspberry Pi mit Raspberry Pi OS Lite arm64 und k3s: drei Server mit
+embedded etcd, fünf Agents. Die API liegt unter der schwebenden Adresse
+`10.35.99.210`.
 
 Der vollständige Weg von der leeren SSD bis zum laufenden ArgoCD steht im
 Runbook [`docs/cluster-rebuild.md`](docs/cluster-rebuild.md).

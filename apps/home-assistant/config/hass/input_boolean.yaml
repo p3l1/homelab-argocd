@@ -1,0 +1,10 @@
+# ABOUTME: Input boolean helpers for HomeKit automations
+# ABOUTME: Dummy switch for triggering HomePod sensor data collection
+
+homepod_sensor_trigger:
+  name: "HomePod Sensor Trigger"
+  icon: mdi:home-thermometer
+
+waschmaschine_abgeholt:
+  name: "Wäsche abgeholt"
+  icon: mdi:check-circle

@@ -23,3 +23,4 @@ läuft.
 | `newt-arcane-service` | `arcane.arcane` | 3552 |
 | `newt-whoami-service` | `whoami.whoami` | 80 |
 | `newt-tekton-service` | `tekton-dashboard.tekton-pipelines` | 9097 |
+| `newt-home-assistant-service` | `home-assistant.home-assistant` | 8123 |

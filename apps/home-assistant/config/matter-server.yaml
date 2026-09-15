@@ -1,0 +1,94 @@
+---
+# Der Ersatz fuer das Add-on core_matter_server. Version 8.1.2, weil das
+# Add-on 8.4.0 laut Changelog genau diesen Python Matter Server fuhr - die
+# Fabric aus chip_factory.ini passt damit unveraendert. Ab Add-on 9.0.0
+# steht matter.js dahinter; der Umstieg ist ein eigener Schritt.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: matter-server-data
+  namespace: home-assistant
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: matter-server
+  namespace: home-assistant
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: matter-server
+  template:
+    metadata:
+      labels:
+        app: matter-server
+    spec:
+      # Matter spricht IPv6-Multicast mit den Geraeten im LAN. Das reicht
+      # durch ein Pod-Netz nicht hindurch.
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: homelab.p3l1.de/workload
+                    operator: In
+                    values: ["home"]
+      containers:
+        - name: matter-server
+          image: ghcr.io/matter-js/python-matter-server:8.1.2
+          args:
+            - --storage-path
+            - /data
+            - --paa-root-cert-dir
+            - /data/credentials
+            # Fabric 2 mit Vendor-ID 4939 (0x134B): Genau dieses Paar steht
+            # im wiederhergestellten chip.json und traegt die Geraete. Die
+            # Voreinstellung (Fabric 1, Vendor 65521) trifft die zweite,
+            # leere Fabric - der Server startete dann mit null Knoten.
+            - --fabricid
+            - "2"
+            - --vendorid
+            - "4939"
+            # Ohne Angabe meldet der Server "Using 'None' as primary
+            # interface" und kann keine Link-Local-Adressen ausspielen.
+            - --primary-interface
+            - eth0
+          ports:
+            - containerPort: 5580
+              name: ws
+          securityContext:
+            capabilities:
+              add: ["NET_ADMIN", "NET_RAW"]
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            # Fuer spaeteres Commissioning ueber Bluetooth; der Server
+            # spricht BlueZ ueber den System-Bus des Hosts an.
+            - name: dbus
+              mountPath: /run/dbus
+              readOnly: true
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: matter-server-data
+        - name: dbus
+          hostPath:
+            path: /run/dbus
+            type: Directory

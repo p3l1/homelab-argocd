@@ -1,0 +1,15 @@
+# ABOUTME: Counters for household inventory tracking
+# ABOUTME: Integer counters with increment/decrement actions
+
+klopapier_bad:
+  name: "Klopapier Bad"
+  icon: mdi:toilet
+  minimum: 0
+  maximum: 50
+  restore: true
+
+waschmaschine_laufzeit:
+  name: "Waschmaschine Laufzeit"
+  icon: mdi:timer
+  minimum: 0
+  restore: true

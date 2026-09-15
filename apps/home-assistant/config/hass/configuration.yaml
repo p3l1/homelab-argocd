@@ -1,0 +1,53 @@
+# Wird vom Init-Container nach /config/configuration.yaml kopiert, nicht
+# verlinkt: !include loest relativ zum Namen der einlesenden Datei auf, und
+# ein Symlink behaelt den Namen /config/configuration.yaml. Kopieren macht
+# die Pfade unten damit eindeutig.
+default_config:
+
+frontend:
+  themes: !include_dir_merge_named themes
+
+# Zweigleisig: iac/ kommt read-only aus dem Repo, die Dateien daneben
+# beschreibt der UI-Editor. HA schreibt ausschliesslich nach
+# /config/automations.yaml, scripts.yaml und scenes.yaml - was dort
+# entsteht, gehoert anschliessend nach apps/home-assistant/config/hass.
+automation git: !include iac/automations.yaml
+automation ui: !include automations.yaml
+script git: !include iac/scripts.yaml
+script ui: !include scripts.yaml
+scene git: !include iac/scenes.yaml
+scene ui: !include scenes.yaml
+
+http:
+  use_x_forwarded_for: true
+  # Traefik und Newt sprechen HA aus dem Pod-Netz an. Der alte Eintrag
+  # 10.35.99.168 war der Reverse Proxy des abgeloesten Pi 5.
+  trusted_proxies:
+    - 10.42.0.0/16
+
+# Der Recorder liegt jetzt auf CloudNativePG. HA_DB_URL kommt aus dem
+# uri-Schluessel des von CNPG erzeugten Secrets home-assistant-db-app.
+recorder:
+  db_url: !env_var HA_DB_URL
+
+rest: !include iac/rest.yaml
+template: !include iac/templates.yaml
+input_number: !include iac/input_number.yaml
+input_boolean: !include iac/input_boolean.yaml
+counter: !include iac/counter.yaml
+timer: !include iac/timer.yaml
+
+# Kein "homekit: !include": homekit.yaml war doppelt verschachtelt
+# (homekit: homekit:) und fiel deshalb schon auf dem Pi durch die
+# Pruefung. Die beiden Bridges laufen aus ihren Config-Entries in
+# .storage weiter - die Kopplungen ueberleben den Umzug nur dort.
+lovelace:
+  resource_mode: yaml
+  dashboards:
+    lovelace-haushalt:
+      mode: yaml
+      filename: iac/lovelace_haushalt.yaml
+      title: Haushalt
+      icon: mdi:home
+      show_in_sidebar: true
+      require_admin: false

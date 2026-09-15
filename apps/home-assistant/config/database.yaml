@@ -1,0 +1,23 @@
+# Zwei Instanzen statt drei wie bei Paperless: Der Recorder schreibt
+# fortlaufend jeden Zustandswechsel. Eine dritte Replik kostet auf den Pi
+# mehr Schreiblast, als sie an Sicherheit bringt.
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: home-assistant-db
+  namespace: home-assistant
+spec:
+  instances: 2
+  storage:
+    size: 10Gi
+    storageClass: longhorn
+  bootstrap:
+    initdb:
+      database: homeassistant
+      owner: homeassistant
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 1Gi

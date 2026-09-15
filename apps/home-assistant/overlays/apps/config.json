@@ -1,0 +1,11 @@
+{
+  "appName": "home-assistant",
+  "userGivenName": "home-assistant",
+  "destNamespace": "home-assistant",
+  "destServer": "https://kubernetes.default.svc",
+  "srcPath": "apps/home-assistant/base",
+  "srcRepoURL": "https://github.com/p3l1/homelab-argocd.git",
+  "srcTargetRevision": "main",
+  "labels": null,
+  "annotations": null
+}

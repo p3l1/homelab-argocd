@@ -1,0 +1,14 @@
+---
+# Vorlage fuer einen Lauf:
+#
+#   kubectl create -f apps/home-assistant/tekton/pipelinerun.yaml
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: home-assistant-config-
+  namespace: tekton-pipelines
+spec:
+  pipelineRef:
+    name: home-assistant-config
+  timeouts:
+    pipeline: 10m

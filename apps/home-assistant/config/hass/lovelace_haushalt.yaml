@@ -1,0 +1,51 @@
+# ABOUTME: Haushalt dashboard - household inventory counters and lists
+# ABOUTME: Shows supply counters, shopping list, todo list, and washing machine controls
+
+title: Haushalt
+views:
+  - title: Haushalt
+    path: haushalt
+    icon: mdi:home
+    cards:
+      - type: heading
+        heading: Vorräte
+        heading_style: title
+      - type: tile
+        entity: counter.klopapier_bad
+        name: Klopapier Bad
+        features:
+          - type: counter-actions
+      - type: heading
+        heading: Einkaufsliste
+        heading_style: title
+      - type: todo-list
+        entity: todo.einkaufsliste
+        hide_completed: true
+      - type: heading
+        heading: Aufgaben
+        heading_style: title
+      - type: todo-list
+        entity: todo.todo
+        hide_completed: true
+
+  - title: Waschen
+    path: waschen
+    icon: mdi:washing-machine
+    cards:
+      - type: tile
+        entity: input_boolean.waschmaschine_lauft
+        name: Status
+      - type: tile
+        entity: counter.waschmaschine_laufzeit
+        name: Laufzeit (min)
+      - type: tile
+        entity: sensor.grillplats_plug_leistung
+        name: Leistung
+      - type: tile
+        entity: input_boolean.waschmaschine_abgeholt
+        name: "Wäsche entnommen"
+        tap_action:
+          action: call-service
+          service: script.turn_on
+          target:
+            entity_id: script.waschmaschine_quittieren

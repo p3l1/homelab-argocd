@@ -1,0 +1,23 @@
+# Home Assistant aus dem Backup des abgeloesten Pi 5. Es gibt kein
+# brauchbares Chart, daher eigene Manifeste. Die YAML-Konfiguration liegt
+# unter config/hass und wird als ConfigMap nach /config/iac gereicht.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: home-assistant
+  namespace: argocd
+spec:
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+  project: apps
+  sources:
+    - repoURL: https://github.com/p3l1/homelab-argocd.git
+      targetRevision: main
+      path: apps/home-assistant/config
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: home-assistant

@@ -1,0 +1,27 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: home-assistant
+resources:
+  - ./database.yaml
+  - ./home-assistant.yaml
+  - ./matter-server.yaml
+  - ./httproute.yaml
+configMapGenerator:
+  - name: home-assistant-iac
+    files:
+      - hass/automations.yaml
+      - hass/configuration.yaml
+      - hass/counter.yaml
+      - hass/input_boolean.yaml
+      - hass/input_number.yaml
+      - hass/lovelace_haushalt.yaml
+      - hass/rest.yaml
+      - hass/scenes.yaml
+      - hass/scripts.yaml
+      - hass/templates.yaml
+      - hass/timer.yaml
+generatorOptions:
+  # Fester Name statt Hash-Suffix: Das Verzeichnis /config/iac wird dann
+  # im laufenden Pod aktualisiert, und ein Reload ueber die API genuegt -
+  # ohne Neustart von HA.
+  disableNameSuffixHash: true

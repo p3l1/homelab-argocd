@@ -1,0 +1,18 @@
+# ABOUTME: Input number helpers for HomePod sensors
+# ABOUTME: Stores temperature and humidity values from HomePod
+
+schreibtisch_wohnzimmer_temperature:
+  name: "Schreibtisch Wohnzimmer Temperatur"
+  unit_of_measurement: "°C"
+  min: -50
+  max: 50
+  step: 0.1
+  icon: mdi:thermometer
+
+schreibtisch_wohnzimmer_humidity:
+  name: "Schreibtisch Wohnzimmer Luftfeuchtigkeit"
+  unit_of_measurement: "%"
+  min: 0
+  max: 100
+  step: 1
+  icon: mdi:water-percent

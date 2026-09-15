@@ -28,7 +28,10 @@ einzugeben.
 |---|---|
 | `arcane-secrets.sops.yaml` | `ENCRYPTION_KEY` und `JWT_SECRET` für Arcane |
 | `newt-credentials.sops.yaml` | Zugangsdaten für den Pangolin-Tunnel |
+| `home-assistant-secrets.sops.yaml` | `secrets.yaml` für Home Assistant |
+| `home-assistant-api.sops.yaml` | Token, mit dem die Tekton-Pipeline den Reload auslöst |
 | `unifi-credentials.sops.yaml` | API-Schlüssel des Routers für external-dns |
 | `paperless-secrets.sops.yaml` | Secret Key und Mail-Zugang für Paperless |
+| `umami-admin.sops.yaml` | Passwort des umami-Admin-Kontos |
 
 `newt-credentials` fehlt noch — die Werte kommen aus Pangolin.

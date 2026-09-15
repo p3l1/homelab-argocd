@@ -1,0 +1,20 @@
+---
+# Erreichbar unter https://home.homelab.internal. Den DNS-Eintrag legt
+# external-dns im Router an, das Zertifikat kommt vom Gateway. Von aussen
+# fuehrt der Weg ueber Pangolin, siehe pangolin/blueprints/homelab.yaml.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: home-assistant
+  namespace: home-assistant
+spec:
+  parentRefs:
+    - name: traefik-gateway
+      namespace: traefik
+      sectionName: websecure
+  hostnames:
+    - home.homelab.internal
+  rules:
+    - backendRefs:
+        - name: home-assistant
+          port: 8123
