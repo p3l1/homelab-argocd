@@ -55,6 +55,9 @@ spec:
         #!/usr/bin/env python3
         import pathlib, shutil, sys
         from homeassistant.util.yaml import loader
+        # Ohne Secrets scheitert der Lader an jedem !secret mit
+        # "Secrets not supported in this YAML file".
+        from homeassistant.util.yaml.loader import Secrets
 
         src = pathlib.Path("/workspace/repo/$(params.config-path)")
         cfg = pathlib.Path("/workspace/check")
@@ -71,10 +74,14 @@ spec:
         # Platzhalter: geprueft wird die Struktur, nicht der Inhalt der
         # Geheimnisse.
         (cfg / "secrets.yaml").write_text(
-            "ha_token: pruefung\nha_auth_header: Bearer pruefung\n")
+            "ha_token: pruefung\n"
+            "ha_auth_header: Bearer pruefung\n"
+            "oidc_client_id: pruefung\n"
+            "oidc_client_secret: pruefung\n"
+            "oidc_discovery_url: https://example.invalid/.well-known/openid-configuration\n")
 
         try:
-            config = loader.load_yaml(str(cfg / "configuration.yaml"))
+            config = loader.load_yaml(str(cfg / "configuration.yaml"), Secrets(cfg))
         except Exception as err:
             print(f"FEHLER: {err}")
             sys.exit(1)
