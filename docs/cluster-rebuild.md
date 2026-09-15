@@ -13,8 +13,7 @@ Die Entwurfsentscheidungen stehen in
 | API-VIP (kube-vip) | — | — | `10.35.99.210` |
 | Server, etcd, getaintet | 3× Pi 4 | `kube-01` – `kube-03` | `.211` – `.213` |
 | Agent | 1× Pi 4 | `kube-04` | `.214` |
-| Agent | 3× Pi 5 | `kube-05`, `kube-06`, `kube-08` | `.215` – `.216`, `.218` |
-| reserviert, derzeit Docker | 1× Pi 5 | `kube-07` | `.217` |
+| Agent | 4× Pi 5 | `kube-05` – `kube-08` | `.215` – `.218` |
 | MetalLB-Pool | — | — | `.230` – `.250` |
 
 Ausgespart bleiben `.1` (Gateway) sowie `.100` und `.200` — die gehören dem
@@ -103,7 +102,7 @@ Die Belegung am USW Flex 2.5G 8 PoE:
 |---|---|---|
 | 1 | `kube-05` | Pi 5 |
 | 2 | `kube-06` | Pi 5 |
-| 3, 4 | Docker-Hosts, nicht im Cluster | Pi 5 |
+| 3, 4 | `kube-07`, `kube-08` | Pi 5 |
 | 5 | `kube-01` | Pi 4 |
 | 6 | `kube-03` | Pi 4 |
 | 7 | `kube-02` | Pi 4 |
@@ -217,7 +216,7 @@ Start selbsttätig aus.
 ./scripts/cluster-status.sh
 ```
 
-Erwartet werden sechs Nodes im Zustand `Ready`, davon drei als
+Erwartet werden acht Nodes im Zustand `Ready`, davon drei als
 `control-plane,etcd`, ein kube-vip-DaemonSet mit 3/3 und eine antwortende
 VIP.
 
@@ -234,7 +233,7 @@ ansible-playbook playbooks/bootstrap.yml   # nur node_base, ohne k3s anzufassen
 
 ```bash
 export KUBECONFIG=~/.kube/config
-kubectl get nodes -o wide          # 6 Nodes, alle Ready
+kubectl get nodes -o wide          # 8 Nodes, alle Ready
 kubectl -n kube-system get ds kube-vip-ds
 ping 10.35.99.210
 ```
@@ -400,12 +399,6 @@ ansible-playbook playbooks/reset.yml
 
 Longhorn-Daten unter `/var/lib/longhorn` bleiben erhalten und müssen bewusst
 gelöscht werden.
-
-### Den reservierten Pi aufnehmen
-
-Sind die Docker-Aufgaben auf `kube-07` migriert, wandert der Host in
-`inventory/hosts.yml` aus `reserved` in die Gruppe `agent`. Danach Schritt 1
-bis 3 für ihn durchlaufen.
 
 ## Probelauf ohne Änderungen
 
