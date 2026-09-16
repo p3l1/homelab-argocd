@@ -137,10 +137,17 @@ fd2a:dd59:adbf::/64 proto ra  nexthop via fe80::...  dev eth0  (3 Border Router)
 
 Über mDNS melden beide dasselbe Netz, das auch in Home Assistant steht:
 `MyHome2132015047`, Extended PAN ID `daae142a100f44d6`. Name und PAN-ID passen
-also — der **Netzwerkschlüssel** nicht mehr. Deshalb scheitert das Teilen der
-Zugangsdaten mit „Thread network credentials does not match with any of the
-active thread networks around". Der Datensatz in Home Assistant stammt vom
-26. Mai und kam aus der iOS-App.
+also — die hinterlegten Zugangsdaten trotzdem nicht, weshalb das Teilen mit
+„Thread network credentials does not match with any of the active thread
+networks around" scheitert.
+
+Nachweisbar veraltet ist der Datensatz an einer anderen Stelle: Er stammt vom
+26. Mai und nennt als bevorzugten Border Agent `d26e27d8c452b71f`. Im Netz
+sind heute `baf13c7c9ffcca50` (Schreibtisch) und `52b08664bc6efd5d`
+(Fernseher) — der dritte ist verschwunden. Als Active Timestamp führen beide
+Seiten 0, Apple setzt ihn nicht; über den lässt sich nichts vergleichen.
+Welches Feld genau abweicht, verrät Apple nicht — dem Ablauf nach ist es der
+Netzwerkschlüssel.
 
 Zu beheben in der **Home-Assistant-App auf dem iPhone**: Einstellungen →
 Geräte & Dienste → Thread → *Zugangsdaten des Thread-Netzwerks importieren*.
