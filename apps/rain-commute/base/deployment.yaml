@@ -1,0 +1,88 @@
+# ABOUTME: Regenalarm fuer den Arbeitsweg - laedt das DWD-Radarkomposit RV.
+# ABOUTME: Kein eigenes Image noetig, der Code kommt aus der ConfigMap.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rain-commute
+  namespace: rain-commute
+  labels:
+    app.kubernetes.io/name: rain-commute
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: rain-commute
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: rain-commute
+    spec:
+      securityContext:
+        # Ohne fsGroup gehoert das frische Longhorn-Volume root, und der als
+        # nobody laufende Prozess kann die Datenbank nicht anlegen.
+        fsGroup: 65534
+        fsGroupChangePolicy: OnRootMismatch
+      containers:
+        - name: exporter
+          image: python:3.13-slim
+          command: ["python", "-u", "/src/exporter.py"]
+          workingDir: /src
+          env:
+            # Das Wurzeldateisystem ist read-only und die ConfigMap ohnehin -
+            # ohne das versucht Python bei jedem Import, Bytecode abzulegen.
+            - name: PYTHONDONTWRITEBYTECODE
+              value: "1"
+            - name: RAIN_DB
+              value: /data/radar.sqlite
+            - name: RAIN_KEEP_DAYS
+              value: "30"
+            # In diesem Cluster gibt es keine Alertmanager-Bridge, die den
+            # Token halten koennte. Das Secret wird von Hand angelegt.
+            - name: GOTIFY_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: gotify-token
+                  key: token
+                  optional: true
+          ports:
+            - name: metrics
+              containerPort: 8000
+          volumeMounts:
+            - name: src
+              mountPath: /src
+            - name: data
+              mountPath: /data
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: metrics
+            initialDelaySeconds: 5
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 20m
+              memory: 96Mi
+            limits:
+              # Spitze beim Abruf: 25 Zeitschritte à 2,6 MB gleichzeitig im
+              # Speicher. Der Archivnachlauf entpackt zusaetzlich einen
+              # Tagesstapel, deshalb mehr Luft als im Regelbetrieb noetig.
+              cpu: 1000m
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 65534
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+      volumes:
+        - name: src
+          configMap:
+            name: rain-commute-src
+        - name: data
+          persistentVolumeClaim:
+            claimName: rain-commute-data

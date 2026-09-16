@@ -1,0 +1,63 @@
+# ABOUTME: Eigener Kachelserver - keine Nutzungsgrenzen, keine Schluessel.
+# ABOUTME: Liefert Vektorkacheln plus die Weboberflaeche zum Betrachten.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: versatiles
+  namespace: versatiles
+  labels:
+    app.kubernetes.io/name: versatiles
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: versatiles
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: versatiles
+    spec:
+      initContainers:
+        # Der Extraktions-Job laeuft nebenher; ohne dieses Warten liefe der
+        # Server in eine leere Datei und stuerbe in einer Schleife.
+        - name: wait-for-tiles
+          image: busybox:1.37
+          command: ["/bin/sh", "-c", "until [ -s /data/bonn.versatiles ]; do echo warte; sleep 15; done"]
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      containers:
+        - name: versatiles
+          image: versatiles/versatiles:latest-alpine
+          # Vorgabe ist bereits 0.0.0.0:8080. Die Kacheln liegen danach unter
+          # /tiles/bonn/{z}/{x}/{y} - den Namen leitet das Werkzeug aus der Datei ab.
+          args: ["serve", "/data/bonn.versatiles"]
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 20
+          volumeMounts:
+            - name: data
+              mountPath: /data
+              readOnly: true
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 1000m
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: versatiles-data

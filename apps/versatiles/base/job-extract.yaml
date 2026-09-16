@@ -1,0 +1,54 @@
+# ABOUTME: Schneidet den Raum Bonn aus dem 66-GB-Planet-Container heraus.
+# ABOUTME: Laeuft einmal; der Server wartet solange auf seine Datei.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: versatiles-extract
+  namespace: versatiles
+  annotations:
+    # Nach einer Aktualisierung des Kachelstands: Job loeschen und neu anlegen.
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: extract
+          image: versatiles/versatiles:latest-alpine
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              if [ -s /data/bonn.versatiles ]; then
+                echo "Kachelcontainer liegt bereits vor"; exit 0
+              fi
+              # Der Quellcontainer beantwortet Range-Requests, es werden also
+              # nur die Kacheln des Ausschnitts uebertragen, nicht 66 GB.
+              versatiles convert \
+                --bbox "6.70,50.50,7.55,50.95" \
+                --bbox-border 2 \
+                https://download.versatiles.org/osm.versatiles \
+                /data/bonn.tmp.versatiles
+              # Erst umbenennen, wenn der Lauf durch ist: Der Server wartet auf
+              # den endgueltigen Namen und startet sonst auf halber Datei.
+              # Die Endung muss dabei .versatiles bleiben, sonst lehnt das
+              # Werkzeug das Ziel ab.
+              mv /data/bonn.tmp.versatiles /data/bonn.versatiles
+              ls -lh /data/bonn.versatiles
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 2000m
+              memory: 1Gi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: versatiles-data

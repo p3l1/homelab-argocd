@@ -1,0 +1,14 @@
+# ABOUTME: Kachelcontainer fuer den Raum Bonn, aus dem Planet-Container geschnitten.
+# ABOUTME: Der Job unten fuellt ihn; ohne ihn startet der Server ins Leere.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: versatiles-data
+  namespace: versatiles
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 4Gi

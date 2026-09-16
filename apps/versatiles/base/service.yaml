@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: versatiles
+  namespace: versatiles
+  labels:
+    app.kubernetes.io/name: versatiles
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: versatiles
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

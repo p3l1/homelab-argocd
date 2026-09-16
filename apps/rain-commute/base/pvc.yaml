@@ -1,0 +1,14 @@
+# ABOUTME: Ablage fuer 30 Tage Radarausschnitte als SQLite-Datei.
+# ABOUTME: Rund 10 MB - 1 Gi laesst Luft fuer WAL und einen laengeren Zeitraum.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: rain-commute-data
+  namespace: rain-commute
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 1Gi

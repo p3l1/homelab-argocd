@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: rain-commute
+  namespace: rain-commute
+  labels:
+    app.kubernetes.io/name: rain-commute
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: rain-commute
+  ports:
+    # Der Portname "metrics" laesst den OTel-Collector den Exporter automatisch
+    # scrapen - dieselbe Mechanik wie bei der Gotify-Bridge.
+    - name: metrics
+      port: 8000
+      targetPort: metrics

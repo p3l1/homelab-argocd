@@ -1,0 +1,25 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: rain-commute
+resources:
+  - namespace.yaml
+  - pvc.yaml
+  - deployment.yaml
+  - service.yaml
+  - httproute.yaml
+
+# Der Namenshash rollt das Deployment neu, sobald sich der Code aendert.
+configMapGenerator:
+  - name: rain-commute-src
+    files:
+      - src/radolan.py
+      - src/commute.py
+      - src/render.py
+      - src/notify.py
+      - src/store.py
+      - src/archive.py
+      - src/webpage.py
+      - src/exporter.py
+      # Einmal aus OpenStreetMap gerendert und auf das DE1200-Raster
+      # reprojiziert. Der Ausschnitt ist fest, also darf die Karte es auch sein.
+      - src/karte.webp

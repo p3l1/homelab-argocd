@@ -1,0 +1,11 @@
+{
+  "appName": "rain-commute",
+  "userGivenName": "rain-commute",
+  "destNamespace": "rain-commute",
+  "destServer": "https://kubernetes.default.svc",
+  "srcPath": "apps/rain-commute/base",
+  "srcRepoURL": "https://github.com/p3l1/homelab-argocd.git",
+  "srcTargetRevision": "main",
+  "labels": null,
+  "annotations": null
+}
