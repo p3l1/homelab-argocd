@@ -337,6 +337,22 @@ class Handler(BaseHTTPRequestHandler):
                                     with_map=not bare, label_offset=offset,
                                     kind=kind)
             self._send(svg, "image/svg+xml")
+        elif path == "/radar.geojson":
+            when, comp = None, None
+            if "at" in query:
+                try:
+                    when = datetime.fromisoformat(query["at"][0])
+                    comp, _ = _composite_at_time(when)
+                except ValueError:
+                    pass
+            if comp is None:
+                with _lock:
+                    forecast = list(_state["forecast"])
+                comp = forecast[0] if forecast else None
+            if comp is None:
+                self._send("{}", "application/json", 503)
+                return
+            self._send(json.dumps(render.to_geojson(comp)), "application/geo+json")
         elif path == "/karte.webp":
             try:
                 with open(render.MAP_FILE, "rb") as fh:

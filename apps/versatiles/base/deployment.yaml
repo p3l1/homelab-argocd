@@ -30,7 +30,7 @@ spec:
             - /bin/sh
             - -c
             - |
-              until [ -s /data/bonn.versatiles ] && [ -s /data/frontend.tar.gz ]; do
+              until [ -s /data/bonn.versatiles ] && [ -s /data/frontend-min.tar.gz ]; do
                 echo "warte auf Kacheln und Oberflaeche"; sleep 10
               done
           volumeMounts:
@@ -41,7 +41,7 @@ spec:
           image: versatiles/versatiles:latest-alpine
           # Vorgabe ist bereits 0.0.0.0:8080. Die Kacheln liegen danach unter
           # /tiles/bonn/{z}/{x}/{y} - den Namen leitet das Werkzeug aus der Datei ab.
-          args: ["serve", "--static", "/data/frontend.tar.gz", "/data/bonn.versatiles"]
+          args: ["serve", "--static", "/data/frontend-min.tar.gz", "/data/bonn.versatiles"]
           ports:
             - name: http
               containerPort: 8080

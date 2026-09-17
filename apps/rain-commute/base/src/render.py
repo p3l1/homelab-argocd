@@ -4,7 +4,7 @@ import base64
 import os
 
 from commute import ROUTE_POINTS
-from radolan import lonlat_to_grid
+from radolan import grid_to_lonlat, lonlat_to_grid
 
 # Der Ausschnitt ist fest, also ist es auch die Karte: einmal aus
 # OpenStreetMap gerendert, auf das DE1200-Raster reprojiziert und
@@ -151,3 +151,51 @@ def render_svg(composite, points=ROUTE_POINTS, when=None, half=HALF, scale=SCALE
 
     parts.append("</svg>")
     return "".join(parts)
+
+
+def to_geojson(composite, points=ROUTE_POINTS, half=HALF):
+    """Die nassen Rasterzellen als Polygone in Laenge/Breite.
+
+    Fuer die Vektorkarte: MapLibre faerbt sie selbst ein und kann sie in jeder
+    Zoomstufe scharf zeichnen - anders als ein Rasterbild.
+    """
+    grid = [lonlat_to_grid(lon, lat) for lon, lat in points]
+    mid_c = (min(c for c, _ in grid) + max(c for c, _ in grid)) / 2
+    mid_r = (min(r for _, r in grid) + max(r for _, r in grid)) / 2
+    r0, c0 = int(mid_r - half), int(mid_c - half)
+    side = half * 2 + 1
+
+    features = []
+    for r in range(r0, r0 + side):
+        for c in range(c0, c0 + side):
+            mm = composite.value_at(r, c)
+            if mm is None or mm < _SCALE[0][0]:
+                continue
+            # Die Zelle spannt sich um ihren Mittelpunkt, daher die halben Schritte.
+            corners = [grid_to_lonlat(c - 0.5, r - 0.5), grid_to_lonlat(c + 0.5, r - 0.5),
+                       grid_to_lonlat(c + 0.5, r + 0.5), grid_to_lonlat(c - 0.5, r + 0.5)]
+            ring = [[round(lon, 5), round(lat, 5)] for lon, lat in corners]
+            ring.append(ring[0])
+            features.append({
+                "type": "Feature",
+                "geometry": {"type": "Polygon", "coordinates": [ring]},
+                "properties": {"mm_h": round(mm * 12, 1), "colour": _colour(mm)},
+            })
+    return {"type": "FeatureCollection", "features": features,
+            "properties": {"forecast_minutes": composite.forecast_minutes}}
+
+
+def route_geojson(points=ROUTE_POINTS):
+    """Die Pendelstrecke als Linie, dazu die beiden Endpunkte."""
+    return {
+        "type": "FeatureCollection",
+        "features": [
+            {"type": "Feature", "properties": {"kind": "route"},
+             "geometry": {"type": "LineString",
+                          "coordinates": [[lon, lat] for lon, lat in points]}},
+            {"type": "Feature", "properties": {"kind": "end", "label": "Zuhause"},
+             "geometry": {"type": "Point", "coordinates": list(points[0])}},
+            {"type": "Feature", "properties": {"kind": "end", "label": "Arbeit"},
+             "geometry": {"type": "Point", "coordinates": list(points[-1])}},
+        ],
+    }

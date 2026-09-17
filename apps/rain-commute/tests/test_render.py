@@ -1,4 +1,6 @@
 import xml.etree.ElementTree as ET
+
+import pytest
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -110,3 +112,38 @@ def test_route_follows_real_geometry_not_cell_centres():
     assert len(xs) == 13
     # Auf ganze Pixel gerundete Zellmittelpunkte waeren durchweg ganzzahlig.
     assert any(abs(x - round(x)) > 0.01 for x in xs)
+
+
+def test_geojson_only_contains_wet_cells():
+    from render import to_geojson
+    dry = to_geojson(parse_composite(make_composite({})))
+    assert dry["features"] == []
+    wet = to_geojson(parse_composite(make_composite({(625, 327): 2.0})))
+    assert len(wet["features"]) == 1
+
+
+def test_geojson_cells_are_closed_rings_in_lonlat():
+    """MapLibre erwartet Laenge/Breite und einen geschlossenen Ring."""
+    from render import to_geojson
+    f = to_geojson(parse_composite(make_composite({(625, 327): 2.0})))["features"][0]
+    ring = f["geometry"]["coordinates"][0]
+    assert len(ring) == 5 and ring[0] == ring[-1]
+    lons = [p[0] for p in ring]
+    lats = [p[1] for p in ring]
+    assert all(6.5 < lo < 7.8 for lo in lons), lons
+    assert all(50.3 < la < 51.2 for la in lats), lats
+
+
+def test_geojson_carries_intensity_in_mm_per_hour():
+    from render import to_geojson
+    f = to_geojson(parse_composite(make_composite({(625, 327): 1.0})))["features"][0]
+    assert f["properties"]["mm_h"] == pytest.approx(12.0)
+    assert f["properties"]["colour"].startswith("#")
+
+
+def test_route_geojson_has_line_and_both_ends():
+    from render import route_geojson
+    fs = route_geojson()["features"]
+    assert fs[0]["geometry"]["type"] == "LineString"
+    assert len(fs[0]["geometry"]["coordinates"]) == 13
+    assert [f["properties"].get("label") for f in fs[1:]] == ["Zuhause", "Arbeit"]

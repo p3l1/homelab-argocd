@@ -22,13 +22,15 @@ spec:
             - -c
             - |
               set -e
-              # Die Oberflaeche zum Blaettern; ohne sie liefert der Server nur
-              # Kacheln und unter / nichts, was man ansehen koennte.
-              if [ ! -s /data/frontend.tar.gz ]; then
-                wget -q -O /data/frontend.tmp.tar.gz \
-                  https://github.com/versatiles-org/versatiles-frontend/releases/latest/download/frontend-tiny.tar.gz
-                mv /data/frontend.tmp.tar.gz /data/frontend.tar.gz
-                ls -lh /data/frontend.tar.gz
+              # Die Oberflaeche zum Blaettern. Nicht die tiny-Variante: der
+              # fehlen Schriften und Symbole, MapLibre zeichnet dann Flaechen
+              # ohne jede Beschriftung. Der Dateiname traegt die Variante,
+              # sonst bliebe beim Wechsel die alte Datei liegen.
+              if [ ! -s /data/frontend-min.tar.gz ]; then
+                wget -q -O /data/frontend-min.tmp.tar.gz \
+                  https://github.com/versatiles-org/versatiles-frontend/releases/latest/download/frontend-min.tar.gz
+                mv /data/frontend-min.tmp.tar.gz /data/frontend-min.tar.gz
+                ls -lh /data/frontend-min.tar.gz
               fi
               if [ -s /data/bonn.versatiles ]; then
                 echo "Kachelcontainer liegt bereits vor"; exit 0
