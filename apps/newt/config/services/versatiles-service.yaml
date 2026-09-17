@@ -1,0 +1,11 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: newt-versatiles-service
+  namespace: newt
+spec:
+  type: ExternalName
+  externalName: versatiles.versatiles.svc.cluster.local
+  ports:
+    - port: 8080

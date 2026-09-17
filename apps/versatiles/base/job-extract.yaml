@@ -22,6 +22,14 @@ spec:
             - -c
             - |
               set -e
+              # Die Oberflaeche zum Blaettern; ohne sie liefert der Server nur
+              # Kacheln und unter / nichts, was man ansehen koennte.
+              if [ ! -s /data/frontend.tar.gz ]; then
+                wget -q -O /data/frontend.tmp.tar.gz \
+                  https://github.com/versatiles-org/versatiles-frontend/releases/latest/download/frontend-tiny.tar.gz
+                mv /data/frontend.tmp.tar.gz /data/frontend.tar.gz
+                ls -lh /data/frontend.tar.gz
+              fi
               if [ -s /data/bonn.versatiles ]; then
                 echo "Kachelcontainer liegt bereits vor"; exit 0
               fi

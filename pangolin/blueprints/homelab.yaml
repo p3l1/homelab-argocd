@@ -181,6 +181,22 @@ public-resources:
           interval: 30
           timeout: 5
 
+  versatiles:
+    name: VersaTiles
+    protocol: http
+    full-domain: tiles.cloud.p3l1.de
+    targets:
+      - site: intent-anniella-pulchra
+        method: http
+        hostname: newt-versatiles-service.newt.svc.cluster.local
+        port: 8080
+        healthcheck:
+          hostname: newt-versatiles-service.newt.svc.cluster.local
+          port: 8080
+          path: /tiles/bonn/tiles.json
+          interval: 30
+          timeout: 5
+
 # Von Pipelines-as-Code ausgeloest - Aenderung an dieser Datei startet die Pipeline.
 
 # Testlauf nach Installation der GitHub App.

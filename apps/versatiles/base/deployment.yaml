@@ -24,7 +24,15 @@ spec:
         # Server in eine leere Datei und stuerbe in einer Schleife.
         - name: wait-for-tiles
           image: busybox:1.37
-          command: ["/bin/sh", "-c", "until [ -s /data/bonn.versatiles ]; do echo warte; sleep 15; done"]
+          # Auch auf die Oberflaeche warten: Der Server bricht ab, wenn sie
+          # beim Start noch fehlt, und der Job laedt sie erst herunter.
+          command:
+            - /bin/sh
+            - -c
+            - |
+              until [ -s /data/bonn.versatiles ] && [ -s /data/frontend.tar.gz ]; do
+                echo "warte auf Kacheln und Oberflaeche"; sleep 10
+              done
           volumeMounts:
             - name: data
               mountPath: /data
@@ -33,7 +41,7 @@ spec:
           image: versatiles/versatiles:latest-alpine
           # Vorgabe ist bereits 0.0.0.0:8080. Die Kacheln liegen danach unter
           # /tiles/bonn/{z}/{x}/{y} - den Namen leitet das Werkzeug aus der Datei ab.
-          args: ["serve", "/data/bonn.versatiles"]
+          args: ["serve", "--static", "/data/frontend.tar.gz", "/data/bonn.versatiles"]
           ports:
             - name: http
               containerPort: 8080
