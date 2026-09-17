@@ -165,6 +165,22 @@ public-resources:
           interval: 30
           timeout: 5
 
+  regenalarm:
+    name: Regenalarm
+    protocol: http
+    full-domain: regen.cloud.p3l1.de
+    targets:
+      - site: intent-anniella-pulchra
+        method: http
+        hostname: newt-rain-commute-service.newt.svc.cluster.local
+        port: 8000
+        healthcheck:
+          hostname: newt-rain-commute-service.newt.svc.cluster.local
+          port: 8000
+          path: /healthz
+          interval: 30
+          timeout: 5
+
 # Von Pipelines-as-Code ausgeloest - Aenderung an dieser Datei startet die Pipeline.
 
 # Testlauf nach Installation der GitHub App.
