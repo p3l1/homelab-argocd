@@ -78,6 +78,7 @@ _TEMPLATE = """<!doctype html>
       <button id="next" type="button">5 Min ›</button>
     </div>
     <div class="legend" id="legend"><span>mm/h</span></div>
+    <div id="err" style="display:none;color:#f2a24b;font-size:12px;margin-top:6px"></div>
     <div class="hint">{count} Zeitschritte vorgehalten. Karte © OpenStreetMap-Mitwirkende</div>
   </div>
 
@@ -128,7 +129,17 @@ map.on('load', () => {{
     paint: {{'circle-radius': 6, 'circle-color': '#ffffff',
              'circle-stroke-color': '#000000', 'circle-stroke-width': 2}}}});
   ready = true;
-  show(startIndex());
+  show(+$('slider').value);
+}});
+
+// Unabhaengig von der Karte: Die Bedienung muss auch dann stehen, wenn die
+// Kacheln haengen.
+render(steps);
+
+map.on('error', e => {{
+  const m = $('err');
+  m.textContent = 'Karte: ' + (e && e.error ? e.error.message : 'unbekannter Fehler');
+  m.style.display = 'block';
 }});
 
 function startIndex() {{
