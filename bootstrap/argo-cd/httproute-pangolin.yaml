@@ -1,0 +1,25 @@
+# Veröffentlicht ArgoCD nach außen, über pangolin-gateway statt über den
+# handgeschriebenen Eintrag in pangolin/blueprints/homelab.yaml.
+#
+# Port 80, nicht 443: argocd-server laeuft mit server.insecure=true, beide
+# Dienstports zeigen auf 8080 und sprechen HTTP. Mit https gab es Bad Gateway.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: argocd-pangolin
+  namespace: argocd
+  annotations:
+    pangolin.p3l1.de/display-name: ArgoCD
+    pangolin.p3l1.de/healthcheck-path: /healthz
+    pangolin.p3l1.de/healthcheck-interval: "30"
+    pangolin.p3l1.de/healthcheck-timeout: "5"
+spec:
+  parentRefs:
+    - name: pangolin
+      namespace: pangolin-gateway
+  hostnames:
+    - argocd.cloud.p3l1.de
+  rules:
+    - backendRefs:
+        - name: argocd-server
+          port: 80

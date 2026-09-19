@@ -3,14 +3,14 @@
 #
 # site verweist auf "Homelab Services" - die Site, an der der Newt aus
 # apps/newt haengt. Die uebrigen Sites (Homelab Documents, Homelab
-# Monitoring) gehoeren zu anderen Hosts und werden hier nicht angefasst.
+# Monitoring) gehören zu anderen Hosts und werden hier nicht angefasst.
 #
 # Die Ziele zeigen auf die ExternalName-Dienste aus apps/newt/config/services,
 # die Newt im Cluster aufloest. So steht hier je Anwendung ein Name,
 # unabhaengig davon, in welchem Namensraum sie laeuft.
 #
 # Angewendet von der Tekton-Pipeline in pangolin/tekton, nicht von ArgoCD.
-# Nur ueber einen Pangolin-Client erreichbar, nicht aus dem Netz. Der
+# Nur über einen Pangolin-Client erreichbar, nicht aus dem Netz. Der
 # Machine Client "homelab-argocd CI" nutzt den Alias, um aus GitHub Actions
 # die Blueprint-Pipeline anzustossen.
 private-resources:
@@ -20,16 +20,16 @@ private-resources:
     destination: el-pangolin-blueprints.tekton-pipelines.svc.cluster.local
     site: intent-anniella-pulchra
     tcp-ports: "8080"
-    # Nicht tekton.homelab.internal - der Name gehoert der Traefik-Route im
-    # LAN; zwei Ziele unter einem Namen waeren nur verwirrend.
+    # Nicht tekton.homelab.internal - der Name gehört der Traefik-Route im
+    # LAN; zwei Ziele unter einem Namen wären nur verwirrend.
     alias: tekton-webhook.homelab.internal
-    # Zugriff nur fuer den CI-Client. Keine Rollen und keine Benutzer:
+    # Zugriff nur für den CI-Client. Keine Rollen und keine Benutzer:
     # Admins haben ohnehin Zugriff, und der interne und der Pocket-ID-Benutzer
-    # teilen sich Benutzername und Adresse - der Blueprint loest ueber genau
+    # teilen sich Benutzername und Adresse - der Blueprint loest über genau
     # diese Felder auf und traefe daher immer beide.
     #
-    # Die Liste gehoert in den Blueprint, nicht nur in die API: jeder Lauf
-    # loescht die bestehenden Zuordnungen und setzt sie aus dieser Datei neu.
+    # Die Liste gehört in den Blueprint, nicht nur in die API: jeder Lauf
+    # löscht die bestehenden Zuordnungen und setzt sie aus dieser Datei neu.
     machines:
       # niceId des Clients "homelab-argocd CI"
       - fine-mastigoproctus-giganteus
@@ -44,19 +44,19 @@ private-resources:
     ssl: true
     site: intent-anniella-pulchra
     # scheme/destination-port beschreiben den Weg zum Ziel, nicht den zum
-    # Client - der laeuft ueber ssl.
+    # Client - der laeuft über ssl.
     scheme: http
     destination: newt-paperless-mcp-service.newt.svc.cluster.local
     destination-port: 3000
     # Ohne machines-Liste haben nur Admins Zugriff. Soll ein bestimmter
-    # Client heran, gehoert dessen niceId hierher - und zwar in diese
+    # Client heran, gehört dessen niceId hierher - und zwar in diese
     # Datei, denn jeder Lauf setzt die Zuordnungen daraus neu.
 
   home-assistant:
     name: Home Assistant
     # Privat wie Paperless MCP: echter Name mit gueltigem Zertifikat, aber
     # nur mit aktivem Pangolin-Client erreichbar. Kein vorgeschaltetes SSO -
-    # Home Assistant meldet selbst an, ueber Pocket ID via auth_oidc, und
+    # Home Assistant meldet selbst an, über Pocket ID via auth_oidc, und
     # die Companion-App wie auch die Webhooks kaemen an einer zweiten
     # Anmeldeseite nicht vorbei.
     mode: http
@@ -68,131 +68,14 @@ private-resources:
     destination-port: 8123
 
 public-resources:
-  argocd:
-    name: ArgoCD
-    protocol: http
-    full-domain: argocd.cloud.p3l1.de
-    auth:
-      sso-enabled: true
-    targets:
-      - site: intent-anniella-pulchra
-        # argocd-server laeuft mit server.insecure=true, beide Dienstports
-        # zeigen auf 8080 und sprechen HTTP. Mit https gab es Bad Gateway.
-        method: http
-        hostname: newt-argocd-service.newt.svc.cluster.local
-        port: 80
-        healthcheck:
-          hostname: newt-argocd-service.newt.svc.cluster.local
-          port: 80
-          path: /healthz
-          interval: 30
-          timeout: 5
-
-  umami:
-    name: Umami
-    protocol: http
-    full-domain: umami.cloud.p3l1.de
-    auth:
-      # Umami sammelt Zugriffe fremder Seiten ein; das Skript muss ohne
-      # Anmeldung erreichbar sein.
-      sso-enabled: false
-    targets:
-      - site: intent-anniella-pulchra
-        method: http
-        hostname: newt-umami-service.newt.svc.cluster.local
-        port: 3000
-        healthcheck:
-          hostname: newt-umami-service.newt.svc.cluster.local
-          port: 3000
-          path: /api/heartbeat
-          interval: 30
-          timeout: 5
-
-  tekton:
-    name: Tekton Dashboard
-    protocol: http
-    full-domain: tekton.cloud.p3l1.de
-    auth:
-      sso-enabled: true
-    targets:
-      - site: intent-anniella-pulchra
-        method: http
-        hostname: newt-tekton-service.newt.svc.cluster.local
-        port: 9097
-        healthcheck:
-          hostname: newt-tekton-service.newt.svc.cluster.local
-          port: 9097
-          path: /
-          interval: 30
-          timeout: 5
-
-  pac:
-    name: Pipelines-as-Code
-    protocol: http
-    full-domain: pac.cloud.p3l1.de
-    auth:
-      # Muss ohne Anmeldung erreichbar sein: GitHub stellt die Events
-      # unbeaufsichtigt zu. Der Controller prueft stattdessen die
-      # HMAC-Signatur, mit der GitHub jeden Aufruf unterschreibt.
-      sso-enabled: false
-    targets:
-      - site: intent-anniella-pulchra
-        method: http
-        hostname: newt-pac-service.newt.svc.cluster.local
-        port: 8080
-        healthcheck:
-          hostname: newt-pac-service.newt.svc.cluster.local
-          port: 8080
-          path: /
-          interval: 30
-          timeout: 5
-
-  arcane:
-    name: Arcane
-    protocol: http
-    full-domain: arcane.cloud.p3l1.de
-    auth:
-      sso-enabled: true
-    targets:
-      - site: intent-anniella-pulchra
-        method: http
-        hostname: newt-arcane-service.newt.svc.cluster.local
-        port: 3552
-        healthcheck:
-          hostname: newt-arcane-service.newt.svc.cluster.local
-          port: 3552
-          path: /
-          interval: 30
-          timeout: 5
-
-  # regenalarm ist hierher entfallen: die Route
-  # apps/rain-commute/base/httproute-pangolin.yaml veroeffentlicht den Dienst
-  # jetzt ueber pangolin-gateway, als Ressource gw-rain-commute-rain-commute-pangolin.
+  # Leer, und das ist Absicht: pangolin-gateway veröffentlicht diese Dienste
+  # jetzt aus HTTPRoutes, die bei ihren Anwendungen liegen — je eine Datei
+  # httproute-pangolin.yaml neben der bestehenden Route für Traefik. Die
+  # Ressourcen heißen in Pangolin gw-<namensraum>-<routenname>; der Controller
+  # fasst ausschließlich dieses Präfix an.
   #
-  # Wichtig: Dieser Blueprint loescht nichts. Die alte Ressource "regenalarm"
-  # blieb nach dem Entfernen dieses Eintrags in Pangolin bestehen und musste von
-  # Hand geloescht werden - sonst haette sie regen.cloud.p3l1.de belegt und
-  # jeden Apply des Controllers scheitern lassen, weil full-domain eindeutig
-  # sein muss.
-
-  versatiles:
-    name: VersaTiles
-    protocol: http
-    full-domain: tiles.cloud.p3l1.de
-    targets:
-      - site: intent-anniella-pulchra
-        method: http
-        hostname: newt-versatiles-service.newt.svc.cluster.local
-        port: 8080
-        healthcheck:
-          hostname: newt-versatiles-service.newt.svc.cluster.local
-          port: 8080
-          path: /tiles/bonn/tiles.json
-          interval: 30
-          timeout: 5
-
-# Von Pipelines-as-Code ausgeloest - Aenderung an dieser Datei startet die Pipeline.
-
-# Testlauf nach Installation der GitHub App.
-
-# Erneuter Testlauf.
+  # Die alten Einträge mussten von Hand aus Pangolin gelöscht werden, denn
+  # dieser Blueprint löscht nichts. full-domain ist instanzweit eindeutig: ein
+  # Konflikt hätte jeden Apply des Controllers scheitern lassen, und zwar für
+  # alle Routen, nicht nur für die betroffene.
+  {}

@@ -1,0 +1,27 @@
+# Veröffentlicht den Kachelserver nach außen, über pangolin-gateway statt
+# über den handgeschriebenen Eintrag in pangolin/blueprints/homelab.yaml.
+#
+# Ohne SSO, und das muss so bleiben: rain-commute lädt die Vektorkarte per
+# <script> von tiles.cloud.p3l1.de. Eine Anmeldeseite davor würde die Karte
+# brechen, ohne dass am Regenalarm selbst etwas zu sehen wäre.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: versatiles-pangolin
+  namespace: versatiles
+  annotations:
+    pangolin.p3l1.de/display-name: VersaTiles
+    pangolin.p3l1.de/sso: "false"
+    pangolin.p3l1.de/healthcheck-path: /tiles/bonn/tiles.json
+    pangolin.p3l1.de/healthcheck-interval: "30"
+    pangolin.p3l1.de/healthcheck-timeout: "5"
+spec:
+  parentRefs:
+    - name: pangolin
+      namespace: pangolin-gateway
+  hostnames:
+    - tiles.cloud.p3l1.de
+  rules:
+    - backendRefs:
+        - name: versatiles
+          port: 8080

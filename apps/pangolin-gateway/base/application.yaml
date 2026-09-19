@@ -1,10 +1,10 @@
-# Veroeffentlicht HTTPRoutes als Pangolin-Ressourcen. Ersetzt damit schrittweise
+# Veröffentlicht HTTPRoutes als Pangolin-Ressourcen. Ersetzt damit schrittweise
 # die handgeschriebenen public-resources aus pangolin/blueprints/homelab.yaml:
 # jede Route, die auf die GatewayClass "pangolin" zeigt, legt der Controller
-# selbst an - und raeumt sie weg, sobald die Route verschwindet.
+# selbst an - und räumt sie weg, sobald die Route verschwindet.
 #
-# Der Controller fasst ausschliesslich Ressourcen mit dem Praefix "gw-" an. Die
-# uebrigen Eintraege aus homelab.yaml bleiben unberuehrt, auch waehrend der
+# Der Controller fasst ausschließlich Ressourcen mit dem Präfix "gw-" an. Die
+# uebrigen Eintraege aus homelab.yaml bleiben unberührt, auch während der
 # Umstellung.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -13,7 +13,7 @@ metadata:
   namespace: argocd
   annotations:
     # Nach Traefik, das die Gateway-API-CRDs mitbringt, und nach Newt, dessen
-    # Tunnel die veroeffentlichten Ziele erreichbar macht.
+    # Tunnel die veröffentlichten Ziele erreichbar macht.
     argocd.argoproj.io/sync-wave: "-4"
 spec:
   syncPolicy:
@@ -31,18 +31,18 @@ spec:
         valuesObject:
           pangolin:
             # Integration-API einschliesslich Versionspfad - nicht die interne
-            # API. Zeigt das hierher falsch, kommt jeder Aufruf als 401 zurueck
+            # API. Zeigt das hierher falsch, kommt jeder Aufruf als 401 zurück
             # und sieht aus wie ein falscher Schluessel.
             endpoint: https://cloud.p3l1.de/v1
             org: cloud.p3l1.de
             # Site "Homelab Services", dieselbe, an der der Newt aus apps/newt
-            # haengt. Routen koennen sie per Annotation ueberschreiben.
+            # haengt. Routen können sie per Annotation überschreiben.
             defaultSite: intent-anniella-pulchra
             apiKeySecret:
               name: pangolin-gateway-credentials
               key: PANGOLIN_API_KEY
             # Der handgeschriebene Eintrag "regenalarm" wurde zuvor von Hand aus
-            # Pangolin geloescht; er hielt regen.cloud.p3l1.de und haette jeden
+            # Pangolin gelöscht; er hielt regen.cloud.p3l1.de und hätte jeden
             # Apply scheitern lassen. Zum Nachstellen eines Trockenlaufs wieder
             # auf true setzen.
             dryRun: false

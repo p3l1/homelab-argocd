@@ -1,27 +1,27 @@
-# Veroeffentlicht Regenalarm nach aussen, ueber pangolin-gateway statt ueber
+# Veröffentlicht Regenalarm nach außen, über pangolin-gateway statt über
 # den handgeschriebenen Eintrag in pangolin/blueprints/homelab.yaml.
 #
 # Getrennt von httproute.yaml, weil die beiden Wege verschiedene Namen tragen:
 # regen.homelab.internal beantwortet Traefik im LAN, regen.cloud.p3l1.de
-# beantwortet Pangolin von aussen. Eine Route mit beiden Namen ginge nicht -
-# der Controller veroeffentlicht einen Namen je Route.
+# beantwortet Pangolin von außen. Eine Route mit beiden Namen ginge nicht -
+# der Controller veröffentlicht einen Namen je Route.
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: rain-commute-pangolin
   namespace: rain-commute
   annotations:
-    # Der Name, den Pangolin im Dashboard zeigt. Ohne ihn hiesse die Ressource
-    # "rain-commute/rain-commute-pangolin" - die Umstellung wuerde den Dienst
+    # Der Name, den Pangolin im Dashboard zeigt. Ohne ihn hieße die Ressource
+    # "rain-commute/rain-commute-pangolin" - die Umstellung würde den Dienst
     # also nebenbei umbenennen.
     pangolin.p3l1.de/display-name: Regenalarm
-    # Ersetzt den healthcheck des bisherigen Blueprint-Eintrags unveraendert.
-    # Hostname und Port erbt die Pruefung vom Ziel.
+    # Ersetzt den healthcheck des bisherigen Blueprint-Eintrags unverändert.
+    # Hostname und Port erbt die Prüfung vom Ziel.
     pangolin.p3l1.de/healthcheck-path: /healthz
     pangolin.p3l1.de/healthcheck-interval: "30"
     pangolin.p3l1.de/healthcheck-timeout: "5"
     # sso bleibt ungesetzt: der Vorgabewert ist "true". Der bisherige Eintrag
-    # trug keinen auth-Block und war damit offen erreichbar - das aendert sich
+    # trug keinen auth-Block und war damit offen erreichbar - das ändert sich
     # mit der Umstellung bewusst.
 spec:
   parentRefs:
@@ -30,7 +30,7 @@ spec:
   hostnames:
     - regen.cloud.p3l1.de
   rules:
-    # Kein matches-Block: v0.1 veroeffentlicht genau eine Regel ohne Filter,
+    # Kein matches-Block: v0.1 veröffentlicht genau eine Regel ohne Filter,
     # und Pangolin leitet ohnehin die ganze Domain an das Ziel weiter.
     - backendRefs:
         - name: rain-commute
