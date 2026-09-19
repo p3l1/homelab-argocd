@@ -1,0 +1,53 @@
+# ABOUTME: Kopiert die Preview-Secrets in jeden Namensraum mit dem Label.
+# ABOUTME: Kein eigenes Image noetig, der Code kommt aus der ConfigMap.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: preview-secrets
+  namespace: preview-secrets
+  labels:
+    app.kubernetes.io/name: preview-secrets
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: preview-secrets
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: preview-secrets
+    spec:
+      serviceAccountName: preview-secrets
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+      containers:
+        - name: sync
+          image: python:3.13-slim
+          command: ["python", "-u", "/src/sync.py"]
+          env:
+            - name: PYTHONDONTWRITEBYTECODE
+              value: "1"
+            - name: SOURCE_NAMESPACE
+              value: preview-secrets
+            - name: SECRET_NAMES
+              value: ghcr-pull,taktwerk-preview-secrets
+            - name: INTERVAL_SECONDS
+              value: "30"
+          resources:
+            requests: { cpu: 10m, memory: 64Mi }
+            limits: { memory: 128Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: src
+              mountPath: /src
+      volumes:
+        - name: src
+          configMap:
+            name: preview-secrets-src

@@ -1,0 +1,61 @@
+# Kommentiert die Adresse einer Preview-Instanz an die Pull Request, sobald sie
+# gesund ist. commentTag laesst jeden Lauf denselben Kommentar aktualisieren,
+# statt bei jedem Push einen neuen anzuhaengen.
+#
+# appID und installationID sind keine Geheimnisse; der private Schluessel liegt
+# SOPS-verschluesselt in secrets/argocd-notifications.sops.yaml.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-notifications-cm
+data:
+  service.github: |
+    appID: $github-appID
+    installationID: $github-installationID
+    privateKey: $github-privateKey
+    # Die Quelle der Application zeigt auf ghcr, nicht auf GitHub. Beide Pfade
+    # lesen deshalb aus Annotationen, die das ApplicationSet setzt.
+    repoURLPath: '{{index .app.metadata.annotations "taktwerk.p3l1.de/repo-url"}}'
+    revisionPath: '{{index .app.metadata.annotations "taktwerk.p3l1.de/revision"}}'
+
+  trigger.on-deployed: |
+    - description: Anwendung ist synchron und gesund
+      send:
+        - taktwerk-preview-ready
+      when: app.status.operationState.phase in ['Succeeded'] and app.status.health.status == 'Healthy'
+      # Einmal je beobachteter Revision, nicht bei jedem Reconcile.
+      oncePer: app.status.sync.revision
+
+  trigger.on-health-degraded: |
+    - description: Anwendung ist unhealthy
+      send:
+        - taktwerk-preview-degraded
+      when: app.status.health.status == 'Degraded'
+      oncePer: app.status.sync.revision
+
+  template.taktwerk-preview-ready: |
+    github:
+      pullRequestComment:
+        commentTag: taktwerk-preview
+        content: |
+          **Preview-Instanz steht** — {{index .app.metadata.annotations "taktwerk.p3l1.de/preview-url"}}
+
+          | | |
+          |---|---|
+          | Anwendung | {{index .app.metadata.annotations "taktwerk.p3l1.de/preview-url"}} |
+          | Postfach | {{index .app.metadata.annotations "taktwerk.p3l1.de/mailpit-url"}} |
+          | Revision | `{{.app.status.sync.revision}}` |
+
+          Beide Adressen liegen hinter Pangolins Anmeldung. Die Instanz traegt
+          Demo-Daten und verschwindet, sobald das Label `preview` entfernt oder
+          die PR geschlossen wird.
+
+  template.taktwerk-preview-degraded: |
+    github:
+      pullRequestComment:
+        commentTag: taktwerk-preview
+        content: |
+          **Preview-Instanz ist unhealthy** — {{.app.metadata.name}}
+
+          Stand: `{{.app.status.health.status}}`. Einzelheiten in ArgoCD unter
+          https://argocd.cloud.p3l1.de/applications/{{.app.metadata.name}}

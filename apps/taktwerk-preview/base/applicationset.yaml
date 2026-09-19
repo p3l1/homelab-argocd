@@ -1,0 +1,95 @@
+# Eine Taktwerk-Instanz je Pull Request mit dem Label "preview".
+#
+# Chart und Images kommen aus ghcr, beide mit dem Commit der PR im Namen:
+# jeder Push erzeugt damit eine neue Spezifikation und loest den Redeploy aus,
+# ohne dass ein veraenderliches Tag verfolgt werden muesste.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: taktwerk-preview
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - pullRequest:
+        github:
+          owner: p3l1
+          repo: taktwerk
+          # Nur PRs, die alle genannten Labels tragen.
+          labels:
+            - preview
+          appSecretName: taktwerk-github-app
+        # Kein Webhook: der ApplicationSet-Controller hoert auf einem eigenen
+        # Dienst, nicht auf argocd-server, und braeuchte eine eigene Route.
+        requeueAfterSeconds: 120
+  template:
+    metadata:
+      name: taktwerk-pr-{{ .number }}
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+      annotations:
+        # Woraus die Benachrichtigung ihren Kommentar baut. Die Quelle der
+        # Application zeigt auf ghcr, nicht auf GitHub - der github-Dienst
+        # findet die PR sonst nicht.
+        taktwerk.p3l1.de/repo-url: https://github.com/p3l1/taktwerk
+        taktwerk.p3l1.de/revision: "{{ .head_sha }}"
+        taktwerk.p3l1.de/preview-url: https://pr-{{ .number }}.taktwerk.cloud.p3l1.de
+        taktwerk.p3l1.de/mailpit-url: https://pr-{{ .number }}-mailpit.taktwerk.cloud.p3l1.de
+        notifications.argoproj.io/subscribe.on-deployed.github: ""
+        notifications.argoproj.io/subscribe.on-health-degraded.github: ""
+    spec:
+      project: apps
+      source:
+        repoURL: ghcr.io/p3l1/charts
+        chart: taktwerk
+        targetRevision: 0.0.0-pr{{ .number }}.{{ .head_short_sha_7 }}
+        helm:
+          valuesObject:
+            host: pr-{{ .number }}.taktwerk.cloud.p3l1.de
+            image:
+              tag: pr-{{ .number }}-{{ .head_short_sha_7 }}
+              pullSecrets:
+                - name: ghcr-pull
+            existingSecret: taktwerk-preview-secrets
+            namespace:
+              create: true
+              labels:
+                p3l1.de/preview-secrets: "true"
+            database:
+              mode: cnpg
+              cnpg:
+                instances: 1
+                storage: 1Gi
+            mailpit:
+              enabled: true
+              host: pr-{{ .number }}-mailpit.taktwerk.cloud.p3l1.de
+            seed:
+              enabled: true
+            route:
+              parentRefs:
+                - name: pangolin
+                  namespace: pangolin-gateway
+              annotations:
+                pangolin.p3l1.de/display-name: Taktwerk PR #{{ .number }}
+                pangolin.p3l1.de/sso: "true"
+                pangolin.p3l1.de/healthcheck-path: /api/version
+            networkPolicy:
+              enabled: true
+              allowFromNamespaces:
+                - newt
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: taktwerk-pr-{{ .number }}
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        # Faengt das Fenster ab, in dem das Label schon steht, die CI aber
+        # Chart und Images noch nicht gepusht hat.
+        retry:
+          limit: 10
+          backoff:
+            duration: 30s
+            factor: 2
+            maxDuration: 10m

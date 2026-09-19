@@ -1,0 +1,33 @@
+# Namensraeume lesen, um die markierten zu finden; Secrets schreiben, um sie
+# dort abzulegen. Auf bestimmte Namen laesst RBAC Schreibrechte nicht
+# einschraenken - das erledigt SECRET_NAMES im Programm.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: preview-secrets
+  namespace: preview-secrets
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: preview-secrets
+rules:
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "create", "update"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: preview-secrets
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: preview-secrets
+subjects:
+  - kind: ServiceAccount
+    name: preview-secrets
+    namespace: preview-secrets

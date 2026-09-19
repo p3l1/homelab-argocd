@@ -1,0 +1,11 @@
+{
+  "appName": "preview-secrets",
+  "userGivenName": "preview-secrets",
+  "destNamespace": "preview-secrets",
+  "destServer": "https://kubernetes.default.svc",
+  "srcPath": "apps/preview-secrets/base",
+  "srcRepoURL": "https://github.com/p3l1/homelab-argocd.git",
+  "srcTargetRevision": "main",
+  "labels": null,
+  "annotations": null
+}

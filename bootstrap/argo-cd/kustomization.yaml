@@ -28,3 +28,18 @@ resources:
 - ./httproute.yaml
 - ./httproute-pangolin.yaml
 - ./certificate.yaml
+
+patches:
+  # Trigger, Vorlagen und der GitHub-Dienst fuer die Preview-Kommentare.
+  - path: ./notifications-cm.yaml
+  # Die Manifeste liefern das Secret leer mit. Bliebe es in der Application,
+  # wuerde selfHeal den von Hand angewandten Inhalt wieder herausloeschen.
+  - target:
+      kind: Secret
+      name: argocd-notifications-secret
+    patch: |
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: argocd-notifications-secret
+      $patch: delete
