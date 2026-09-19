@@ -1,0 +1,22 @@
+# Das Gateway, auf das die zu veroeffentlichenden Routen zeigen. Es traegt
+# keine Adresse und keine Listener-Zertifikate: Pangolin terminiert TLS
+# ausserhalb des Clusters, der Weg hinein laeuft durch den Newt-Tunnel.
+#
+# Der Listener ist trotzdem noetig, weil die Gateway API ihn verlangt. Der
+# Controller wertet ihn nicht aus - er liest Hostname und Backend der Route.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: pangolin
+  namespace: pangolin-gateway
+spec:
+  gatewayClassName: pangolin
+  listeners:
+    - name: http
+      port: 80
+      protocol: HTTP
+      allowedRoutes:
+        # Die zu veroeffentlichenden Anwendungen liegen in ihren eigenen
+        # Namensraeumen, nicht hier.
+        namespaces:
+          from: All

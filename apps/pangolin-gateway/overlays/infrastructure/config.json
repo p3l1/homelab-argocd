@@ -1,0 +1,11 @@
+{
+  "appName": "pangolin-gateway",
+  "userGivenName": "pangolin-gateway",
+  "destNamespace": "pangolin-gateway",
+  "destServer": "https://kubernetes.default.svc",
+  "srcPath": "apps/pangolin-gateway/base",
+  "srcRepoURL": "https://github.com/p3l1/homelab-argocd.git",
+  "srcTargetRevision": "main",
+  "labels": null,
+  "annotations": null
+}
