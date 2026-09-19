@@ -26,4 +26,5 @@ resources:
 # von cert-manager. Beim ersten Anwenden gibt es die noch nicht - ArgoCD
 # zieht sie nach, sobald die Infrastruktur steht.
 - ./httproute.yaml
+- ./httproute-pangolin.yaml
 - ./certificate.yaml
