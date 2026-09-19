@@ -1,9 +1,11 @@
 # Veröffentlicht den Kachelserver nach außen, über pangolin-gateway statt
 # über den handgeschriebenen Eintrag in pangolin/blueprints/homelab.yaml.
 #
-# Ohne SSO, und das muss so bleiben: rain-commute lädt die Vektorkarte per
-# <script> von tiles.cloud.p3l1.de. Eine Anmeldeseite davor würde die Karte
-# brechen, ohne dass am Regenalarm selbst etwas zu sehen wäre.
+# Mit SSO, wie alle übrigen Dienste. rain-commute lädt die Vektorkarte per
+# <script> von tiles.cloud.p3l1.de: das trägt, solange Pangolins Sitzungscookie
+# für die gesamte Domain gilt — wer den Regenalarm sieht, ist bereits angemeldet.
+# Bricht die Karte, ist das Cookie auf die einzelne Subdomain beschränkt und die
+# Annotation muss zurück auf "false".
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -11,7 +13,6 @@ metadata:
   namespace: versatiles
   annotations:
     pangolin.p3l1.de/display-name: VersaTiles
-    pangolin.p3l1.de/sso: "false"
     pangolin.p3l1.de/healthcheck-path: /tiles/bonn/tiles.json
     pangolin.p3l1.de/healthcheck-interval: "30"
     pangolin.p3l1.de/healthcheck-timeout: "5"
