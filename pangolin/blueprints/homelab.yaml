@@ -165,21 +165,15 @@ public-resources:
           interval: 30
           timeout: 5
 
-  regenalarm:
-    name: Regenalarm
-    protocol: http
-    full-domain: regen.cloud.p3l1.de
-    targets:
-      - site: intent-anniella-pulchra
-        method: http
-        hostname: newt-rain-commute-service.newt.svc.cluster.local
-        port: 8000
-        healthcheck:
-          hostname: newt-rain-commute-service.newt.svc.cluster.local
-          port: 8000
-          path: /healthz
-          interval: 30
-          timeout: 5
+  # regenalarm ist hierher entfallen: die Route
+  # apps/rain-commute/base/httproute-pangolin.yaml veroeffentlicht den Dienst
+  # jetzt ueber pangolin-gateway, als Ressource gw-rain-commute-rain-commute-pangolin.
+  #
+  # Wichtig: Dieser Blueprint loescht nichts. Die alte Ressource "regenalarm"
+  # blieb nach dem Entfernen dieses Eintrags in Pangolin bestehen und musste von
+  # Hand geloescht werden - sonst haette sie regen.cloud.p3l1.de belegt und
+  # jeden Apply des Controllers scheitern lassen, weil full-domain eindeutig
+  # sein muss.
 
   versatiles:
     name: VersaTiles
