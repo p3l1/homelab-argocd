@@ -95,7 +95,12 @@ spec:
             # siehe die Regeln unten. Unbelegt hiesse "production", und dann
             # zeigt sie nichts.
             sentry:
-              environment: preview
+              # Eigene Instanz, eigene Umgebung: so stehen die Fehler einer
+              # Preview unter ihrer Nummer und nicht im Topf mit Produktion.
+              environment: preview-{{ .number }}
+              # Moderne DSN ohne Passwortteil - die Anwendung reicht sie
+              # ohnehin an jeden Browser weiter, der die Instanz oeffnet.
+              dsn: https://6767bb3ce02a4f39a077eb1161ba542d@errors.cloud.p3l1.de/1
             oidc:
               enabled: true
               issuer: https://id.cloud.p3l1.de
