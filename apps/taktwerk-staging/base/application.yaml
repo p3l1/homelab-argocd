@@ -1,0 +1,101 @@
+# Eine dauerhafte Taktwerk-Instanz mit dem Stand, der als Naechstes released
+# wird. Anders als eine Preview haengt sie an keiner PR: Name und Namensraum
+# bleiben ueber Release-Zyklen stehen, also auch die Datenbank.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: taktwerk-staging
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: apps
+  source:
+    repoURL: ghcr.io/p3l1/charts
+    chart: taktwerk
+    # Die hoechste Chart-Version ueber 0.1.0. Das "-0" ist tragend: ohne den
+    # Prerelease-Teil im Constraint ueberspringt Masterminds jede Vorabversion,
+    # und der Range faende nur die Release-Charts.
+    targetRevision: ">=0.1.0-0"
+    helm:
+      valuesObject:
+        host: staging.taktwerk.cloud.p3l1.de
+        image:
+          # Absichtlich leer: der Tag kommt aus der appVersion des Charts, die
+          # der Build auf dieselbe Version setzt. Nur so muss diese Datei die
+          # Version nicht kennen.
+          tag: ""
+          pullSecrets:
+            - name: ghcr-pull
+        existingSecret: taktwerk-preview-secrets
+        namespace:
+          create: true
+          labels:
+            p3l1.de/preview-secrets: "true"
+        database:
+          mode: cnpg
+          cnpg:
+            instances: 1
+            storage: 2Gi
+        # Dauerhaft an, anders als bei den Previews: ohne Postfach laesst sich
+        # weder eine Einladung noch ein Passwort-Reset vorfuehren.
+        mailpit:
+          enabled: true
+          host: staging-mailpit.taktwerk.cloud.p3l1.de
+          # Eigene Annotationen: die Regeln der Anwendung oeffnen jeden Pfad,
+          # weil sie selbst anmeldet. Mailpit tut das nicht.
+          routeAnnotations:
+            pangolin.p3l1.de/display-name: Taktwerk Staging Postfach
+            pangolin.p3l1.de/sso: "true"
+            pangolin.p3l1.de/healthcheck-mode: tcp
+        seed:
+          # Ueberspringt sich selbst, sobald die Datenbank Benutzer hat - die
+          # angesammelten Daten ueberstehen also jeden Redeploy.
+          enabled: true
+          adminEmail: philipp@herzo.gs
+        passwordLogin:
+          enabled: true
+        sentry:
+          # Das Praefix "preview-" traegt: die Anwendung schaltet daran das
+          # Panel mit den Seed-Zugangsdaten frei (_is_preview_deployment).
+          # "staging" allein waere nicht anmeldbar.
+          environment: preview-staging
+          dsn: https://6767bb3ce02a4f39a077eb1161ba542d@errors.cloud.p3l1.de/1
+        oidc:
+          enabled: true
+          issuer: https://id.cloud.p3l1.de
+          providerId: pocket-id
+          providerName: Pocket ID
+        route:
+          parentRefs:
+            - name: pangolin
+              namespace: pangolin-gateway
+          annotations:
+            pangolin.p3l1.de/display-name: Taktwerk Staging
+            pangolin.p3l1.de/sso: "true"
+            pangolin.p3l1.de/access-rules: |
+              - action: pass
+                match: path
+                value: /api/preview/*
+              - action: allow
+                match: path
+                value: /*
+            pangolin.p3l1.de/healthcheck-path: /api/version
+        networkPolicy:
+          enabled: true
+          allowFromNamespaces:
+            - newt
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: taktwerk-staging
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    # Faengt das Fenster ab, in dem der Chart noch nicht in ghcr liegt.
+    retry:
+      limit: 10
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 10m
