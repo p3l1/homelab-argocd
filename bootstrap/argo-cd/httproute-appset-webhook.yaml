@@ -11,10 +11,13 @@
 # https://github.com/argoproj/argo-cd/issues/21444. Ein Secret an der App
 # waere damit wirkungslos, also grenzt stattdessen die Herkunft ein.
 #
-# Ohne SSO gaebe es sonst gar keine Schranke: GitHub kann sich nicht anmelden,
-# und eine Anmeldeseite vor einem Webhook hilft niemandem. Die letzte Regel
-# schliesst deshalb alles, was nicht von GitHub kommt - erste Uebereinstimmung
-# gewinnt, also stehen die erlaubten Bereiche davor.
+# Die letzte Regel schliesst alles, was nicht von GitHub kommt; erste
+# Uebereinstimmung gewinnt, also stehen die erlaubten Bereiche davor.
+#
+# SSO bleibt trotzdem an. Es kostet nichts, weil "allow" die Anmeldung fuer
+# GitHub ohnehin ueberspringt, und es traegt genau dann, wenn die Regeln nicht
+# ankommen - eine Fassung des Controllers, die diese Annotation nicht kennt,
+# uebergeht sie ohne Fehler. Ohne SSO stuende der Endpunkt dann offen.
 #
 # Die Bereiche stehen unter https://api.github.com/meta im Feld "hooks" und
 # aendern sich gelegentlich.
@@ -25,7 +28,7 @@ metadata:
   namespace: argocd
   annotations:
     pangolin.p3l1.de/display-name: ArgoCD ApplicationSet Webhook
-    pangolin.p3l1.de/sso: "false"
+    pangolin.p3l1.de/sso: "true"
     pangolin.p3l1.de/access-rules: |
       - action: allow
         match: cidr
