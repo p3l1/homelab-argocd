@@ -25,7 +25,7 @@ metadata:
   namespace: argocd
   annotations:
     pangolin.p3l1.de/display-name: ArgoCD ApplicationSet Webhook
-    pangolin.p3l1.de/sso: "true"
+    pangolin.p3l1.de/sso: "false"
     pangolin.p3l1.de/access-rules: |
       - action: allow
         match: cidr
