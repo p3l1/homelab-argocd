@@ -130,9 +130,12 @@ spec:
                 # genau wie eine Anfrage, auf die keine Regel passt.
                 pangolin.p3l1.de/sso: "true"
                 pangolin.p3l1.de/access-rules: |
+                  # Beide Pfade unter preview/: die Zugangsdaten selbst und
+                  # der Weg, der nach der Anmeldung zur Seite zurueckfuehrt.
+                  # Ein Stern als ganzes Segment deckt null oder mehr davon ab.
                   - action: pass
                     match: path
-                    value: /api/preview/credentials
+                    value: /api/preview/*
                   # /* und nicht /** : ein Stern als ganzes Segment passt bei
                   # Pangolin auf null oder mehr Segmente und deckt damit auch
                   # die Wurzel ab. Zwei Sterne werden zu einem Muster, das genau
