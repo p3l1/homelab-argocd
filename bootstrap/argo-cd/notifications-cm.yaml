@@ -9,21 +9,21 @@ kind: ConfigMap
 metadata:
   name: argocd-notifications-cm
 data:
+  # Nur die Zugangsdaten. repoURLPath und revisionPath gehoeren in die
+  # Vorlagen - hier stehend werden sie stillschweigend ignoriert.
   service.github: |
     appID: $github-appID
     installationID: $github-installationID
     privateKey: $github-privateKey
-    # Die Quelle der Application zeigt auf ghcr, nicht auf GitHub. Beide Pfade
-    # lesen deshalb aus Annotationen, die das ApplicationSet setzt.
-    repoURLPath: '{{index .app.metadata.annotations "taktwerk.p3l1.de/repo-url"}}'
-    revisionPath: '{{index .app.metadata.annotations "taktwerk.p3l1.de/revision"}}'
 
   trigger.on-deployed: |
     - description: Anwendung ist synchron und gesund
       send:
         - taktwerk-preview-ready
-      when: app.status.operationState.phase in ['Succeeded'] and app.status.health.status == 'Healthy'
-      # Einmal je beobachteter Revision, nicht bei jedem Reconcile.
+      # Die Pruefung auf operationState faengt den Zustand ab, in dem noch gar
+      # keine Operation lief - ohne sie bricht der Ausdruck ab.
+      when: app.status.operationState != nil and app.status.operationState.phase in ['Succeeded'] and app.status.health.status == 'Healthy'
+      # Einmal je Chart-Version, also je Commit der Pull Request.
       oncePer: app.status.sync.revision
 
   trigger.on-health-degraded: |
@@ -35,6 +35,11 @@ data:
 
   template.taktwerk-preview-ready: |
     github:
+      # Die Quelle der Application zeigt auf ghcr, nicht auf GitHub, und die
+      # Revision ist eine Chart-Version. Beides kommt deshalb aus Annotationen,
+      # die das ApplicationSet setzt.
+      repoURLPath: '{{index .app.metadata.annotations "taktwerk.p3l1.de/repo-url"}}'
+      revisionPath: '{{index .app.metadata.annotations "taktwerk.p3l1.de/revision"}}'
       pullRequestComment:
         commentTag: taktwerk-preview
         content: |
@@ -44,7 +49,7 @@ data:
           |---|---|
           | Anwendung | {{index .app.metadata.annotations "taktwerk.p3l1.de/preview-url"}} |
           | Postfach | {{index .app.metadata.annotations "taktwerk.p3l1.de/mailpit-url"}} |
-          | Revision | `{{.app.status.sync.revision}}` |
+          | Chart | `{{.app.status.sync.revision}}` |
 
           Beide Adressen liegen hinter Pangolins Anmeldung. Die Instanz traegt
           Demo-Daten und verschwindet, sobald das Label `preview` entfernt oder
@@ -52,10 +57,12 @@ data:
 
   template.taktwerk-preview-degraded: |
     github:
+      repoURLPath: '{{index .app.metadata.annotations "taktwerk.p3l1.de/repo-url"}}'
+      revisionPath: '{{index .app.metadata.annotations "taktwerk.p3l1.de/revision"}}'
       pullRequestComment:
         commentTag: taktwerk-preview
         content: |
           **Preview-Instanz ist unhealthy** — {{.app.metadata.name}}
 
           Stand: `{{.app.status.health.status}}`. Einzelheiten in ArgoCD unter
-          https://argocd.cloud.p3l1.de/applications/{{.app.metadata.name}}
+          {{.context.argocdUrl}}/applications/{{.app.metadata.name}}
