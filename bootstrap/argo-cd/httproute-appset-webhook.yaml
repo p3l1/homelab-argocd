@@ -42,11 +42,6 @@ metadata:
       - action: allow
         match: cidr
         value: 143.55.64.0/20
-      # Voruebergehend: laesst den eigenen Anschluss an denselben Weg, den
-      # GitHub nimmt, um die 404 nachzustellen. Faellt nach der Messung weg.
-      - action: allow
-        match: cidr
-        value: 92.208.29.107/32
       - action: deny
         match: cidr
         value: 0.0.0.0/0
