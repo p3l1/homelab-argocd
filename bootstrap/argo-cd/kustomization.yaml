@@ -27,6 +27,7 @@ resources:
 # zieht sie nach, sobald die Infrastruktur steht.
 - ./httproute.yaml
 - ./httproute-pangolin.yaml
+- ./httproute-appset-webhook.yaml
 - ./certificate.yaml
 
 patches:

@@ -1,0 +1,52 @@
+# Nimmt GitHubs Pull-Request-Ereignisse entgegen, damit der Generator nicht auf
+# seinen naechsten Durchlauf warten muss. Spuerbar beim Abbau: dort ist die
+# Wartezeit reines Nichtstun, waehrend sie beim Aufbau ohnehin hinter der CI
+# verschwindet.
+#
+# Eigener Dienst, nicht argocd-server: der ApplicationSet-Controller bringt
+# einen eigenen Webhook-Server auf Port 7000 mit.
+#
+# Die Zugriffsregeln sind der einzige Schutz. Der Controller prueft die
+# Signatur nicht, mit der GitHub jeden Aufruf unterschreibt - siehe
+# https://github.com/argoproj/argo-cd/issues/21444. Ein Secret an der App
+# waere damit wirkungslos, also grenzt stattdessen die Herkunft ein:
+# "allow" ueberspringt die Anmeldung fuer GitHubs Zustell-IPs, alles andere
+# faellt auf die Anmeldung zurueck.
+#
+# Die Bereiche stehen unter https://api.github.com/meta im Feld "hooks" und
+# aendern sich gelegentlich.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: argocd-appset-webhook
+  namespace: argocd
+  annotations:
+    pangolin.p3l1.de/display-name: ArgoCD ApplicationSet Webhook
+    pangolin.p3l1.de/sso: "true"
+    pangolin.p3l1.de/access-rules: |
+      - action: allow
+        match: cidr
+        value: 192.30.252.0/22
+      - action: allow
+        match: cidr
+        value: 185.199.108.0/22
+      - action: allow
+        match: cidr
+        value: 140.82.112.0/20
+      - action: allow
+        match: cidr
+        value: 143.55.64.0/20
+spec:
+  parentRefs:
+    - name: pangolin
+      namespace: pangolin-gateway
+  hostnames:
+    - argocd-webhook.cloud.p3l1.de
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /api/webhook
+      backendRefs:
+        - name: argocd-applicationset-controller
+          port: 7000
