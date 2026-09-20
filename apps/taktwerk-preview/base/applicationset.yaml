@@ -65,7 +65,10 @@ spec:
             # pruefen will, und das ist der seltenere Fall. Das Label dafuer
             # heisst mailpit.
             mailpit:
-              enabled: {{ if has "mailpit" .labels }}true{{ else }}false{{ end }}
+              # In Anfuehrungszeichen, weil ein Wert, der mit {{ beginnt, sonst
+              # als YAML-Mapping gelesen wird. Das Chart nimmt die Zeichenkette
+              # entgegen und wertet sie aus - Helm allein haelt "false" fuer wahr.
+              enabled: '{{ if has "mailpit" .labels }}true{{ else }}false{{ end }}'
               host: pr-{{ .number }}-mailpit.taktwerk.cloud.p3l1.de
             seed:
               enabled: true
