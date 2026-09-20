@@ -76,6 +76,13 @@ spec:
             # Pocket ID beim ersten Anmelden holt. Erlaubt ist das ueber einen
             # Platzhalter in Pocket IDs Einstellungen:
             #   https://*.taktwerk.cloud.p3l1.de/oidc-client.json
+            # Bleibt an, obwohl Pocket ID konfiguriert ist: die Testlaeufe
+            # melden sich als die vorangelegten Mitglieder an, und die haben
+            # nur ein Passwort. Tragbar ist das, weil die Passwoerter aus dem
+            # zentralen Secret kommen statt aus dem Quelltext - sonst waere
+            # jede offene Instanz mit einem bekannten Wort zu betreten.
+            passwordLogin:
+              enabled: true
             oidc:
               enabled: true
               issuer: https://id.cloud.p3l1.de
