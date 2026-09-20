@@ -70,6 +70,16 @@ spec:
               # entgegen und wertet sie aus - Helm allein haelt "false" fuer wahr.
               enabled: '{{ if has "mailpit" .labels }}true{{ else }}false{{ end }}'
               host: pr-{{ .number }}-mailpit.taktwerk.cloud.p3l1.de
+              # Eigene Annotationen: die Regeln der Anwendung oeffnen jeden
+              # Pfad, weil sie selbst anmeldet. Mailpit tut das nicht - es
+              # haette sonst jede abgefangene Mail offen im Netz, samt
+              # Einladungstoken.
+              routeAnnotations:
+                pangolin.p3l1.de/display-name: Taktwerk PR #{{ .number }} Postfach
+                pangolin.p3l1.de/sso: "true"
+                # Kein Pfad geraten: Mailpit hat keinen, den Pangolin als
+                # gesund kennt, und eine offene Verbindung sagt hier genug.
+                pangolin.p3l1.de/healthcheck-mode: tcp
             seed:
               enabled: true
               # Muss die Adresse sein, fuer die Pocket ID buergt - sonst landet die
@@ -123,10 +133,11 @@ spec:
                   - action: pass
                     match: path
                     value: /api/preview/credentials
-                  # /* und nicht /** : bei Pangolin passt ein Stern als ganzes
-                  # Segment auf null oder mehr Segmente, deckt also auch die
-                  # Wurzel ab. Ein doppelter waere ein Segment, das buchstaeblich
-                  # so heisst.
+                  # /* und nicht /** : ein Stern als ganzes Segment passt bei
+                  # Pangolin auf null oder mehr Segmente und deckt damit auch
+                  # die Wurzel ab. Zwei Sterne werden zu einem Muster, das genau
+                  # ein beliebiges Segment trifft - /** traf weder / noch /a/b,
+                  # sondern nur /a.
                   - action: allow
                     match: path
                     value: /*
