@@ -9,9 +9,12 @@
 # Die Zugriffsregeln sind der einzige Schutz. Der Controller prueft die
 # Signatur nicht, mit der GitHub jeden Aufruf unterschreibt - siehe
 # https://github.com/argoproj/argo-cd/issues/21444. Ein Secret an der App
-# waere damit wirkungslos, also grenzt stattdessen die Herkunft ein:
-# "allow" ueberspringt die Anmeldung fuer GitHubs Zustell-IPs, alles andere
-# faellt auf die Anmeldung zurueck.
+# waere damit wirkungslos, also grenzt stattdessen die Herkunft ein.
+#
+# Ohne SSO gaebe es sonst gar keine Schranke: GitHub kann sich nicht anmelden,
+# und eine Anmeldeseite vor einem Webhook hilft niemandem. Die letzte Regel
+# schliesst deshalb alles, was nicht von GitHub kommt - erste Uebereinstimmung
+# gewinnt, also stehen die erlaubten Bereiche davor.
 #
 # Die Bereiche stehen unter https://api.github.com/meta im Feld "hooks" und
 # aendern sich gelegentlich.
@@ -22,7 +25,7 @@ metadata:
   namespace: argocd
   annotations:
     pangolin.p3l1.de/display-name: ArgoCD ApplicationSet Webhook
-    pangolin.p3l1.de/sso: "true"
+    pangolin.p3l1.de/sso: "false"
     pangolin.p3l1.de/access-rules: |
       - action: allow
         match: cidr
@@ -36,6 +39,9 @@ metadata:
       - action: allow
         match: cidr
         value: 143.55.64.0/20
+      - action: deny
+        match: cidr
+        value: 0.0.0.0/0
 spec:
   parentRefs:
     - name: pangolin
