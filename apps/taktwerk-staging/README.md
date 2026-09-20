@@ -34,6 +34,19 @@ gehört zur *nächsten* Version und liegt damit über dem letzten Release:
 Die Preview-Charts heißen `0.0.0-pr<n>.<sha>` und fallen unter die Untergrenze
 des Ranges.
 
+Das `-0` im Constraint ist tragend. Gegen ein Repository mit genau diesen
+Versionen aufgelöst:
+
+| Constraint | Ergebnis |
+|---|---|
+| `>=0.1.0-0` | `0.33.1-pre.0` |
+| `>=0.1.0` | `0.33.0` |
+| `*` | `0.33.0` |
+
+Ohne den Prerelease-Teil im Constraint überspringt Masterminds jede
+Vorabversion — der Range fände dann nur Release-Charts, und Staging bliebe auf
+dem letzten Release stehen.
+
 ## Scharfe Kante
 
 Fällt der `staging`-Job aus, während ein Release-Chart schon liegt, nimmt ArgoCD

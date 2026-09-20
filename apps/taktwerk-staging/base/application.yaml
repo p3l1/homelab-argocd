@@ -13,9 +13,9 @@ spec:
   source:
     repoURL: ghcr.io/p3l1/charts
     chart: taktwerk
-    # Kein fester Wert, sondern die hoechste Chart-Version ueber 0.1.0. Die
-    # Preview-Charts (0.0.0-pr<n>.<sha>) fallen darunter, und jeder
-    # Staging-Chart (<naechste>-pre.<n>) liegt ueber dem letzten Release.
+    # Die hoechste Chart-Version ueber 0.1.0. Das "-0" ist tragend: ohne den
+    # Prerelease-Teil im Constraint ueberspringt Masterminds jede Vorabversion,
+    # und der Range faende nur die Release-Charts.
     targetRevision: ">=0.1.0-0"
     helm:
       valuesObject:
