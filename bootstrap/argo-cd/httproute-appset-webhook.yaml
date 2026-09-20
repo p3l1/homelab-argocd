@@ -29,6 +29,15 @@ metadata:
   annotations:
     pangolin.p3l1.de/display-name: ArgoCD ApplicationSet Webhook
     pangolin.p3l1.de/sso: "true"
+    # Pangolin stellt einem Ziel nichts zu, dessen Zustand es nicht kennt -
+    # ohne Pruefung antwortet die Adresse mit 404. Der Webhook-Server hat
+    # keinen Pfad, der 2xx liefert: /api/webhook gibt auf GET eine 400,
+    # alles andere 404.
+    #
+    # tcp statt healthcheck-status: "400" - beides ginge, aber die 400 ist ein
+    # Innenleben von ArgoCD, das ein Upgrade aendern darf. Ein offener Port
+    # behauptet weniger und bleibt dabei richtig.
+    pangolin.p3l1.de/healthcheck-mode: tcp
     pangolin.p3l1.de/access-rules: |
       - action: allow
         match: cidr
