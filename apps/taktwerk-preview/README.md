@@ -42,6 +42,38 @@ ab.
 
 Secrets werden von Hand angewandt, nicht von ArgoCD.
 
+## Anmeldung
+
+Die Instanzen stehen **offen im Netz** — kein SSO davor. Angemeldet wird in der
+Anwendung selbst, über Pocket ID: Entra bürgt nur für den Tenant des Chors, die
+Konten dieses Homelabs liegen in Pocket ID.
+
+**Registriert wird nichts.** Jede Instanz liefert unter ihrer eigenen Adresse ein
+Client-ID-Metadaten-Dokument aus, das Pocket ID beim ersten Anmelden holt:
+
+```
+https://pr-<n>.taktwerk.cloud.p3l1.de/oidc-client.json
+```
+
+Erlaubt ist das über einen Platzhalter in Pocket IDs Einstellungen unter
+*OIDC → Metadaten-Dokumente zur Kunden-ID*:
+
+```
+https://*.taktwerk.cloud.p3l1.de/oidc-client.json
+```
+
+Der einfache Platzhalter ersetzt genau ein Namenssegment — jede PR-Nummer, aber
+kein zweiter Punkt. Ein Secret gibt es nicht: solche Clients sind öffentlich,
+und an die Stelle des Secrets tritt PKCE.
+
+`seed.adminEmail` muss die Adresse sein, für die Pocket ID bürgt. Trifft sie
+nicht, legt die erste Anmeldung einen frischen Benutzer ohne Rechte an, statt
+auf dem vorangelegten Superuser zu landen.
+
+Die Passwortanmeldung schaltet sich dabei von selbst ab: Taktwerk lässt sie nur
+zu, solange kein Anmeldedienst konfiguriert ist. Eine offene Instanz bietet also
+Pocket ID und sonst nichts.
+
 ## Kosten im Blick behalten
 
 Jede Instanz belegt eine Datenbank mit eigenem Datenträger, drei Deployments und

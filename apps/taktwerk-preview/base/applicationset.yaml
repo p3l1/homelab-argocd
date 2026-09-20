@@ -66,13 +66,31 @@ spec:
               host: pr-{{ .number }}-mailpit.taktwerk.cloud.p3l1.de
             seed:
               enabled: true
+              # Muss die Adresse sein, fuer die Pocket ID buergt - sonst landet die
+              # Anmeldung auf einem frisch angelegten Benutzer ohne Rechte statt auf
+              # dem vorangelegten Superuser.
+              adminEmail: philipp@herzo.gs
+            # Entra buergt nur fuer den Tenant des Chors; die Konten dieses
+            # Homelabs liegen in Pocket ID. Registriert wird nichts: die Instanz
+            # weist sich mit einem Dokument unter ihrer eigenen Adresse aus, das
+            # Pocket ID beim ersten Anmelden holt. Erlaubt ist das ueber einen
+            # Platzhalter in Pocket IDs Einstellungen:
+            #   https://*.taktwerk.cloud.p3l1.de/oidc-client.json
+            oidc:
+              enabled: true
+              issuer: https://id.cloud.p3l1.de
+              providerId: pocket-id
+              providerName: Pocket ID
             route:
               parentRefs:
                 - name: pangolin
                   namespace: pangolin-gateway
               annotations:
                 pangolin.p3l1.de/display-name: Taktwerk PR #{{ .number }}
-                pangolin.p3l1.de/sso: "true"
+                # Kein SSO davor: die Anwendung meldet selbst an. Zwei Anmeldungen
+                # hintereinander waeren nur laestig, und die zweite pruefte, was die
+                # erste schon geprueft hat.
+                pangolin.p3l1.de/sso: "false"
                 pangolin.p3l1.de/healthcheck-path: /api/version
             networkPolicy:
               enabled: true
