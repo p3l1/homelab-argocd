@@ -123,9 +123,13 @@ spec:
                   - action: pass
                     match: path
                     value: /api/preview/credentials
+                  # /* und nicht /** : bei Pangolin passt ein Stern als ganzes
+                  # Segment auf null oder mehr Segmente, deckt also auch die
+                  # Wurzel ab. Ein doppelter waere ein Segment, das buchstaeblich
+                  # so heisst.
                   - action: allow
                     match: path
-                    value: /**
+                    value: /*
                 pangolin.p3l1.de/healthcheck-path: /api/version
             networkPolicy:
               enabled: true
