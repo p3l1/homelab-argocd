@@ -89,10 +89,13 @@ spec:
             # jede offene Instanz mit einem bekannten Wort zu betreten.
             passwordLogin:
               enabled: true
-            # Zeigt die Seed-Zugangsdaten auf der Anmeldeseite. Erreichbar ist
-            # der Pfad nur mit Pangolin-Anmeldung, siehe die Regeln unten.
-            previewCredentials:
-              enabled: true
+            # Entscheidet mehr als die Fehlermeldungen: eine Instanz, die sich
+            # "preview" nennt, zeigt ihre Seed-Zugangsdaten auf der
+            # Anmeldeseite. Erreichbar ist der Pfad nur mit Pangolin-Anmeldung,
+            # siehe die Regeln unten. Unbelegt hiesse "production", und dann
+            # zeigt sie nichts.
+            sentry:
+              environment: preview
             oidc:
               enabled: true
               issuer: https://id.cloud.p3l1.de
