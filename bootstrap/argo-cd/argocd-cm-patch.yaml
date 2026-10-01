@@ -9,6 +9,10 @@ metadata:
   name: argocd-cm
 data:
   url: https://argocd.cloud.p3l1.de
+  # Kein lokaler Admin mehr: Pocket ID ist der einzige Weg in die
+  # Oberflaeche. Zurueck geht es ueber kubectl, indem dieser Wert in der
+  # ConfigMap wieder auf true steht.
+  admin.enabled: "false"
   oidc.config: |
     name: Pocket-ID
     issuer: https://id.cloud.p3l1.de
