@@ -1,0 +1,13 @@
+# Bindet die Pocket-ID-Gruppen an ArgoCD-Rollen. Dieselben Gruppen wie im
+# Monitoring-Cluster: Gruppen sind bei uns app-weit, Clients instanzweise.
+# policy.default leer heisst: Wer in keiner Gruppe ist, darf nichts.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-rbac-cm
+data:
+  policy.csv: |
+    g, argocd_administrator, role:admin
+    g, argocd_read_only, role:readonly
+  policy.default: ""
+  scopes: "[groups]"

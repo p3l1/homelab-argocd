@@ -33,6 +33,9 @@ resources:
 patches:
   # Trigger, Vorlagen und der GitHub-Dienst fuer die Preview-Kommentare.
   - path: ./notifications-cm.yaml
+  # Anmeldung ueber Pocket ID und die Zuordnung der Gruppen zu Rollen.
+  - path: ./argocd-cm-patch.yaml
+  - path: ./argocd-rbac-cm-patch.yaml
   # Die Manifeste liefern das Secret leer mit. Bliebe es in der Application,
   # wuerde selfHeal den von Hand angewandten Inhalt wieder herausloeschen.
   - target:
