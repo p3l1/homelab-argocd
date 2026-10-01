@@ -269,13 +269,22 @@ argocd-application-controller" cannot list resource ... at the cluster scope
 kubectl -n argocd get applications
 ```
 
-Erwartet werden 23 Applications in `Synced/Healthy`. Die Zugangsdaten für die
-Oberfläche:
+Erwartet werden 23 Applications in `Synced/Healthy`.
+
+Angemeldet wird über Pocket ID, siehe [`kubectl-oidc.md`](kubectl-oidc.md) für
+den Aufbau. Der lokale Admin ist abgeschaltet (`admin.enabled: "false"` in
+`bootstrap/argo-cd/argocd-cm-patch.yaml`).
+
+Beim Neuaufbau steht die ConfigMap allerdings erst, wenn ArgoCD sich selbst
+ausgerollt hat — bis dahin greift das Erstpasswort:
 
 ```bash
 kubectl -n argocd get secret argocd-initial-admin-secret \
   -o jsonpath="{.data.password}" | base64 -d; echo
 ```
+
+Zurück zum lokalen Admin, falls die Anmeldung je klemmt: `admin.enabled` in
+`argocd-cm` auf `true` setzen.
 
 ### Secrets
 
