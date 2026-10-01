@@ -46,6 +46,15 @@ server_config_yaml: |
   write-kubeconfig-mode: "0644"
   node-taint:
     - "CriticalAddonsOnly=true:NoExecute"
+  # Anmeldung ueber Pocket ID, Client "Kubernetes Homelab". Die Praefixe
+  # halten OIDC-Namen von den lokalen Konten getrennt.
+  kube-apiserver-arg:
+    - "oidc-issuer-url=https://id.cloud.p3l1.de"
+    - "oidc-client-id=e0524f83-fe1f-41d7-8403-31e611458c56"
+    - "oidc-username-claim=preferred_username"
+    - "oidc-username-prefix=oidc:"
+    - "oidc-groups-claim=groups"
+    - "oidc-groups-prefix=oidc:"
 
 # --- kube-vip -------------------------------------------------------------
 kube_vip_address: "{{ api_endpoint }}"

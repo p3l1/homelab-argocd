@@ -32,6 +32,11 @@ ansible-playbook playbooks/site.yml
 
 Jeder Lauf ist wiederholbar — der zweite meldet `changed=0`.
 
+## Anmeldung
+
+`kubectl` meldet sich über Pocket ID an, in beiden Clustern. Einrichtung und
+Fallstricke in [`docs/kubectl-oidc.md`](docs/kubectl-oidc.md).
+
 ## Anwendungen
 
 Verwaltet mit `argocd-autopilot`. Details in [`apps/README.md`](apps/README.md).
