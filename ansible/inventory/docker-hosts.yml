@@ -1,0 +1,9 @@
+---
+# Docker-Hosts ausserhalb des Clusters. Eigenes Inventory, weil hosts.yml
+# den k3s-Nodes gehoert. Der Zugang steht in group_vars/docker_hosts.yml -
+# in der Inventory-Datei selbst wuerde group_vars/all ihn ueberstimmen.
+docker_hosts:
+  hosts:
+    cloud:
+      ansible_host: cloud.p3l1.de
+      # Traegt Pangolin, Gerbil, Traefik und Pocket ID.

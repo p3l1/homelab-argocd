@@ -1,0 +1,29 @@
+---
+# Muss mit APP_URL des Managers uebereinstimmen - der Agent paart sich
+# ueber diese Adresse und folgt keiner Umleitung von http auf https.
+arcane_agent_manager_url: https://arcane.cloud.p3l1.de
+
+# Token des Environments. Der Manager erzeugt es beim Anlegen des
+# Environments; die Rolle bricht ohne Wert ab. Quelle ist
+# inventory/group_vars/<gruppe>/secrets.sops.yml.
+arcane_agent_token: ""
+
+# Auf die Fassung des Managers gepinnt, siehe
+# apps/arcane/config/deployment.yaml.
+arcane_agent_version: v2.10.2
+arcane_agent_image: "ghcr.io/getarcaneapp/agent:{{ arcane_agent_version }}"
+
+arcane_agent_dir: /opt/arcane
+arcane_agent_name: arcane-edge-agent
+
+# poll haelt keinen Tunnel offen. auto braucht im Reverse Proxy einen
+# h2c-Router auf /api/tunnel/connect und einen Read-Timeout von 0s.
+arcane_agent_transport: poll
+
+arcane_agent_timezone: Europe/Berlin
+
+# Prueft nach dem Start, ob der Manager das Token annimmt.
+arcane_agent_verify: true
+
+# Wartezeit bis zum ersten Poll des Agenten, in Sekunden.
+arcane_agent_verify_delay: 20

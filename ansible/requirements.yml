@@ -7,5 +7,9 @@ collections:
   - name: community.general
     version: ">=7.0.0"
   - name: community.sops
+  # docker_compose_v2 ruft die Compose-Erweiterung des Docker-CLI auf und
+  # braucht kein Python-SDK auf dem Zielhost.
+  - name: community.docker
+    version: ">=3.10.0"
   - name: ansible.posix
     version: ">=1.5.0"

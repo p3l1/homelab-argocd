@@ -1,0 +1,5 @@
+---
+- name: Restart the arcane agent
+  community.docker.docker_compose_v2:
+    project_src: "{{ arcane_agent_dir }}"
+    state: restarted

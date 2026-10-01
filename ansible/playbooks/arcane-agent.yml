@@ -1,0 +1,11 @@
+---
+# Arcane-Agent auf den Docker-Hosts ausserhalb des Clusters. Das Environment
+# muss im Manager vorher bestehen, sein Token kommt als Variable herein.
+#
+#   ansible-playbook -i inventory/docker-hosts.yml playbooks/arcane-agent.yml \
+#     -e arcane_agent_token=arc_...
+- name: Install the Arcane agent
+  hosts: docker_hosts
+  gather_facts: false
+  roles:
+    - role: arcane_agent

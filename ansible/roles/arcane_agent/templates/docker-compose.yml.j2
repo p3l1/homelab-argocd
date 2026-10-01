@@ -1,0 +1,32 @@
+---
+# Von Ansible erzeugt - Aenderungen gehen beim naechsten Lauf verloren.
+# Rolle: ansible/roles/arcane_agent
+#
+# Edge-Betrieb: der Agent waehlt nach aussen, der Host braucht keinen
+# offenen Port.
+services:
+  {{ arcane_agent_name }}:
+    image: {{ arcane_agent_image }}
+    container_name: {{ arcane_agent_name }}
+    restart: unless-stopped
+    environment:
+      EDGE_AGENT: "true"
+      EDGE_TRANSPORT: {{ arcane_agent_transport }}
+      MANAGER_API_URL: {{ arcane_agent_manager_url }}
+      AGENT_TOKEN_FILE: /run/secrets/agent_token
+      TZ: {{ arcane_agent_timezone }}
+    secrets:
+      - agent_token
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - agent-data:/app/data
+    # Laesst den Agent seine eigene Container-ID erkennen, was er fuer die
+    # Selbstaktualisierung braucht.
+    cgroup: host
+
+secrets:
+  agent_token:
+    file: ./agent-token
+
+volumes:
+  agent-data:

@@ -1,0 +1,83 @@
+---
+- name: Require a token and a manager address
+  ansible.builtin.assert:
+    that:
+      - arcane_agent_token | length > 0
+      - arcane_agent_manager_url | length > 0
+    fail_msg: >-
+      arcane_agent_token und arcane_agent_manager_url muessen gesetzt sein.
+      Das Token stammt aus dem Environment, das im Manager unter
+      Environments -> Add Environment -> Edge angelegt wird.
+    quiet: true
+
+- name: Check for the compose plugin
+  ansible.builtin.command: docker compose version --short
+  register: arcane_agent_compose_version
+  changed_when: false
+
+- name: Ensure the agent directory exists
+  ansible.builtin.file:
+    path: "{{ arcane_agent_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+
+# Das Token geht als Docker-Secret in den Container, nicht als Umgebungs-
+# variable: Arcane zeigt die Umgebung der Container, die es verwaltet, in
+# der UI an - und dieser Agent verwaltet sich selbst mit.
+- name: Install the agent token
+  ansible.builtin.copy:
+    content: "{{ arcane_agent_token }}\n"
+    dest: "{{ arcane_agent_dir }}/agent-token"
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+  notify: Restart the arcane agent
+
+- name: Write the compose file
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ arcane_agent_dir }}/docker-compose.yml"
+    owner: root
+    group: root
+    mode: "0640"
+  notify: Restart the arcane agent
+
+- name: Start the agent
+  community.docker.docker_compose_v2:
+    project_src: "{{ arcane_agent_dir }}"
+    state: present
+    pull: missing
+    remove_orphans: true
+
+- name: Confirm the manager accepts the token
+  when: arcane_agent_verify | bool
+  block:
+    - name: Apply a pending token or compose change first
+      ansible.builtin.meta: flush_handlers
+
+    # Ein abgelehntes Token meldet der Agent beim ersten Poll. Laeuft es,
+    # bleibt die Schleife still - es gibt also keine Gegenprobe, nur die
+    # Abwesenheit der Ablehnung.
+    - name: Wait for the first poll
+      ansible.builtin.wait_for:
+        timeout: "{{ arcane_agent_verify_delay }}"
+
+    - name: Read the agent log
+      ansible.builtin.shell:
+        cmd: >-
+          docker logs --since {{ arcane_agent_verify_delay }}s
+          {{ arcane_agent_name }} 2>&1
+      register: arcane_agent_log
+      changed_when: false
+
+    - name: Fail if the manager rejects the token
+      ansible.builtin.assert:
+        that:
+          - not arcane_agent_log.stdout is search('Poll control request failed')
+        fail_msg: >-
+          Der Manager weist das Token ab. Ein 401 bedeutet, dass das
+          Environment im Manager fehlt oder sein Token neu erzeugt wurde.
+        quiet: true
