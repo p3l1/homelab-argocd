@@ -57,6 +57,13 @@ spec:
               value: openid email profile groups
             - name: OIDC_PROVIDER_NAME
               value: Pocket ID
+            # Statischer Admin-API-Key. Arcane legt ihn beim Start an und
+            # rotiert ihn, sobald sich der Wert hier unterscheidet.
+            - name: ADMIN_STATIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: arcane-secrets
+                  key: admin-static-api-key
           volumeMounts:
             - name: data
               mountPath: /app/data
