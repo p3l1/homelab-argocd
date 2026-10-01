@@ -36,6 +36,27 @@ spec:
                 secretKeyRef:
                   name: arcane-secrets
                   key: jwt-secret
+            # Rueckfall fuer die Redirect-URI, wenn die Anfrage keinen Origin
+            # mitbringt. Ohne das bleibt die Vorgabe localhost:3552.
+            - name: APP_URL
+              value: https://arcane.cloud.p3l1.de
+            - name: OIDC_ENABLED
+              value: "true"
+            - name: OIDC_ISSUER_URL
+              value: https://id.cloud.p3l1.de
+            - name: OIDC_CLIENT_ID
+              value: 75bff70e-161f-4b53-9c15-c4d41b02fcb2
+            - name: OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: arcane-secrets
+                  key: oidc-client-secret
+            # groups kommt zur Vorgabe dazu, OIDC_GROUPS_CLAIM steht schon
+            # richtig auf "groups".
+            - name: OIDC_SCOPES
+              value: openid email profile groups
+            - name: OIDC_PROVIDER_NAME
+              value: Pocket ID
           volumeMounts:
             - name: data
               mountPath: /app/data
