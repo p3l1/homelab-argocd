@@ -19,7 +19,15 @@ die() { printf '\033[91mFehler:\033[0m %s\n' "$1" >&2; exit 1; }
 info() { printf '\033[94m==>\033[0m %s\n' "$1"; }
 ok() { printf '\033[92m[OK]\033[0m %s\n' "$1"; }
 
-[[ $# -ge 3 ]] || die "Aufruf: $0 <name> <namespace> <SCHLUESSEL> [SCHLUESSEL ...]"
+# Labels muessen mitkommen: ArgoCD findet ein Secret nur dann ueber
+# $name:key, wenn es app.kubernetes.io/part-of=argocd traegt.
+LABELS=()
+while [[ ${1:-} == -l || ${1:-} == --label ]]; do
+  [[ -n "${2:-}" && "$2" == *=* ]] || die "--label erwartet SCHLUESSEL=WERT"
+  LABELS+=("$2"); shift 2
+done
+
+[[ $# -ge 3 ]] || die "Aufruf: $0 [--label K=V ...] <name> <namespace> <SCHLUESSEL> [SCHLUESSEL ...]"
 NAME="$1"; NS="$2"; shift 2
 KEYS=("$@")
 
@@ -81,6 +89,12 @@ chmod 600 "$TMP"
   echo "metadata:"
   echo "  name: $NAME"
   echo "  namespace: $NS"
+  if [[ ${#LABELS[@]} -gt 0 ]]; then
+    echo "  labels:"
+    for l in "${LABELS[@]}"; do
+      printf '    %s: %s\n' "${l%%=*}" "${l#*=}"
+    done
+  fi
   echo "type: Opaque"
   echo "stringData:"
   for k in "${ALL_KEYS[@]}"; do
