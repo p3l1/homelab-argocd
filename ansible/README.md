@@ -51,9 +51,27 @@ Vars-Plugin, die Playbooks kennen die Entschlüsselung also nicht.
 sops inventory/group_vars/all/secrets.sops.yml    # bearbeiten
 ```
 
+## sudo ohne Passwort
+
+`node_base` richtet `pam_ssh_agent_auth` ein, `sudo` nimmt damit den
+weitergereichten YubiKey. Ansibles `become` ruft aber `sudo -n` auf, und `-n`
+bricht ab, bevor PAM läuft:
+
+```bash
+ANSIBLE_BECOME_FLAGS='-H -S' ansible-playbook playbooks/site.yml
+```
+
+Zum Prüfen von Hand `sudo -K; sudo -H -S true < /dev/null` — ohne `-K` meldet
+der globale Zeitstempel aus `/etc/sudoers.d/010_global-tty` auch dann Erfolg,
+wenn die Agent-Anmeldung gar nicht greift.
+
 ## Prüfen
 
 ```bash
 yamllint . && ansible-lint
 ansible-playbook playbooks/site.yml --check --diff
 ```
+
+`--check` scheitert in `network.yml` an „Fail if the profile did not take": die
+vorangehende `command`-Aufgabe wird im Check-Modus übersprungen, die Variable
+bleibt leer. Kein echter Fehler.
