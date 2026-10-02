@@ -92,19 +92,13 @@ API-Schlüssels läuft statt über die Rolle. Der Schlüssel braucht dafür
 zusätzlich `createClient`:
 
 ```bash
-curl -s -H "Authorization: Bearer <key_id>.<key_secret>" \
-  "$PANGOLIN_ENDPOINT/org/cloud.p3l1.de/pick-client-defaults"
+./scripts/pangolin-client.sh "cloud.p3l1.de Arcane Agent"
 ```
 
-Die Antwort liefert `olmId`, `olmSecret` und ein freies `subnet` aus dem
-Org-Netz. Damit dann anlegen, `type` ist `olm`:
-
-```bash
-curl -s -X PUT -H "Authorization: Bearer <key_id>.<key_secret>" \
-  -H 'Content-Type: application/json' \
-  -d '{"name":"...","olmId":"...","secret":"...","subnet":"...","type":"olm"}' \
-  "$PANGOLIN_ENDPOINT/org/cloud.p3l1.de/client"
-```
+Das Skript holt über `pick-client-defaults` eine freie Adresse aus dem
+Org-Netz samt `olmId` und `olmSecret`, legt den Client an (`type: olm`) und
+gibt `niceId`, Client-ID und Secret aus. Das Secret zeigt Pangolin nur
+einmal.
 
 Nebenbei: Im Dashboard schickt der Knopf „Create Client" das Formular gar
 nicht ab, die Eingabetaste im Namensfeld schon. Der `403` wird also erst
