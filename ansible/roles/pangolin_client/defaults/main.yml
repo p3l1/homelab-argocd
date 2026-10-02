@@ -1,0 +1,27 @@
+---
+# Die Releases liegen unter fosrl/pangolin-cli, der Quellcode unter
+# fosrl/cli. olm ist abgekuendigt und ausdruecklich nicht mehr der Weg fuer
+# einen Maschinen-Client.
+pangolin_client_version: "0.18.1"
+pangolin_client_release_base: https://github.com/fosrl/pangolin-cli/releases/download
+pangolin_client_dir: /usr/local/lib/pangolin
+pangolin_client_bin: /usr/local/bin/pangolin
+
+# Adresse des Dashboards, nicht die Integration-API mit /v1 am Ende.
+pangolin_client_endpoint: https://cloud.p3l1.de
+
+# Maschinen-Client aus dem Pangolin-Dashboard. Die Rolle bricht ohne ab.
+pangolin_client_id: ""
+pangolin_client_secret: ""
+pangolin_client_org: ""
+
+pangolin_client_conf_dir: /etc/pangolin-client
+pangolin_client_interface: pangolin
+
+# Aus: der Host betreibt Pangolin, Traefik und Pocket ID selbst, und die
+# CLI biegt sonst seinen Resolver um. Die Routen zu den Ressourcen legt sie
+# trotzdem an - Namen loest der Aufrufer ueber die Tunneladresse auf.
+pangolin_client_override_dns: false
+
+# Prueft nach dem Start, ob die Tunnelschnittstelle entsteht.
+pangolin_client_verify: true

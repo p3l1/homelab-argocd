@@ -68,6 +68,16 @@ Angelegt wurde er über die API; `pick-client-defaults` liefert dafür
 passende Werte. Die Zugangsdaten liegen als GitHub-Secrets
 (`PANGOLIN_OLM_ID`, `PANGOLIN_OLM_SECRET`).
 
+Ein **zweiter Client fehlt noch**: `cloud.p3l1.de` selbst braucht einen, damit
+der Arcane-Edge-Agent dort die private Ressource `arcane-manager` erreicht. Die
+öffentliche Route `arcane.cloud.p3l1.de` liegt hinter SSO, bei dem sich ein
+Agent nicht anmelden kann. Seine `niceId` gehört in die `machines`-Liste von
+`arcane-manager`, seine Zugangsdaten auf den Host — siehe die Rolle
+`pangolin_client` in [`../ansible/README.md`](../ansible/README.md).
+
+Auf dem Host läuft die **Pangolin-CLI**, nicht olm: olm ist laut eigenem
+README abgekündigt und ausdrücklich nicht mehr für Maschinen-Clients gedacht.
+
 ## Sites in dieser Pangolin-Instanz
 
 | Site (`niceId`) | Name | Zweck |

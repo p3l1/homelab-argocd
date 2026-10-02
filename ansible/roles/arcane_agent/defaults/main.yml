@@ -1,7 +1,13 @@
 ---
-# Muss mit APP_URL des Managers uebereinstimmen - der Agent paart sich
-# ueber diese Adresse und folgt keiner Umleitung von http auf https.
-arcane_agent_manager_url: https://arcane.cloud.p3l1.de
+# Die private-resource aus pangolin/blueprints/homelab.yaml, nicht die
+# oeffentliche Route arcane.cloud.p3l1.de: die liegt hinter Pangolins SSO,
+# bei dem sich ein Agent nicht anmelden kann.
+arcane_agent_manager_url: http://arcane-manager.homelab.internal:3552
+
+# Namensauflösung fuer den Alias, als Name-zu-Adresse-Abbildung. Der Host
+# loest ihn nicht selbst auf, weil pangolin_client seinen Resolver bewusst
+# nicht umbiegt. Adresse zeigt "pangolin list aliases".
+arcane_agent_extra_hosts: {}
 
 # Token des Environments. Der Manager erzeugt es beim Anlegen des
 # Environments; die Rolle bricht ohne Wert ab. Quelle ist

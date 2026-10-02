@@ -13,6 +13,7 @@ in [`../docs/superpowers/specs/2026-09-05-cluster-rebuild-design.md`](../docs/su
 | `upgrade.yml` | Hebt k3s auf die Version aus `group_vars` |
 | `reset.yml` | Entfernt k3s wieder |
 | `arcane-agent.yml` | Arcane-Agent auf den Docker-Hosts ausserhalb des Clusters |
+| `pangolin-client.yml` | Pangolin-Maschinen-Client, Voraussetzung für `arcane-agent.yml` |
 
 ## Inventories
 
@@ -39,6 +40,7 @@ in [`../docs/superpowers/specs/2026-09-05-cluster-rebuild-design.md`](../docs/su
 | `node_base` | Pakete, feste Adresse, Swap aus, SSH-Härtung |
 | `kube_vip` | Manifest der schwebenden API-Adresse, vor dem k3s-Start |
 | `arcane_agent` | Arcane-Edge-Agent als Docker-Compose-Projekt in `/opt/arcane` |
+| `pangolin_client` | Pangolin-CLI als `pangolin-client.service`, verbindet den Host mit dem Tunnel |
 
 k3s selbst installiert die Collection `k3s.orchestration` aus
 [k3s-io/k3s-ansible](https://github.com/k3s-io/k3s-ansible); von dort stammen
@@ -56,23 +58,47 @@ sops inventory/group_vars/all/secrets.sops.yml    # bearbeiten
 
 ## Arcane-Agent
 
-Der Agent läuft im **Edge**-Betrieb: er wählt nach außen zum Manager, der
-Host braucht keinen offenen Port. Sein Token gehört zu genau einem
-Environment und wird vom Manager erzeugt — das Environment muss also
-**vorher** bestehen:
+Der Agent läuft im **Edge**-Betrieb: er wählt nach außen zum Manager, der Host
+braucht keinen offenen Port.
 
-```bash
-ansible-playbook -i inventory/docker-hosts.yml playbooks/arcane-agent.yml \
-  -e arcane_agent_token=arc_...
-```
+Er erreicht den Manager **nicht** über `arcane.cloud.p3l1.de`. Diese Route
+liegt hinter Pangolins SSO — der Controller schaltet es per Vorgabe ein — und
+ein Agent hat keine Pangolin-Sitzung. Jeder Pfad dort, die Anmeldeseite
+eingeschlossen, antwortet mit `401`.
 
-Dauerhaft gehört das Token nach
+Stattdessen über die `private-resource` `arcane-manager` aus
+[`../pangolin/blueprints/homelab.yaml`](../pangolin/blueprints/homelab.yaml),
+erreichbar nur mit aktivem Pangolin-Client. Die Reihenfolge:
+
+1. **Maschinen-Client** im Pangolin-Dashboard anlegen und seine `niceId` in
+   die `machines`-Liste von `arcane-manager` eintragen. Ohne Eintrag haben
+   nur Admins Zugriff.
+2. **Blueprint anwenden** über die Tekton-Pipeline, siehe
+   [`../pangolin/README.md`](../pangolin/README.md).
+3. **Client verbinden:**
+   ```bash
+   ansible-playbook -i inventory/docker-hosts.yml playbooks/pangolin-client.yml \
+     -e pangolin_client_id=... -e pangolin_client_secret=...
+   ```
+4. **Tunneladresse der Ressource ablesen** — `pangolin list aliases` auf dem
+   Host. `pangolin_client` biegt den Resolver des Hosts bewusst **nicht** um:
+   dort laufen Pangolin, Traefik und Pocket ID, und eine übernommene
+   DNS-Konfiguration träfe sie mit.
+5. **Agent ausrollen:**
+   ```bash
+   ansible-playbook -i inventory/docker-hosts.yml playbooks/arcane-agent.yml \
+     -e arcane_agent_token=arc_... \
+     -e '{"arcane_agent_extra_hosts":{"arcane-manager.homelab.internal":"<Adresse>"}}'
+   ```
+
+Das Agent-Token gehört zu genau einem Environment und wird vom Manager
+erzeugt — das Environment muss also **vorher** bestehen. Dauerhaft gehören
+Token und Client-Zugangsdaten nach
 `inventory/group_vars/docker_hosts/secrets.sops.yml`, von wo `community.sops`
-es als Vars-Plugin lädt — so wie der k3s-Token unter `all`. Je Host gilt
-`host_vars/<name>/secrets.sops.yml`.
+sie als Vars-Plugin lädt, so wie der k3s-Token unter `all`.
 
-Auf dem Host landet es als Docker-Secret in `/opt/arcane/agent-token`, nicht
-als Umgebungsvariable: Arcane zeigt die Umgebung der Container, die es
+Auf dem Host landet das Token als Docker-Secret in `/opt/arcane/agent-token`,
+nicht als Umgebungsvariable: Arcane zeigt die Umgebung der Container, die es
 verwaltet, in der Oberfläche an — und der Agent verwaltet sich selbst mit.
 
 `EDGE_TRANSPORT` bleibt auf `poll`. `auto` hält einen gRPC-Tunnel offen und
@@ -82,8 +108,8 @@ Environment als **Standby**, solange nichts abgefragt wird; das ist der
 gesunde Zustand.
 
 Ein `401 Unauthorized` in `docker logs arcane-edge-agent` heißt, dass der
-Manager das Token nicht kennt — das Environment fehlt oder sein Token wurde
-neu erzeugt. Die Rolle prüft genau darauf und bricht ab.
+Manager das Token nicht kennt — oder dass die Anfrage bei Pangolins SSO
+hängt statt beim Manager anzukommen. Die Rolle prüft darauf und bricht ab.
 
 ## sudo ohne Passwort
 

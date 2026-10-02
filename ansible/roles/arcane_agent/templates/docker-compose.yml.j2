@@ -17,6 +17,12 @@ services:
       TZ: {{ arcane_agent_timezone }}
     secrets:
       - agent_token
+{% if arcane_agent_extra_hosts %}
+    extra_hosts:
+{% for host, address in arcane_agent_extra_hosts.items() %}
+      - "{{ host }}:{{ address }}"
+{% endfor %}
+{% endif %}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - agent-data:/app/data

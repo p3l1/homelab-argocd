@@ -1,0 +1,12 @@
+---
+# Maschinen-Client der Pangolin-CLI. Erst damit erreicht ein Host die
+# private-resources des Tunnels; die Zugangsdaten kommen als Variablen.
+#
+#   ansible-playbook -i inventory/docker-hosts.yml playbooks/pangolin-client.yml \
+#     -e pangolin_client_id=... -e pangolin_client_secret=...
+- name: Connect the Pangolin machine client
+  hosts: docker_hosts
+  # ansible_architecture waehlt das Release-Artefakt.
+  gather_facts: true
+  roles:
+    - role: pangolin_client

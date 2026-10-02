@@ -1,0 +1,99 @@
+---
+- name: Require machine client credentials
+  ansible.builtin.assert:
+    that:
+      - pangolin_client_id | length > 0
+      - pangolin_client_secret | length > 0
+      - pangolin_client_endpoint | length > 0
+    fail_msg: >-
+      pangolin_client_id, pangolin_client_secret und
+      pangolin_client_endpoint muessen gesetzt sein. Die beiden ersten
+      stammen aus dem Maschinen-Client im Pangolin-Dashboard.
+    quiet: true
+
+- name: Ensure the install directory exists
+  ansible.builtin.file:
+    path: "{{ pangolin_client_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+# Je Fassung eine eigene Datei, der Symlink zeigt darauf. Damit ist der
+# Wechsel idempotent und ohne Pruefsumme erkennbar - die Releases
+# veroeffentlichen keine.
+- name: Download the Pangolin CLI
+  ansible.builtin.get_url:
+    url: "{{ pangolin_client_url }}"
+    dest: "{{ pangolin_client_dir }}/pangolin-{{ pangolin_client_version }}"
+    owner: root
+    group: root
+    mode: "0755"
+  vars:
+    pangolin_client_arch: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
+    pangolin_client_url: >-
+      {{ pangolin_client_release_base }}/{{ pangolin_client_version
+      }}/pangolin-cli_linux_{{ pangolin_client_arch }}
+
+- name: Link the current version
+  ansible.builtin.file:
+    src: "{{ pangolin_client_dir }}/pangolin-{{ pangolin_client_version }}"
+    dest: "{{ pangolin_client_bin }}"
+    state: link
+    owner: root
+    group: root
+  notify: Restart the pangolin client
+
+- name: Ensure the configuration directory exists
+  ansible.builtin.file:
+    path: "{{ pangolin_client_conf_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+
+- name: Install the client credentials
+  ansible.builtin.copy:
+    content: |
+      PANGOLIN_CLIENT_ID={{ pangolin_client_id }}
+      PANGOLIN_CLIENT_SECRET={{ pangolin_client_secret }}
+      PANGOLIN_ENDPOINT={{ pangolin_client_endpoint }}
+      {% if pangolin_client_org | length > 0 %}
+      PANGOLIN_ORG={{ pangolin_client_org }}
+      {% endif %}
+    dest: "{{ pangolin_client_conf_dir }}/client.env"
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+  notify: Restart the pangolin client
+
+- name: Install the service unit
+  ansible.builtin.template:
+    src: pangolin-client.service.j2
+    dest: /etc/systemd/system/pangolin-client.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart the pangolin client
+
+- name: Enable the client
+  ansible.builtin.systemd:
+    name: pangolin-client
+    state: started
+    enabled: true
+    daemon_reload: true
+
+- name: Confirm the tunnel is up
+  when: pangolin_client_verify | bool
+  block:
+    - name: Apply a pending credential or unit change first
+      ansible.builtin.meta: flush_handlers
+
+    - name: Wait for the tunnel interface
+      ansible.builtin.command: ip -brief link show {{ pangolin_client_interface }}
+      register: pangolin_client_link
+      changed_when: false
+      until: pangolin_client_link.rc == 0
+      retries: 12
+      delay: 5

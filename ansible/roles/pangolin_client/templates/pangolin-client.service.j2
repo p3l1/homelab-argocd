@@ -1,0 +1,21 @@
+# Von Ansible erzeugt - Aenderungen gehen beim naechsten Lauf verloren.
+# Rolle: ansible/roles/pangolin_client
+[Unit]
+Description=Pangolin machine client
+Documentation=https://docs.pangolin.net/manage/clients
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Die Zugangsdaten kommen aus der Umgebung, nicht von der Befehlszeile -
+# dort laese sie jeder lokale Nutzer mit ps.
+EnvironmentFile={{ pangolin_client_conf_dir }}/client.env
+ExecStart={{ pangolin_client_bin }} up client --attach \
+    --interface-name {{ pangolin_client_interface }} \
+    --override-dns={{ pangolin_client_override_dns | bool | lower }}
+Restart=always
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target

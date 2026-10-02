@@ -67,6 +67,23 @@ private-resources:
     destination: newt-home-assistant-service.newt.svc.cluster.local
     destination-port: 8123
 
+  arcane-manager:
+    name: Arcane Manager
+    # Fuer den Arcane-Edge-Agent auf cloud.p3l1.de. Er kann sich nicht bei
+    # Pangolin anmelden, erreicht den Manager also nicht ueber die
+    # oeffentliche Route arcane.cloud.p3l1.de - die liegt hinter SSO.
+    mode: host
+    destination: arcane.arcane.svc.cluster.local
+    site: intent-anniella-pulchra
+    tcp-ports: "3552"
+    # Nicht arcane.homelab.internal: der Name gehoert der Traefik-Route im
+    # LAN.
+    alias: arcane-manager.homelab.internal
+    # Noch leer: der Maschinen-Client fuer cloud.p3l1.de existiert noch
+    # nicht. Ohne die Liste haben nur Admins Zugriff, der Eintrag laesst
+    # sich also gefahrlos anwenden.
+    machines: []
+
 public-resources:
   # Leer, und das ist Absicht: pangolin-gateway veröffentlicht diese Dienste
   # jetzt aus HTTPRoutes, die bei ihren Anwendungen liegen — je eine Datei
