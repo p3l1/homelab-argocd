@@ -32,7 +32,10 @@
     dest: "{{ arcane_agent_dir }}/agent-token"
     owner: root
     group: root
-    mode: "0600"
+    # Nicht 0600: der Agent legt die Rechte des Hosts durch und laeuft nach
+    # der Startvorbereitung als 65532. Das Verzeichnis ist 0750, damit
+    # bleibt die Datei auf dem Host trotzdem root vorbehalten.
+    mode: "0644"
   no_log: true
   notify: Restart the arcane agent
 
