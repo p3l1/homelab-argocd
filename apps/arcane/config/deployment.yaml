@@ -57,6 +57,13 @@ spec:
               value: openid email profile groups
             - name: OIDC_PROVIDER_NAME
               value: Pocket ID
+            # Die Rollen-IDs stammen aus /api/roles der laufenden Instanz.
+            # Arcane traegt sie beim Start als source=env ein und entfernt
+            # verwaiste; von Hand angelegte Zuordnungen bleiben unberuehrt.
+            - name: OIDC_ROLE_MAPPINGS
+              value: >-
+                [{"claimValue":"arcane_admins","roleId":"role_admin"},
+                {"claimValue":"arcane_viewers","roleId":"role_viewer"}]
             # Statischer Admin-API-Key. Arcane legt ihn beim Start an und
             # rotiert ihn, sobald sich der Wert hier unterscheidet.
             - name: ADMIN_STATIC_API_KEY
