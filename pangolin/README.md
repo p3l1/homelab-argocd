@@ -78,6 +78,38 @@ Agent nicht anmelden kann. Seine `niceId` gehört in die `machines`-Liste von
 Auf dem Host läuft die **Pangolin-CLI**, nicht olm: olm ist laut eigenem
 README abgekündigt und ausdrücklich nicht mehr für Maschinen-Clients gedacht.
 
+### Clients entstehen nur über die API
+
+Das Dashboard kann in dieser Instanz **keine** Maschinen-Clients anlegen.
+`PUT /org/<org>/client` antwortet der angemeldeten Sitzung mit `403`, obwohl
+der Benutzer `isOwner` und `isAdmin` ist: `checkUserActionPermission` liest
+ausschließlich die Tabelle `roleActions` und kennt keine Owner-Ausnahme, und
+dort fehlt die Zeile für `createClient`. Nachrüsten lässt sie sich nicht —
+die Routen `/role/:roleId/action(s)` sind in Pangolin auskommentiert.
+
+Der Weg ist die Integration-API, deren Prüfung über die Aktionen des
+API-Schlüssels läuft statt über die Rolle. Der Schlüssel braucht dafür
+zusätzlich `createClient`:
+
+```bash
+curl -s -H "Authorization: Bearer <key_id>.<key_secret>" \
+  "$PANGOLIN_ENDPOINT/org/cloud.p3l1.de/pick-client-defaults"
+```
+
+Die Antwort liefert `olmId`, `olmSecret` und ein freies `subnet` aus dem
+Org-Netz. Damit dann anlegen, `type` ist `olm`:
+
+```bash
+curl -s -X PUT -H "Authorization: Bearer <key_id>.<key_secret>" \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"...","olmId":"...","secret":"...","subnet":"...","type":"olm"}' \
+  "$PANGOLIN_ENDPOINT/org/cloud.p3l1.de/client"
+```
+
+Nebenbei: Im Dashboard schickt der Knopf „Create Client" das Formular gar
+nicht ab, die Eingabetaste im Namensfeld schon. Der `403` wird also erst
+sichtbar, wenn man Enter drückt.
+
 ## Sites in dieser Pangolin-Instanz
 
 | Site (`niceId`) | Name | Zweck |
