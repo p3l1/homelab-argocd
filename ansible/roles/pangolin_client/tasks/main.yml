@@ -30,7 +30,8 @@
     group: root
     mode: "0755"
   vars:
-    pangolin_client_arch: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
+    pangolin_client_arch: >-
+      {{ 'arm64' if ansible_facts['architecture'] == 'aarch64' else 'amd64' }}
     pangolin_client_url: >-
       {{ pangolin_client_release_base }}/{{ pangolin_client_version
       }}/pangolin-cli_linux_{{ pangolin_client_arch }}

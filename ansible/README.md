@@ -135,3 +135,7 @@ ansible-playbook playbooks/site.yml --check --diff
 `--check` scheitert in `network.yml` an „Fail if the profile did not take": die
 vorangehende `command`-Aufgabe wird im Check-Modus übersprungen, die Variable
 bleibt leer. Kein echter Fehler.
+
+Ebenso scheitert `--check` in `pangolin-client.yml` an „Destination
+/usr/local/lib/pangolin does not exist": im Check-Modus entsteht das
+Verzeichnis nicht, das der Download braucht. Auch kein echter Fehler.
