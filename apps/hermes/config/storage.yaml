@@ -1,0 +1,15 @@
+# Ein Volume fuer alles: Hermes legt Sitzungen, Erinnerungen, Skills und die
+# Anmeldungen unter /opt/data ab, signal-cli bekommt einen subPath davon.
+# Die SQLite-Datenbank laeuft im WAL-Modus und braucht ein Blockgeraet -
+# Longhorn passt, NFS waere Datenverlust.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: hermes-data
+  namespace: hermes
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 20Gi

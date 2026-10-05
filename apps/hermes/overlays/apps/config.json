@@ -1,0 +1,11 @@
+{
+  "appName": "hermes",
+  "userGivenName": "hermes",
+  "destNamespace": "hermes",
+  "destServer": "https://kubernetes.default.svc",
+  "srcPath": "apps/hermes/base",
+  "srcRepoURL": "https://github.com/p3l1/homelab-argocd.git",
+  "srcTargetRevision": "main",
+  "labels": null,
+  "annotations": null
+}

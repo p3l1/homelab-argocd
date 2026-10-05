@@ -1,0 +1,226 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hermes
+  namespace: hermes
+spec:
+  replicas: 1
+  # Zwei Gateways auf demselben Datenverzeichnis zerstoeren den Zustand, und
+  # das Volume ist ReadWriteOnce. Erst der alte Pod weg, dann der neue.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: hermes
+  template:
+    metadata:
+      labels:
+        app: hermes
+    spec:
+      serviceAccountName: hermes
+      securityContext:
+        # Beide Container laufen als 10000 und teilen sich das Volume.
+        fsGroup: 10000
+      initContainers:
+        - name: seed-config
+          image: docker.io/nousresearch/hermes-agent:v2026.9.24
+          command: ["sh", "-c"]
+          args:
+            - |
+              install -d -m 0700 /opt/data/signal-cli
+              [ -f /opt/data/config.yaml ] && exit 0
+              install -D -m 0644 /seed/config.yaml /opt/data/config.yaml
+          securityContext:
+            runAsUser: 10000
+            runAsGroup: 10000
+          volumeMounts:
+            - name: data
+              mountPath: /opt/data
+            - name: seed
+              mountPath: /seed
+        # Das DirectSDK-Plugin treibt die Claude-Code-CLI als Modell-Client.
+        # Beides fehlt im Image und landet darum bei jedem Start auf dem
+        # Volume; die Anmeldung selbst bleibt ein einmaliger exec-Handgriff.
+        - name: claude-cli
+          image: docker.io/nousresearch/hermes-agent:v2026.9.24
+          command: ["sh", "-c"]
+          args:
+            - |
+              set -eux
+              npm install -g @anthropic-ai/claude-code@2.1.289
+              hermes plugins install claude-subscription-directsdk
+          env:
+            - name: HOME
+              value: /opt/data/home
+            - name: HERMES_HOME
+              value: /opt/data
+            - name: NPM_CONFIG_PREFIX
+              value: /opt/data/home/.npm-global
+          securityContext:
+            runAsUser: 10000
+            runAsGroup: 10000
+          volumeMounts:
+            - name: data
+              mountPath: /opt/data
+      containers:
+        - name: hermes
+          image: docker.io/nousresearch/hermes-agent:v2026.9.24
+          # Der Entrypoint /init ist s6-overlay als PID 1 und richtet vor dem
+          # Start ein; darum nur args setzen, niemals command.
+          args: ["gateway", "run"]
+          ports:
+            - containerPort: 9119
+              name: dashboard
+            - containerPort: 8642
+              name: api
+          env:
+            - name: TZ
+              value: Europe/Berlin
+            - name: HERMES_HOME
+              value: /opt/data
+            - name: HERMES_UID
+              value: "10000"
+            - name: HERMES_GID
+              value: "10000"
+            # Dashboard. Auf einer Nicht-Loopback-Adresse verweigert es den
+            # Start, solange kein Auth-Provider steht - hier Pocket ID.
+            - name: HERMES_DASHBOARD
+              value: "1"
+            - name: HERMES_DASHBOARD_HOST
+              value: 0.0.0.0
+            - name: HERMES_DASHBOARD_PORT
+              value: "9119"
+            - name: HERMES_DASHBOARD_PUBLIC_URL
+              value: https://hermes.cloud.p3l1.de
+            - name: HERMES_DASHBOARD_OIDC_ISSUER
+              value: https://id.cloud.p3l1.de
+            - name: HERMES_DASHBOARD_OIDC_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-secrets
+                  key: OIDC_CLIENT_ID
+            # OpenAI-kompatibler Endpunkt, nur cluster-intern. Er kennt
+            # ausschliesslich diesen Schluessel, keine Anmeldung.
+            - name: API_SERVER_ENABLED
+              value: "true"
+            - name: API_SERVER_HOST
+              value: 0.0.0.0
+            - name: API_SERVER_PORT
+              value: "8642"
+            - name: API_SERVER_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-secrets
+                  key: API_SERVER_KEY
+            # Signal. Der Daemon laeuft im Sidecar auf Loopback, also nur
+            # innerhalb dieses Pods erreichbar.
+            - name: SIGNAL_HTTP_URL
+              value: http://127.0.0.1:8080
+            - name: SIGNAL_ACCOUNT
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-secrets
+                  key: SIGNAL_ACCOUNT
+            - name: SIGNAL_ALLOWED_USERS
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-secrets
+                  key: SIGNAL_ACCOUNT
+            - name: SIGNAL_HOME_CHANNEL
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-secrets
+                  key: SIGNAL_ACCOUNT
+            # Pfad und Anmeldung der Claude-Code-CLI, beide auf dem Volume.
+            - name: CLAUDE_SUBSCRIPTION_DIRECTSDK_COMMAND
+              value: /opt/data/home/.npm-global/bin/claude
+            - name: CLAUDE_CONFIG_DIR
+              value: /opt/data/home/.claude
+            # Rueckfall, falls der Abo-Weg ausfaellt: hermes model umstellen.
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-secrets
+                  key: ANTHROPIC_API_KEY
+          volumeMounts:
+            - name: data
+              mountPath: /opt/data
+            # Chromium der Browser-Tools braucht mehr als die 64 MiB, die
+            # containerd von sich aus auf /dev/shm legt.
+            - name: shm
+              mountPath: /dev/shm
+          resources:
+            requests:
+              cpu: 500m
+              memory: 2Gi
+            limits:
+              memory: 4Gi
+          securityContext:
+            # s6-overlay startet als root, chownt das Volume und faellt dann
+            # per s6-setuidgid auf 10000 zurueck. Nach dem ersten Rollout
+            # pruefen, ob dieser Satz an Capabilities reicht.
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+              add: ["CHOWN", "FOWNER", "DAC_OVERRIDE", "SETUID", "SETGID"]
+        - name: signal-cli
+          image: ghcr.io/p3l1/signal-cli:0.14.8
+          # Vor der Verknuepfung bricht der Daemon ab. Die Schleife haelt den
+          # Container am Leben, damit das einmalige link per exec moeglich ist.
+          command: ["sh", "-c"]
+          args:
+            - |
+              until signal-cli --config /data/signal-cli \
+                    --account "$SIGNAL_ACCOUNT" daemon --http 127.0.0.1:8080; do
+                echo "signal-cli beendet - Geraet verknuepft? Neuer Versuch in 30s"
+                sleep 30
+              done
+          env:
+            - name: SIGNAL_ACCOUNT
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-secrets
+                  key: SIGNAL_ACCOUNT
+          volumeMounts:
+            # Ohne subPath: Kubelet legt subPath-Verzeichnisse als root an,
+            # UID 10000 koennte darin nicht schreiben.
+            - name: data
+              mountPath: /data
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 768Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: hermes-data
+        - name: seed
+          configMap:
+            name: hermes-seed
+        - name: shm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 1Gi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hermes
+  namespace: hermes
+spec:
+  selector:
+    app: hermes
+  ports:
+    - port: 9119
+      targetPort: dashboard
+      name: dashboard
+    - port: 8642
+      targetPort: api
+      name: api

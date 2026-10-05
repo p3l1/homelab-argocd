@@ -33,5 +33,6 @@ einzugeben.
 | `unifi-credentials.sops.yaml` | API-Schlüssel des Routers für external-dns |
 | `paperless-secrets.sops.yaml` | Secret Key und Mail-Zugang für Paperless |
 | `umami-secrets.sops.yaml` | Admin-Passwort, `APP_SECRET` und 2FA-Schlüssel für Umami |
+| `hermes-secrets.sops.yaml` | Signal-Nummer, OIDC-Client und API-Schlüssel für Hermes |
 
 `newt-credentials` fehlt noch — die Werte kommen aus Pangolin.

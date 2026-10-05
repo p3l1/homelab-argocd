@@ -40,6 +40,7 @@ Longhorn, CloudNativePG und zuletzt Newt.
 | `tekton-pipelines` | Chart `1.14.0` | CI |
 | `arcane` | eigene Manifeste | Verwaltung der externen Docker-Hosts |
 | `home-assistant` | eigene Manifeste | Hausautomation, fest auf dem Node mit dem Funkadapter |
+| `hermes` | eigene Manifeste | Agent mit Claude-Abo, Dashboard und Signal-Sidecar |
 
 Secrets liegen SOPS-verschlüsselt unter [`secrets/`](../secrets) und werden
 von Hand angewandt, nicht von ArgoCD.

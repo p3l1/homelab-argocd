@@ -1,0 +1,13 @@
+# Vorlage fuer /opt/data/config.yaml. Ein initContainer legt sie nur an,
+# wenn die Datei fehlt - Hermes schreibt die Datei selbst, ein eingehaengtes
+# ConfigMap waere schreibgeschuetzt.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hermes-seed
+  namespace: hermes
+data:
+  config.yaml: |
+    model:
+      provider: claude-subscription-directsdk-experimental
+      default: sonnet
