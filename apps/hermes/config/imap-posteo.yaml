@@ -24,10 +24,9 @@ spec:
         fsGroup: 1000
       containers:
         - name: imap-mcp
-          # Unveraenderlicher Tag: der Versions-Tag wird bei jedem Bau neu
-          # geschrieben, ein Node mit altem Cache bekaeme sonst die falsche
-          # Fassung. sha-f2b2a47 bringt IMAP_PASS_FILE und IMAP_LABEL mit.
-          image: ghcr.io/p3l1/imap-mini-mcp:sha-f2b2a47
+          # Versions-Tags sind seit 0.2.0 unveraenderlich: sie entstehen nur
+          # im Release, nicht bei jedem Push.
+          image: ghcr.io/p3l1/imap-mini-mcp:0.2.0
           ports:
             - containerPort: 3000
               name: http
