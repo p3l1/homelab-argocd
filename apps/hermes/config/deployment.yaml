@@ -48,7 +48,13 @@ spec:
             - |
               set -eux
               npm install -g @anthropic-ai/claude-code@2.1.289
-              hermes plugins install claude-subscription-directsdk
+              # Ohne --enable bleibt das Plugin installiert, aber inaktiv.
+              # --no-allow-tool-override ueberspringt eine Rueckfrage, die
+              # ohne TTY haengen wuerde.
+              [ -d /opt/data/plugins/claude-subscription-directsdk-experimental ] ||
+                hermes plugins install --enable claude-subscription-directsdk
+              hermes plugins enable --no-allow-tool-override \
+                claude-subscription-directsdk-experimental || true
           env:
             - name: HOME
               value: /opt/data/home
