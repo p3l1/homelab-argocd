@@ -127,16 +127,19 @@ spec:
                 secretKeyRef:
                   name: hermes-secrets
                   key: SIGNAL_ACCOUNT
+            # Eigene Nummer fuer Hermes: SIGNAL_ACCOUNT ist seine, die beiden
+            # anderen zeigen auf Philipps Nummer - wer ihn ansprechen darf und
+            # wohin ungefragte Nachrichten gehen.
             - name: SIGNAL_ALLOWED_USERS
               valueFrom:
                 secretKeyRef:
                   name: hermes-secrets
-                  key: SIGNAL_ACCOUNT
+                  key: SIGNAL_ALLOWED_USERS
             - name: SIGNAL_HOME_CHANNEL
               valueFrom:
                 secretKeyRef:
                   name: hermes-secrets
-                  key: SIGNAL_ACCOUNT
+                  key: SIGNAL_ALLOWED_USERS
             # Pfad und Anmeldung der Claude-Code-CLI, beide auf dem Volume.
             - name: CLAUDE_SUBSCRIPTION_DIRECTSDK_COMMAND
               value: /opt/data/home/.npm-global/bin/claude

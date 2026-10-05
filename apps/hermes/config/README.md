@@ -33,7 +33,7 @@ run /login". Der Wert liegt im Secret, aber nicht im Deployment — wer vom
 Abo-Weg auf Abrechnung pro Token wechseln will, trägt die Variable dort wieder
 ein und stellt `hermes model` um. Das Plugin heißt ausdrücklich „Experimental".
 
-## Signal läuft als verknüpftes Gerät
+## Signal hat ein eigenes Konto
 
 Der Sidecar hält den Daemon auf `127.0.0.1:8080` — nur innerhalb des Pods
 erreichbar, deshalb auch ohne Probe. Das Image stammt aus
@@ -41,21 +41,29 @@ erreichbar, deshalb auch ohne Probe. Das Image stammt aus
 bündelt die native libsignal nur für x86_64, auf arm64 muss sie nachgezogen
 werden.
 
-Bis zur Verknüpfung bricht der Daemon ab; eine Schleife im Sidecar hält den
-Container deshalb am Leben, sonst wäre der nötige `exec` nicht möglich. Das
-Verknüpfen kommt also **nach** dem ersten Sync — der QR-Code erscheint im
-Terminal:
+Hermes hat eine **eigene Nummer**, kein verknüpftes Gerät an einem fremden
+Konto. Damit sieht er ausschließlich seine eigenen Unterhaltungen. Man schreibt
+ihm wie jedem anderen Kontakt; `SIGNAL_ALLOWED_USERS` entscheidet, wem er
+antwortet, `SIGNAL_HOME_CHANNEL`, wohin ungefragte Nachrichten gehen.
+
+Registriert wird einmalig im Sidecar. Ohne Captcha verweigert Signal:
 
 ```bash
-kubectl -n hermes exec -it deploy/hermes -c signal-cli -- \
-  signal-cli --config /data/signal-cli link -n HermesAgent
+kubectl -n hermes exec deploy/hermes -c signal-cli -- \
+  signal-cli --config /data/signal-cli -a +49... register --captcha '<token>'
+kubectl -n hermes exec deploy/hermes -c signal-cli -- \
+  signal-cli --config /data/signal-cli -a +49... verify <code>
 ```
 
-Gesprochen wird über „Nachricht an mich" — Hermes hängt als Zweitgerät am
-eigenen Konto. Das heißt auch: **der gesamte Signal-Eingang läuft durch den
-Hermes-Prozess.** Die Allowlist steuert, auf wen er antwortet, nicht, was er
-sieht. Und die Anmeldung lebt allein auf dem Volume: ist es weg, muss das
-Gerät neu verknüpft werden.
+Den Token liefert `signalcaptchas.org/registration/generate.html`, den Code
+eine SMS an die Nummer. Beide Befehle schweigen bei Erfolg; ob es geklappt hat,
+zeigt `uuid` in `/data/signal-cli/data/accounts.json`.
+
+Bis zur Registrierung bricht der Daemon ab; eine Schleife im Sidecar hält den
+Container deshalb am Leben, sonst wäre der nötige `exec` nicht möglich.
+
+Die Anmeldung lebt allein auf dem Volume: ist es weg, muss neu registriert
+werden — und eine Nummer lässt sich nicht beliebig oft neu registrieren.
 
 ## Pocket ID
 
