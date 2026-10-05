@@ -1,0 +1,45 @@
+# Der MCP-Server haelt das Postfach-Passwort. Beide Richtungen sind darum
+# zugeschnuert: nur Hermes darf hinein, und hinaus geht nur IMAPS.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: imap-posteo
+  namespace: hermes
+spec:
+  podSelector:
+    matchLabels:
+      app: imap-posteo
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: hermes
+      ports:
+        - protocol: TCP
+          port: 3000
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # Nur IMAPS nach draussen. Die privaten Bereiche sind ausgenommen, damit
+    # der Container das Homelab nicht erreicht, falls ihn jemand uebernimmt.
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      ports:
+        - protocol: TCP
+          port: 993

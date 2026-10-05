@@ -28,8 +28,9 @@ spec:
           args:
             - |
               install -d -m 0700 /opt/data/signal-cli
-              [ -f /opt/data/config.yaml ] && exit 0
-              install -D -m 0644 /seed/config.yaml /opt/data/config.yaml
+              [ -f /opt/data/config.yaml ] ||
+                install -D -m 0644 /seed/config.yaml /opt/data/config.yaml
+              python3 /seed/merge-mcp.py
           securityContext:
             runAsUser: 10000
             runAsGroup: 10000

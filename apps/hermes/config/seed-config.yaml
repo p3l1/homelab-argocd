@@ -11,3 +11,25 @@ data:
     model:
       provider: claude-subscription-directsdk-experimental
       default: sonnet
+
+  # Diese Liste gehoert Git: der initContainer schreibt sie bei jedem Start
+  # nach /opt/data/config.yaml, den Rest der Datei fuehrt Hermes selbst.
+  mcp-servers.yaml: |
+    posteo:
+      url: http://imap-posteo:3000/mcp
+
+  # Fuehrt die Serverliste in die Datei ein, die Hermes selbst fortschreibt.
+  # Ein Seed allein greift nur auf einem frischen Volume.
+  merge-mcp.py: |
+    import pathlib
+    import yaml
+
+    config = pathlib.Path("/opt/data/config.yaml")
+    have = yaml.safe_load(config.read_text()) or {}
+    want = yaml.safe_load(pathlib.Path("/seed/mcp-servers.yaml").read_text()) or {}
+
+    if have.get("mcp_servers") != want:
+        have["mcp_servers"] = want
+        config.write_text(yaml.safe_dump(have, sort_keys=False, allow_unicode=True))
+        print("mcp_servers aus dem Seed uebernommen")
+

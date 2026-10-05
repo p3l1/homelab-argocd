@@ -1,0 +1,103 @@
+# Ein MCP-Server je Postfach. Das Passwort liegt nur hier, nicht bei Hermes:
+# der Agent spricht ueber HTTP und bekommt die Zugangsdaten nie zu sehen.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: imap-posteo
+  namespace: hermes
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: imap-posteo
+  template:
+    metadata:
+      labels:
+        app: imap-posteo
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        # Secret-Dateien gehoeren root mit dieser Gruppe; 0440 macht sie damit
+        # fuer den node-Nutzer lesbar, fuer alle anderen nicht.
+        fsGroup: 1000
+      containers:
+        - name: imap-mcp
+          # Unveraenderlicher Tag: der Versions-Tag wird bei jedem Bau neu
+          # geschrieben, ein Node mit altem Cache bekaeme sonst die falsche
+          # Fassung. sha-f2b2a47 bringt IMAP_PASS_FILE und IMAP_LABEL mit.
+          image: ghcr.io/p3l1/imap-mini-mcp:sha-f2b2a47
+          ports:
+            - containerPort: 3000
+              name: http
+          env:
+            - name: TZ
+              value: Europe/Berlin
+            - name: IMAP_HOST
+              value: posteo.de
+            - name: IMAP_PORT
+              value: "993"
+            - name: IMAP_SECURE
+              value: "true"
+            - name: IMAP_USER
+              value: philipp-herzog@posteo.de
+            - name: IMAP_LABEL
+              value: Posteo
+            # Aus einer Datei statt aus der Umgebung: die taucht weder in
+            # /proc/<pid>/environ noch in einem Crash-Dump auf.
+            - name: IMAP_PASS_FILE
+              value: /run/secrets/imap/pass
+          volumeMounts:
+            - name: imap-pass
+              mountPath: /run/secrets/imap
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 384Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+      volumes:
+        - name: imap-pass
+          secret:
+            secretName: hermes-secrets
+            defaultMode: 0440
+            items:
+              - key: IMAP_PASS_POSTEO
+                path: pass
+        - name: tmp
+          emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: imap-posteo
+  namespace: hermes
+spec:
+  selector:
+    app: imap-posteo
+  ports:
+    - port: 3000
+      targetPort: http
+      name: http
