@@ -11,7 +11,10 @@ metadata:
     # wieder ab, deren username nicht woertlich in der Liste steht, und bei
     # einer Zeile aus dem IdP ist das nicht die E-Mail.
     pangolin.p3l1.de/roles: Member
-    pangolin.p3l1.de/healthcheck-path: /
+    # TCP statt HTTP: das Dashboard leitet jede unangemeldete Anfrage zum IdP
+    # weiter und schreibt dabei einen angefangenen Login ins Protokoll. Der
+    # Port-Test sagt hier dasselbe, ohne die echten Anmeldungen zu begraben.
+    pangolin.p3l1.de/healthcheck-mode: tcp
     pangolin.p3l1.de/healthcheck-interval: "30"
     pangolin.p3l1.de/healthcheck-timeout: "5"
 spec:
