@@ -7,8 +7,11 @@ metadata:
   namespace: hermes
   annotations:
     pangolin.p3l1.de/display-name: Hermes
-    # Erfasst beide Benutzerzeilen der Organisation, die interne und die ueber
-    # Pocket ID: Pangolin vergleicht den Eintrag gegen username oder email.
+    # Die Rolle deckt die Anmeldung ueber Pocket ID ab: Pangolin raeumt
+    # Benutzer wieder ab, deren username nicht woertlich in der Liste steht,
+    # und bei einer IdP-Zeile ist das nicht die E-Mail. Rollen vergleicht es
+    # ueber den Namen.
+    pangolin.p3l1.de/roles: Member
     pangolin.p3l1.de/users: philipp@herzo.gs
     pangolin.p3l1.de/healthcheck-path: /
     pangolin.p3l1.de/healthcheck-interval: "30"
