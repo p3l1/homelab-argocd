@@ -31,6 +31,7 @@ spec:
               [ -f /opt/data/config.yaml ] ||
                 install -D -m 0644 /seed/config.yaml /opt/data/config.yaml
               python3 /seed/merge-mcp.py
+              install -D -m 0644 /seed/gitconfig /opt/data/home/.gitconfig
           securityContext:
             runAsUser: 10000
             runAsGroup: 10000
@@ -49,6 +50,12 @@ spec:
             - |
               set -eux
               npm install -g @anthropic-ai/claude-code@2.1.289
+              # Fuer Pull Requests. Fehlt im Image, darum hierher aufs Volume.
+              [ -x /opt/data/.local/bin/gh ] || {
+                curl -fsSL "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_arm64.tar.gz" |
+                  tar xz -C /tmp
+                install -D -m 0755 "/tmp/gh_${GH_VERSION}_linux_arm64/bin/gh" /opt/data/.local/bin/gh
+              }
               # Ohne --enable bleibt das Plugin installiert, aber inaktiv.
               # --no-allow-tool-override ueberspringt eine Rueckfrage, die
               # ohne TTY haengen wuerde.
@@ -63,6 +70,8 @@ spec:
               value: /opt/data
             - name: NPM_CONFIG_PREFIX
               value: /opt/data/home/.npm-global
+            - name: GH_VERSION
+              value: 2.102.0
           securityContext:
             runAsUser: 10000
             runAsGroup: 10000
@@ -147,6 +156,18 @@ spec:
               value: /opt/data/home/.npm-global/bin/claude
             - name: CLAUDE_CONFIG_DIR
               value: /opt/data/home/.claude
+            # Fuer git und gh. Anders als das Postfach-Passwort ist dieser
+            # Token fuer den Agenten lesbar - fine-grained und eng halten.
+            - name: GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-secrets
+                  key: GITHUB_TOKEN
+            - name: GH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-secrets
+                  key: GITHUB_TOKEN
             # ANTHROPIC_API_KEY steht hier absichtlich nicht: die Claude-CLI
             # bevorzugt einen Key aus der Umgebung und kommt dann nie zur
             # Abo-Anmeldung. Der Wert liegt im Secret, falls er gebraucht wird.

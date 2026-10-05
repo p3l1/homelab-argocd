@@ -33,3 +33,16 @@ data:
         config.write_text(yaml.safe_dump(have, sort_keys=False, allow_unicode=True))
         print("mcp_servers aus dem Seed uebernommen")
 
+  # Der Helper reicht den Token aus der Umgebung durch, statt ihn in eine
+  # Datei zu schreiben. Diese Datei gehoert Git, nicht Hermes.
+  gitconfig: |
+    [user]
+        name = Hermes
+        email = hermes@cloud.p3l1.de
+    [credential "https://github.com"]
+        helper = "!f() { echo username=x-access-token; echo password=$GITHUB_TOKEN; }; f"
+    [init]
+        defaultBranch = main
+    [push]
+        autoSetupRemote = true
+

@@ -65,6 +65,25 @@ Container deshalb am Leben, sonst wäre der nötige `exec` nicht möglich.
 Die Anmeldung lebt allein auf dem Volume: ist es weg, muss neu registriert
 werden — und eine Nummer lässt sich nicht beliebig oft neu registrieren.
 
+## GitHub
+
+Der Agent bekommt einen Token **in seiner eigenen Umgebung** — anders als das
+Postfach-Passwort, das nur im MCP-Container liegt. Er kann ihn also lesen. Das
+ist bewusst so gewählt, weil `git` und `gh` ihn dort erwarten; die Folge ist,
+dass der Token eng gehalten gehört: fine-grained, nur die vorgesehenen Repos,
+`contents: write` und `pull_requests: write`, mit Ablaufdatum. Ein geschütztes
+`main` verhindert, dass aus „Pull Request" ein direkter Push wird.
+
+`gh` fehlt im Image und wird vom initContainer auf das Volume gelegt, nach
+`/opt/data/.local/bin` — das liegt bereits auf dem PATH. Die Identität und der
+Credential-Helper stehen in `/opt/data/home/.gitconfig`, das aus der ConfigMap
+kommt und bei jedem Start neu geschrieben wird. Der Helper reicht
+`$GITHUB_TOKEN` durch, statt ihn in eine Datei zu schreiben.
+
+Commits tragen `Hermes <hermes@cloud.p3l1.de>` — eine eigene Identität, damit
+sie von deinen eigenen unterscheidbar bleiben. GitHub ordnet sie dadurch keinem
+Konto zu; wer das will, trägt eine verifizierte Adresse ein.
+
 ## Pocket ID
 
 Das Dashboard verweigert den Start, sobald es auf einer Nicht-Loopback-Adresse
