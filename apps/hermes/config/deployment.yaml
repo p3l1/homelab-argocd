@@ -127,9 +127,10 @@ spec:
                 secretKeyRef:
                   name: hermes-secrets
                   key: SIGNAL_ACCOUNT
-            # Eigene Nummer fuer Hermes: SIGNAL_ACCOUNT ist seine, die beiden
-            # anderen zeigen auf Philipps Nummer - wer ihn ansprechen darf und
-            # wohin ungefragte Nachrichten gehen.
+            # SIGNAL_ACCOUNT ist die Nummer von Hermes. Die Allowlist nimmt
+            # eine Liste und braucht die UUID, weil Signal die Nummer eines
+            # Nicht-Kontakts nicht preisgibt; der Home-Channel will ein
+            # einzelnes Ziel und hat darum einen eigenen Schluessel.
             - name: SIGNAL_ALLOWED_USERS
               valueFrom:
                 secretKeyRef:
@@ -139,7 +140,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: hermes-secrets
-                  key: SIGNAL_ALLOWED_USERS
+                  key: SIGNAL_HOME_CHANNEL
             # Pfad und Anmeldung der Claude-Code-CLI, beide auf dem Volume.
             - name: CLAUDE_SUBSCRIPTION_DIRECTSDK_COMMAND
               value: /opt/data/home/.npm-global/bin/claude
