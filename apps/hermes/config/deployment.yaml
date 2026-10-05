@@ -150,6 +150,15 @@ spec:
             # ANTHROPIC_API_KEY steht hier absichtlich nicht: die Claude-CLI
             # bevorzugt einen Key aus der Umgebung und kommt dann nie zur
             # Abo-Anmeldung. Der Wert liegt im Secret, falls er gebraucht wird.
+          # Ohne sie fuehrt der Service den Endpunkt schon, bevor das
+          # Dashboard lauscht - der Weg von aussen endet dann im 502.
+          readinessProbe:
+            httpGet:
+              path: /
+              port: dashboard
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 30
           volumeMounts:
             - name: data
               mountPath: /opt/data
