@@ -91,6 +91,14 @@ Alle optional, alle an der HTTPRoute:
 Hostname und Port der Prüfung erbt der Controller vom Ziel — eine Prüfung gegen eine
 andere Adresse beschriebe das Ziel nicht.
 
+**Eine geänderte Healthcheck-Annotation braucht einen Neustart von newt.** Beim
+Reload registriert newt seine Ziele neu und schleppt dabei alten
+Healthcheck-Zustand mit; Pangolin führt das Ziel dann als ungesund und antwortet
+mit `502`, obwohl der Dienst im Cluster einwandfrei antwortet. Am 2026-10-06 beim
+Umstellen der Hermes-Route auf `healthcheck-mode: tcp` passiert — von innen kam
+`200`, von außen `502`, und `kubectl -n newt rollout restart deploy/newt` hat es
+behoben. Verwandt: [fosrl/newt#411](https://github.com/fosrl/newt/issues/411).
+
 ## Grenzen von v0.3
 
 Eine Route wird nur veröffentlicht, wenn sie genau einen Hostnamen, eine Regel, einen
