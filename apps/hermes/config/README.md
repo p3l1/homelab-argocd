@@ -24,9 +24,14 @@ kubectl -n hermes exec -it deploy/hermes -- /opt/data/home/.npm-global/bin/claud
 
 Danach erneuert die CLI ihr Token selbst. Jeder Zug zieht gegen das
 Agent-SDK-Kontingent des Abos, zur Rate von `claude -p` — laut Doku etwa
-1,7-fach gegenüber der interaktiven Nutzung. Das Plugin heißt ausdrücklich
-„Experimental"; fällt der Weg aus, stellt `hermes model` auf den
-`ANTHROPIC_API_KEY` aus demselben Secret um.
+1,7-fach gegenüber der interaktiven Nutzung.
+
+**`ANTHROPIC_API_KEY` darf dabei nicht in der Umgebung stehen.** Die CLI nimmt
+einen Key aus der Umgebung und meldet dann „Invalid API key · Fix external API
+key", statt zur Anmeldung zu kommen; ohne ihn sagt sie „Not logged in · Please
+run /login". Der Wert liegt im Secret, aber nicht im Deployment — wer vom
+Abo-Weg auf Abrechnung pro Token wechseln will, trägt die Variable dort wieder
+ein und stellt `hermes model` um. Das Plugin heißt ausdrücklich „Experimental".
 
 ## Signal läuft als verknüpftes Gerät
 
