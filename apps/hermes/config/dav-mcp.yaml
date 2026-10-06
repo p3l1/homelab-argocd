@@ -1,0 +1,100 @@
+# Posteo-Kalender und -Notizen. Das Passwort liegt nur hier, nicht bei Hermes:
+# der Agent spricht ueber HTTP und bekommt die Zugangsdaten nie zu sehen.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dav-mcp
+  namespace: hermes
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dav-mcp
+  template:
+    metadata:
+      labels:
+        app: dav-mcp
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        # Secret-Dateien gehoeren root mit dieser Gruppe; 0440 macht sie damit
+        # fuer den dav-Nutzer lesbar, fuer alle anderen nicht.
+        fsGroup: 1000
+      containers:
+        - name: dav-mcp
+          image: ghcr.io/p3l1/dav-mcp:0.1.0
+          ports:
+            - containerPort: 3000
+              name: http
+          env:
+            - name: TZ
+              value: Europe/Berlin
+            # Ein Prozess, mehrere Konten. Weitere kommen als zweiter Name in
+            # DAV_ACCOUNTS und einem eigenen Satz DAV_<NAME>_* dazu.
+            - name: DAV_ACCOUNTS
+              value: posteo
+            - name: DAV_POSTEO_URL
+              value: https://posteo.de:8443/
+            - name: DAV_POSTEO_USER
+              value: philipp-herzog@posteo.de
+            - name: DAV_POSTEO_LABEL
+              value: Posteo
+            # Aus einer Datei statt aus der Umgebung: die taucht weder in
+            # /proc/<pid>/environ noch in einem Crash-Dump auf.
+            - name: DAV_POSTEO_PASS_FILE
+              value: /run/secrets/dav/pass
+          volumeMounts:
+            - name: dav-pass
+              mountPath: /run/secrets/dav
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 384Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+      volumes:
+        - name: dav-pass
+          secret:
+            secretName: hermes-secrets
+            defaultMode: 0440
+            items:
+              - key: DAV_PASS_POSTEO
+                path: pass
+        - name: tmp
+          emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dav-mcp
+  namespace: hermes
+spec:
+  selector:
+    app: dav-mcp
+  ports:
+    - port: 3000
+      targetPort: http
+      name: http

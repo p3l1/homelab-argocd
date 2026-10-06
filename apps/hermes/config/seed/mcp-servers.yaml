@@ -4,3 +4,5 @@ posteo:
   url: http://imap-posteo:3000/mcp
 m365:
   url: http://graph-mcp:3000/mcp
+posteo-dav:
+  url: http://dav-mcp:3000/mcp
