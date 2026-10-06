@@ -31,6 +31,7 @@ spec:
               [ -f /opt/data/config.yaml ] ||
                 install -D -m 0644 /seed/config.yaml /opt/data/config.yaml
               python3 /seed/merge-mcp.py
+              sh /seed/seed-profiles.sh
               install -D -m 0644 /seed/gitconfig /opt/data/home/.gitconfig
           securityContext:
             runAsUser: 10000
@@ -329,3 +330,15 @@ spec:
     - port: 8642
       targetPort: api
       name: api
+    - port: 8643
+      targetPort: 8643
+      name: staff-sekretari
+    - port: 8644
+      targetPort: 8644
+      name: staff-vereinsbu
+    - port: 8645
+      targetPort: 8645
+      name: staff-taktwerk
+    - port: 8646
+      targetPort: 8646
+      name: staff-technik

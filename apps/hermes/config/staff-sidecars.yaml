@@ -1,0 +1,201 @@
+# Mitarbeiter-Profile als Sidecars: je ein Hermes-Gateway mit eigenem
+# HERMES_HOME (/opt/data/profiles/<name>) und eigenem API-Port. Paperclip
+# spricht sie ueber den Service hermes an (hermes_gateway, Port je Profil).
+# Erzeugt aus den Profil-Daten; Aenderungen bitte hier und im seed/profiles/ pflegen.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hermes
+  namespace: hermes
+spec:
+  template:
+    spec:
+      containers:
+        # E-Mail-Check Posteo, Kalender, Antwortentwuerfe
+        - name: staff-sekretariat
+          image: docker.io/nousresearch/hermes-agent:v2026.9.24
+          args: ["gateway", "run"]
+          ports:
+            - containerPort: 8643
+              name: api-sekretari
+          env:
+            - name: TZ
+              value: Europe/Berlin
+            - name: HERMES_HOME
+              value: /opt/data/profiles/sekretariat
+            - name: HERMES_UID
+              value: "10000"
+            - name: HERMES_GID
+              value: "10000"
+            - name: API_SERVER_ENABLED
+              value: "true"
+            - name: API_SERVER_HOST
+              value: 0.0.0.0
+            - name: API_SERVER_PORT
+              value: "8643"
+            - name: API_SERVER_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-staff-secrets
+                  key: API_KEY_SEKRETARIAT
+            - name: CLAUDE_SUBSCRIPTION_DIRECTSDK_COMMAND
+              value: /opt/data/home/.npm-global/bin/claude
+            - name: CLAUDE_CONFIG_DIR
+              value: /opt/data/home/.claude
+          volumeMounts:
+            - name: data
+              mountPath: /opt/data
+            - name: shm
+              mountPath: /dev/shm
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              memory: 2Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+              add: ["CHOWN", "FOWNER", "DAC_OVERRIDE", "SETUID", "SETGID"]
+        # Plan-b-Mitgliedschaftsanfragen, Vereinsverwaltung
+        - name: staff-vereinsbuero
+          image: docker.io/nousresearch/hermes-agent:v2026.9.24
+          args: ["gateway", "run"]
+          ports:
+            - containerPort: 8644
+              name: api-vereinsbu
+          env:
+            - name: TZ
+              value: Europe/Berlin
+            - name: HERMES_HOME
+              value: /opt/data/profiles/vereinsbuero
+            - name: HERMES_UID
+              value: "10000"
+            - name: HERMES_GID
+              value: "10000"
+            - name: API_SERVER_ENABLED
+              value: "true"
+            - name: API_SERVER_HOST
+              value: 0.0.0.0
+            - name: API_SERVER_PORT
+              value: "8644"
+            - name: API_SERVER_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-staff-secrets
+                  key: API_KEY_VEREINSBUERO
+            - name: CLAUDE_SUBSCRIPTION_DIRECTSDK_COMMAND
+              value: /opt/data/home/.npm-global/bin/claude
+            - name: CLAUDE_CONFIG_DIR
+              value: /opt/data/home/.claude
+          volumeMounts:
+            - name: data
+              mountPath: /opt/data
+            - name: shm
+              mountPath: /dev/shm
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              memory: 2Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+              add: ["CHOWN", "FOWNER", "DAC_OVERRIDE", "SETUID", "SETGID"]
+        # Taktwerk-Problemmeldungen aus Teams
+        - name: staff-taktwerk
+          image: docker.io/nousresearch/hermes-agent:v2026.9.24
+          args: ["gateway", "run"]
+          ports:
+            - containerPort: 8645
+              name: api-taktwerk
+          env:
+            - name: TZ
+              value: Europe/Berlin
+            - name: HERMES_HOME
+              value: /opt/data/profiles/taktwerk
+            - name: HERMES_UID
+              value: "10000"
+            - name: HERMES_GID
+              value: "10000"
+            - name: API_SERVER_ENABLED
+              value: "true"
+            - name: API_SERVER_HOST
+              value: 0.0.0.0
+            - name: API_SERVER_PORT
+              value: "8645"
+            - name: API_SERVER_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-staff-secrets
+                  key: API_KEY_TAKTWERK
+            - name: CLAUDE_SUBSCRIPTION_DIRECTSDK_COMMAND
+              value: /opt/data/home/.npm-global/bin/claude
+            - name: CLAUDE_CONFIG_DIR
+              value: /opt/data/home/.claude
+          volumeMounts:
+            - name: data
+              mountPath: /opt/data
+            - name: shm
+              mountPath: /dev/shm
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              memory: 2Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+              add: ["CHOWN", "FOWNER", "DAC_OVERRIDE", "SETUID", "SETGID"]
+        # Cluster-Check, Homelab-PRs
+        - name: staff-technik
+          image: docker.io/nousresearch/hermes-agent:v2026.9.24
+          args: ["gateway", "run"]
+          ports:
+            - containerPort: 8646
+              name: api-technik
+          env:
+            - name: TZ
+              value: Europe/Berlin
+            - name: HERMES_HOME
+              value: /opt/data/profiles/technik
+            - name: HERMES_UID
+              value: "10000"
+            - name: HERMES_GID
+              value: "10000"
+            - name: API_SERVER_ENABLED
+              value: "true"
+            - name: API_SERVER_HOST
+              value: 0.0.0.0
+            - name: API_SERVER_PORT
+              value: "8646"
+            - name: API_SERVER_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-staff-secrets
+                  key: API_KEY_TECHNIK
+            - name: CLAUDE_SUBSCRIPTION_DIRECTSDK_COMMAND
+              value: /opt/data/home/.npm-global/bin/claude
+            - name: CLAUDE_CONFIG_DIR
+              value: /opt/data/home/.claude
+          volumeMounts:
+            - name: data
+              mountPath: /opt/data
+            - name: shm
+              mountPath: /dev/shm
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              memory: 2Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+              add: ["CHOWN", "FOWNER", "DAC_OVERRIDE", "SETUID", "SETGID"]

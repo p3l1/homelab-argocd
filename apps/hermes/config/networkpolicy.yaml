@@ -115,3 +115,11 @@ spec:
       ports:
         - protocol: TCP
           port: 8642
+        - protocol: TCP
+          port: 8643
+        - protocol: TCP
+          port: 8644
+        - protocol: TCP
+          port: 8645
+        - protocol: TCP
+          port: 8646
