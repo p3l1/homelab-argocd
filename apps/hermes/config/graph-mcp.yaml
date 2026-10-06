@@ -41,9 +41,12 @@ spec:
             - --trust-proxy-auth
             # Ohne dieses Flag bleiben Arbeits- und Schulkonten unerreichbar.
             - --org-mode
-            # Das Image bringt 334 Tools mit; hier bleiben zehn uebrig.
+            # Das Image bringt 334 Tools mit; hier bleiben sieben uebrig.
+            # find-meeting-times fehlt mit Absicht: es verlangt
+            # Calendars.Read.Shared, und get-schedule deckt freie Zeiten ab.
+            # list-accounts und verify-login wirken nur mit --enable-auth-tools.
             - --enabled-tools
-            - ^(list-accounts|verify-login|list-calendars|list-calendar-events|get-calendar-event|get-calendar-view|create-calendar-event|update-calendar-event|get-schedule|find-meeting-times)$
+            - ^(list-calendars|list-calendar-events|get-calendar-event|get-calendar-view|create-calendar-event|update-calendar-event|get-schedule)$
             # Grenze auch fuer den Login: MSAL fragt nur noch diese an.
             - --allowed-scopes
             - User.Read Calendars.ReadWrite

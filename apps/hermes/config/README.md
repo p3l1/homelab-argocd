@@ -185,8 +185,10 @@ Postfach hält der Server die Token selbst und Hermes spricht nur HTTP — er
 bekommt die Anmeldungen nie zu sehen. Die Posteo-Kalender und -Notizen folgen
 später über `dav-mcp`.
 
-Von 334 Tools bleiben zehn übrig, und `--allowed-scopes` begrenzt auch den
-Login: MSAL fragt nur `User.Read` und `Calendars.ReadWrite` an.
+Von 334 Tools bleiben sieben übrig, und `--allowed-scopes` begrenzt auch den
+Login: MSAL fragt nur `User.Read` und `Calendars.ReadWrite` an. `get-schedule`
+kommt damit aus, `find-meeting-times` nicht — das verlangt
+`Calendars.Read.Shared` und bleibt deshalb draußen.
 
 ### Hier arbeitet er unter *deiner* Identität
 
