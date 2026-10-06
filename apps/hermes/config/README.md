@@ -177,18 +177,36 @@ kubectl -n hermes logs deploy/hermes -c github-token
 # Token erneuert, gueltig bis 2026-10-06T...Z
 ```
 
-## Kalender
+## Kalender und M365-Postfächer
 
-Die M365-Kalender bedient `graph-mcp`, ein konfigurierter
+Beides bedient `graph-mcp`, ein konfigurierter
 [`ms-365-mcp-server`](https://github.com/softeria/ms-365-mcp-server). Wie beim
 Postfach hält der Server die Token selbst und Hermes spricht nur HTTP — er
 bekommt die Anmeldungen nie zu sehen. Die Posteo-Kalender und -Notizen folgen
 später über `dav-mcp`.
 
-Von 334 Tools bleiben sieben übrig, und `--allowed-scopes` begrenzt auch den
-Login: MSAL fragt nur `User.Read` und `Calendars.ReadWrite` an. `get-schedule`
-kommt damit aus, `find-meeting-times` nicht — das verlangt
+Von 334 Tools bleiben 17 übrig, und `--allowed-scopes` begrenzt auch den
+Login: MSAL fragt nur `Calendars.ReadWrite` und `Mail.ReadWrite` an.
+`get-schedule` kommt damit aus, `find-meeting-times` nicht — das verlangt
 `Calendars.Read.Shared` und bleibt deshalb draußen.
+
+### Mail: lesen und Entwürfe, wie bei Posteo
+
+Dieselbe Linie wie beim IMAP-Server, nur härter durchgesetzt. Dort ist „kein
+Senden" eine Selbstbeschränkung des Servers; hier fehlt die Berechtigung:
+`send-mail` verlangt zusätzlich `Mail.Send`, und ohne diesen Scope schaltet
+der Server das Tool von selbst ab — auch wenn es jemand in `--enabled-tools`
+einträgt. Zwei unabhängige Riegel.
+
+`delete-mail-message` braucht diesen zweiten Riegel nicht, es kommt mit
+`Mail.ReadWrite` aus. Es steht deshalb einfach nicht in der Liste.
+
+Was er kann: Ordner und Nachrichten lesen, Anhänge auflisten, verschieben,
+als gelesen markieren, und Entwürfe anlegen — neu, als Antwort oder als
+Antwort an alle.
+
+Posteo bleibt beim IMAP-Server. Der kann dort mehr (Sterne, Massenverschieben
+nach Absender oder Domain) und hält sein eigenes Passwort.
 
 ### Hier arbeitet er unter *deiner* Identität
 
@@ -216,6 +234,12 @@ kubectl -n hermes exec deploy/graph-mcp -- ms-365-mcp-server --list-accounts
 Tenants der Unterschied zwischen Probieren und Wissen. Ein Tenant kann
 User-Consent auf gering eingestufte Berechtigungen begrenzen oder unbekannte
 Anwendungen per Conditional Access sperren; dann endet es hier.
+
+Damit ist bei **`Mail.ReadWrite` zu rechnen**: Admin-Consent verlangt es nicht,
+aber es gilt als hoch eingestuft und ist in Microsofts empfohlener
+User-Consent-Richtlinie vom Selbst-Consent ausgenommen. Folgt ein Tenant dieser
+Empfehlung, braucht der Mail-Teil den Administrator. Die Kalender-Tools bleiben
+davon unberührt — `--allowed-scopes` führt beide Scopes getrennt.
 
 **Schließe den Device-Code-Login im Browser mit einem Passkey ab, wo der
 Tenant es zulässt**, nicht mit Passwort und MFA:
