@@ -90,3 +90,28 @@ spec:
       ports:
         - protocol: TCP
           port: 443
+
+---
+# Die API auf 8642 kennt nur einen Bearer-Schluessel; erreichen darf sie
+# allein Paperclip. Das Dashboard bleibt offen fuer Pangolin.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: hermes
+  namespace: hermes
+spec:
+  podSelector:
+    matchLabels:
+      app: hermes
+  policyTypes: [Ingress]
+  ingress:
+    - ports:
+        - protocol: TCP
+          port: 9119
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: paperclip
+      ports:
+        - protocol: TCP
+          port: 8642
