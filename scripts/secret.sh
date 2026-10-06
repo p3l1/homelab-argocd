@@ -12,6 +12,9 @@
 # eine Terminal-Eingabezeile fasst nur 1024 Zeichen, laengeres Einfuegen in die
 # Abfrage bleibt wirkungslos.
 #
+# -r SCHLUESSEL entfernt einen Schluessel aus Datei und Cluster. Dann ist auch
+# ein Aufruf ohne weitere Schluessel zulaessig.
+#
 # Das Secret geht sofort in den Cluster und zusaetzlich nach
 # secrets/<name>.sops.yaml - sonst waere es nach einem Neuaufbau verloren.
 
@@ -26,6 +29,7 @@ ok() { printf '\033[92m[OK]\033[0m %s\n' "$1"; }
 # Labels muessen mitkommen: ArgoCD findet ein Secret nur dann ueber
 # $name:key, wenn es app.kubernetes.io/part-of=argocd traegt.
 LABELS=()
+REMOVE=()
 declare -A FROM_FILE=()
 while [[ ${1:-} == -* ]]; do
   case "$1" in
@@ -37,11 +41,15 @@ while [[ ${1:-} == -* ]]; do
       path="${2#*=}"; path="${path/#\~/$HOME}"
       [[ -r "$path" ]] || die "$path ist nicht lesbar"
       FROM_FILE["${2%%=*}"]="$path"; shift 2 ;;
+    -r|--remove)
+      [[ -n "${2:-}" ]] || die "--remove erwartet einen SCHLUESSEL"
+      REMOVE+=("$2"); shift 2 ;;
     *) die "Unbekannte Option: $1" ;;
   esac
 done
 
-[[ $# -ge 3 ]] || die "Aufruf: $0 [--label K=V ...] <name> <namespace> <SCHLUESSEL> [SCHLUESSEL ...]"
+MIN=3; [[ ${#REMOVE[@]} -gt 0 ]] && MIN=2
+[[ $# -ge $MIN ]] || die "Aufruf: $0 [--label K=V] [-f K=PFAD] [-r K] <name> <namespace> [SCHLUESSEL ...]"
 NAME="$1"; NS="$2"; shift 2
 KEYS=("$@")
 
@@ -52,23 +60,27 @@ FILE="secrets/${NAME}.sops.yaml"
 mkdir -p secrets
 
 # Vorhandene Werte einlesen, damit einzelne Schluessel ergaenzt werden koennen.
+# NUL trennt die Paare, nicht der Zeilenumbruch: ein mehrzeiliger Wert wie ein
+# PEM-Schluessel wuerde sonst Zeile fuer Zeile zu eigenen Schluesseln zerfallen.
 declare -A CURRENT=()
 if [[ -f "$FILE" ]]; then
   info "Vorhandene Datei $FILE wird als Grundlage genommen"
-  while IFS='=' read -r k v; do
+  while IFS='=' read -r -d '' k v; do
     [[ -n "$k" ]] && CURRENT["$k"]="$v"
   done < <(sops -d "$FILE" 2>/dev/null | python3 -c "
 import sys, yaml
 d = yaml.safe_load(sys.stdin) or {}
 for k, v in (d.get('stringData') or {}).items():
-    print(f'{k}={v}')
+    sys.stdout.write(f'{k}={v}\0')
 " 2>/dev/null || true)
 fi
 
 declare -A VALUES=()
 for k in "${KEYS[@]}"; do
   if [[ -n "${FROM_FILE[$k]:-}" ]]; then
-    VALUES["$k"]=$(<"${FROM_FILE[$k]}")
+    # Das angehaengte x rettet den Schluss-Zeilenumbruch, den $( ) sonst frisst.
+    VALUES["$k"]=$(cat "${FROM_FILE[$k]}"; printf x)
+    VALUES["$k"]="${VALUES[$k]%x}"
     [[ -n "${VALUES[$k]}" ]] || die "${FROM_FILE[$k]} ist leer."
     info "$k aus ${FROM_FILE[$k]} gelesen"
   elif [[ -n "${CURRENT[$k]:-}" ]]; then
@@ -86,7 +98,16 @@ done
 # Schluessel nachtragen will, alle uebrigen aus der Datei - im Cluster
 # faellt es nicht auf, weil "kubectl apply" zusammenfuehrt, aber nach
 # einem Neuaufbau waeren sie weg.
-ALL_KEYS=("${KEYS[@]}")
+for k in "${REMOVE[@]}"; do
+  if [[ -n "${CURRENT[$k]:-}" ]]; then
+    unset 'CURRENT[$k]'
+    info "$k wird entfernt"
+  else
+    info "$k war nicht vorhanden"
+  fi
+done
+
+ALL_KEYS=("${KEYS[@]+"${KEYS[@]}"}")
 for k in "${!CURRENT[@]}"; do
   if [[ -z "${VALUES[$k]:-}" ]]; then
     VALUES["$k"]="${CURRENT[$k]}"
