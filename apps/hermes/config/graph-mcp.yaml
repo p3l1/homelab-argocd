@@ -41,15 +41,18 @@ spec:
             - --trust-proxy-auth
             # Ohne dieses Flag bleiben Arbeits- und Schulkonten unerreichbar.
             - --org-mode
-            # Das Image bringt 334 Tools mit; hier bleiben sieben uebrig.
-            # find-meeting-times fehlt mit Absicht: es verlangt
-            # Calendars.Read.Shared, und get-schedule deckt freie Zeiten ab.
-            # list-accounts und verify-login wirken nur mit --enable-auth-tools.
+            # Das Image bringt 334 Tools mit; hier bleiben 17 uebrig.
+            # Draussen mit Absicht: send-mail und delete-mail-message,
+            # delete-calendar-event, Teilnehmer, sowie find-meeting-times,
+            # das Calendars.Read.Shared verlangt.
             - --enabled-tools
-            - ^(list-calendars|list-calendar-events|get-calendar-event|get-calendar-view|create-calendar-event|update-calendar-event|get-schedule)$
+            - ^(list-calendars|list-calendar-events|get-calendar-event|get-calendar-view|create-calendar-event|update-calendar-event|get-schedule|list-mail-folders|list-mail-messages|list-mail-folder-messages|get-mail-message|list-mail-attachments|create-draft-email|create-reply-draft|create-reply-all-draft|move-mail-message|update-mail-message)$
             # Grenze auch fuer den Login: MSAL fragt nur noch diese an.
+            # Ohne Mail.Send schaltet der Server send-mail selbst ab, auch
+            # wenn es jemand in die Liste oben eintraegt. User.Read nutzt
+            # kein Tool, aber testLogin() ruft damit /me ab.
             - --allowed-scopes
-            - User.Read Calendars.ReadWrite
+            - User.Read Calendars.ReadWrite Mail.ReadWrite
           ports:
             - containerPort: 3000
               name: http
