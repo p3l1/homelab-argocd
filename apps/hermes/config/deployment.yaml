@@ -115,6 +115,24 @@ spec:
                 secretKeyRef:
                   name: hermes-secrets
                   key: OIDC_CLIENT_ID
+            # Zweiter Provider neben Pocket ID: die Anmeldeseite listet beide.
+            # Fuer Clients, die keinen Browser-Fluss koennen - etwa die App.
+            - name: HERMES_DASHBOARD_BASIC_AUTH_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-secrets
+                  key: HERMES_DASHBOARD_BASIC_AUTH_USERNAME
+            - name: HERMES_DASHBOARD_BASIC_AUTH_PASSWORD_HASH
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-secrets
+                  key: HERMES_DASHBOARD_BASIC_AUTH_PASSWORD_HASH
+            # Haelt Sitzungen ueber Neustarts hinweg gueltig.
+            - name: HERMES_DASHBOARD_BASIC_AUTH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-secrets
+                  key: HERMES_DASHBOARD_BASIC_AUTH_SECRET
             # OpenAI-kompatibler Endpunkt, nur cluster-intern. Er kennt
             # ausschliesslich diesen Schluessel, keine Anmeldung.
             - name: API_SERVER_ENABLED
