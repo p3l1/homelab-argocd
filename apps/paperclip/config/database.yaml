@@ -1,0 +1,22 @@
+# CloudNativePG legt Cluster und Zugangsdaten an; das Secret paperclip-db-app
+# entsteht dabei automatisch und enthaelt unter anderem 'uri'.
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: paperclip-db
+  namespace: paperclip
+spec:
+  instances: 1
+  storage:
+    size: 5Gi
+    storageClass: longhorn
+  bootstrap:
+    initdb:
+      database: paperclip
+      owner: paperclip
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 512Mi

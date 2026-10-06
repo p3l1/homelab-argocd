@@ -41,6 +41,7 @@ Longhorn, CloudNativePG und zuletzt Newt.
 | `arcane` | eigene Manifeste | Verwaltung der externen Docker-Hosts |
 | `home-assistant` | eigene Manifeste | Hausautomation, fest auf dem Node mit dem Funkadapter |
 | `hermes` | eigene Manifeste | Agent mit Claude-Abo, Dashboard und Signal-Sidecar |
+| `paperclip` | eigene Manifeste | Agenten-Harness, Hermes als Agent, Datenbank über CloudNativePG |
 
 Secrets liegen SOPS-verschlüsselt unter [`secrets/`](../secrets) und werden
 von Hand angewandt, nicht von ArgoCD.

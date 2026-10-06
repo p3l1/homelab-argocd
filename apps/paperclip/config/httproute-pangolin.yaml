@@ -1,0 +1,23 @@
+# Pangolin-SSO davor, dahinter Paperclips eigene Anmeldung - OIDC kann
+# Paperclip nicht.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: paperclip-pangolin
+  namespace: paperclip
+  annotations:
+    pangolin.p3l1.de/display-name: Paperclip
+    pangolin.p3l1.de/roles: Member
+    pangolin.p3l1.de/healthcheck-path: /api/health
+    pangolin.p3l1.de/healthcheck-interval: "30"
+    pangolin.p3l1.de/healthcheck-timeout: "5"
+spec:
+  parentRefs:
+    - name: pangolin
+      namespace: pangolin-gateway
+  hostnames:
+    - paperclip.cloud.p3l1.de
+  rules:
+    - backendRefs:
+        - name: paperclip
+          port: 3100

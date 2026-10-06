@@ -1,0 +1,22 @@
+# Paperclip: Agenten-Harness. Es gibt kein offizielles Helm-Chart, daher
+# eigene Manifeste; die Datenbank stellt CloudNativePG.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: paperclip
+  namespace: argocd
+spec:
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+  project: apps
+  sources:
+    - repoURL: https://github.com/p3l1/homelab-argocd.git
+      targetRevision: main
+      path: apps/paperclip/config
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: paperclip

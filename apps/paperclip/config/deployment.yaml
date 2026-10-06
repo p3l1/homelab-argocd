@@ -1,0 +1,108 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: paperclip
+  namespace: paperclip
+spec:
+  replicas: 1
+  # Das Volume ist ReadWriteOnce: erst der alte Pod weg, dann der neue.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: paperclip
+  template:
+    metadata:
+      labels:
+        app: paperclip
+    spec:
+      containers:
+        - name: paperclip
+          image: ghcr.io/paperclipai/paperclip:2026.1005.0
+          # Der Entrypoint startet als root, korrigiert die Rechte unter
+          # /paperclip und wechselt dann per gosu zum Benutzer node.
+          ports:
+            - containerPort: 3100
+              name: http
+          env:
+            - name: TZ
+              value: Europe/Berlin
+            - name: PAPERCLIP_DEPLOYMENT_MODE
+              value: authenticated
+            - name: PAPERCLIP_DEPLOYMENT_EXPOSURE
+              value: public
+            - name: PAPERCLIP_PUBLIC_URL
+              value: https://paperclip.cloud.p3l1.de
+            # Hermes meldet sich cluster-intern zurueck, nicht ueber Pangolin.
+            - name: PAPERCLIP_ALLOWED_HOSTNAMES
+              value: paperclip.paperclip.svc
+            # newt reicht X-Forwarded-For aus dem Pod-Netz (10.42.0.0/16) herein.
+            - name: TRUST_PROXY
+              value: uniquelocal
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: paperclip-db-app
+                  key: uri
+            - name: PAPERCLIP_STORAGE_PROVIDER
+              value: local_disk
+            - name: PAPERCLIP_STORAGE_LOCAL_DIR
+              value: /paperclip/storage
+            - name: BETTER_AUTH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: paperclip-secrets
+                  key: BETTER_AUTH_SECRET
+            - name: PAPERCLIP_SECRETS_MASTER_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: paperclip-secrets
+                  key: PAPERCLIP_SECRETS_MASTER_KEY
+            - name: PAPERCLIP_AGENT_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: paperclip-secrets
+                  key: PAPERCLIP_AGENT_JWT_SECRET
+            - name: PAPERCLIP_TELEMETRY_DISABLED
+              value: "1"
+            - name: DO_NOT_TRACK
+              value: "1"
+          # Beim ersten Start laufen die Migrationen; das dauert auf dem Pi.
+          startupProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 10
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              memory: 1Gi
+          volumeMounts:
+            - name: data
+              mountPath: /paperclip
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: paperclip-data
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: paperclip
+  namespace: paperclip
+spec:
+  selector:
+    app: paperclip
+  ports:
+    - port: 3100
+      targetPort: http
+      name: http
