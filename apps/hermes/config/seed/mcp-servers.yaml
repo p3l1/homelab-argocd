@@ -2,3 +2,5 @@
 # nach /opt/data/config.yaml, den Rest der Datei fuehrt Hermes selbst.
 posteo:
   url: http://imap-posteo:3000/mcp
+m365:
+  url: http://graph-mcp:3000/mcp
