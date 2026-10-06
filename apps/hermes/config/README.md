@@ -177,6 +177,64 @@ kubectl -n hermes logs deploy/hermes -c github-token
 # Token erneuert, gueltig bis 2026-10-06T...Z
 ```
 
+## Kalender
+
+Die M365-Kalender bedient `graph-mcp`, ein konfigurierter
+[`ms-365-mcp-server`](https://github.com/softeria/ms-365-mcp-server). Wie beim
+Postfach hält der Server die Token selbst und Hermes spricht nur HTTP — er
+bekommt die Anmeldungen nie zu sehen. Die Posteo-Kalender und -Notizen folgen
+später über `dav-mcp`.
+
+Von 334 Tools bleiben zehn übrig, und `--allowed-scopes` begrenzt auch den
+Login: MSAL fragt nur `User.Read` und `Calendars.ReadWrite` an.
+
+### Hier arbeitet er unter *deiner* Identität
+
+Bei Signal hat er eine eigene Nummer, bei GitHub eine eigene App. In einem
+fremden Tenant ist beides nicht möglich: ohne eigene App-Registrierung bleibt
+nur delegierter Zugriff. Jeder Termin, den er anlegt, trägt deinen Namen, und
+jeder Zugriff erscheint im Audit-Log des Tenants als deine Anmeldung.
+
+Darum sind zwei Dinge abgeschaltet: **Teilnehmer** und **Löschen**. Beides
+verschickt echte Einladungen und Absagen unter deinem Namen, und Graph lässt
+das nicht unterdrücken. Wird Löschen gebraucht, genügt ein Eintrag im
+`--enabled-tools`-Ausdruck.
+
+### Anmeldung je Konto
+
+Einmalig pro Postfach, wie bei Signal und der Claude-CLI:
+
+```bash
+kubectl -n hermes exec deploy/graph-mcp -- ms-365-mcp-server --org-mode --list-permissions
+kubectl -n hermes exec -it deploy/graph-mcp -- ms-365-mcp-server --login
+kubectl -n hermes exec deploy/graph-mcp -- ms-365-mcp-server --list-accounts
+```
+
+`--list-permissions` vorweg sagt, was der Tenant freigeben müsste — bei fremden
+Tenants der Unterschied zwischen Probieren und Wissen. Ein Tenant kann
+User-Consent auf gering eingestufte Berechtigungen begrenzen oder unbekannte
+Anwendungen per Conditional Access sperren; dann endet es hier.
+
+**Schließe den Device-Code-Login im Browser mit einem Passkey ab, wo der
+Tenant es zulässt**, nicht mit Passwort und MFA:
+
+| Ereignis | Passwort + MFA | passwortlos |
+|---|---|---|
+| Passwort geändert, SSPR | **widerrufen** | bleibt |
+| Admin-Reset (Entra/M365 admin center) | widerrufen | widerrufen |
+| Admin widerruft alle Token | widerrufen | widerrufen |
+
+Bei einem Tenant mit 90-Tage-Passwortrotation ist das der Unterschied zwischen
+viermal im Jahr und praktisch nie. Durch Zeitablauf verfällt nichts: der
+Refresh Token ersetzt sich bei jeder Nutzung.
+
+Nicht in unserer Hand ist eine Sign-in-Frequency-Policy. Ohne sie gilt ein
+90-Tage-Fenster; setzt ein Tenant sieben Tage, ist das Konto wöchentlich neu
+anzumelden. Das zeigt sich erst im Betrieb.
+
+Die Anmeldungen liegen allein auf `graph-mcp-tokens`. Ist das Volume weg, ist
+jedes Konto neu anzumelden.
+
 ## Pocket ID
 
 Das Dashboard verweigert den Start, sobald es auf einer Nicht-Loopback-Adresse
