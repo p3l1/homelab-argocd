@@ -8,5 +8,14 @@ for f in /seed/profiles/*.yaml; do
   d=/opt/data/profiles/$n
   install -d -m 0700 "$d"
   [ -f "$d/config.yaml" ] || install -m 0644 "$f" "$d/config.yaml"
+  # Temporaerer Shim: jedes Profil laeuft als eigenes Sidecar-Gateway.
+  # Bestehende config.yaml (volle Vorlage mit leerem gateway:-Block) ergaenzen.
+  if ! grep -q '^  standalone:' "$d/config.yaml"; then
+    if grep -q '^gateway:' "$d/config.yaml"; then
+      sed -i 's/^gateway:.*/gateway:\n  standalone: true/' "$d/config.yaml"
+    else
+      printf 'gateway:\n  standalone: true\n' >> "$d/config.yaml"
+    fi
+  fi
   [ -e "$d/plugins" ] || ln -s /opt/data/plugins "$d/plugins"
 done

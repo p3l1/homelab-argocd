@@ -5,3 +5,5 @@ model:
 mcp_servers:
   posteo:
     url: http://imap-posteo:3000/mcp
+gateway:
+  standalone: true

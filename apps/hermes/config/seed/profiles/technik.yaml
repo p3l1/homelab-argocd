@@ -2,3 +2,5 @@
 model:
   provider: claude-subscription-directsdk-experimental
   default: sonnet
+gateway:
+  standalone: true

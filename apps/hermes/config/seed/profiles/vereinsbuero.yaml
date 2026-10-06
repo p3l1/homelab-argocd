@@ -5,3 +5,5 @@ model:
 mcp_servers:
   m365:
     url: http://graph-mcp:3000/mcp
+gateway:
+  standalone: true
