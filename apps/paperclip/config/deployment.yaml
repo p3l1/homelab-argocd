@@ -63,6 +63,9 @@ spec:
                 secretKeyRef:
                   name: paperclip-secrets
                   key: PAPERCLIP_AGENT_JWT_SECRET
+            # Weitere Menschen kommen nur noch ueber einen Invite aus dem Board.
+            - name: PAPERCLIP_AUTH_DISABLE_SIGN_UP
+              value: "true"
             - name: PAPERCLIP_TELEMETRY_DISABLED
               value: "1"
             - name: DO_NOT_TRACK
