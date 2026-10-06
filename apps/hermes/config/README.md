@@ -117,22 +117,20 @@ sich im laufenden Container nicht nachziehen. Beide lesen deshalb die Datei:
 
 ### Wo er schreiben darf
 
-Die App ist auf diese Repositories installiert — nicht auf alle, der Rest
-bleibt für ihn unerreichbar:
+Nur dort, wo die App installiert ist — alles andere bleibt für ihn unerreichbar.
+Welche Repositories das sind, sagt die Installation selbst, nicht diese Datei:
 
-```
-homelab-argocd   taktwerk      pangolin-gateway   imap-mini-mcp
-docker-signal-cli   nix        homelab-monitoring
-paperless-ngx-operator         homelab-newt
+```bash
+gh api /installation/repositories --jq '.repositories[].full_name'
 ```
 
-Jedes trägt ein Ruleset `protect-main`: auf dem Standard-Branch nur über Pull
-Request, kein Löschen, kein Force-Push. Als Repository-Admin hast du einen
+Jedes davon braucht ein Ruleset `protect-main`: auf dem Standard-Branch nur über
+Pull Request, kein Löschen, kein Force-Push. Als Repository-Admin hast du einen
 Bypass und pushst weiter direkt; die App hat keinen. „Pull Request" ist für sie
 also keine Konvention, sondern die einzige Möglichkeit.
 
-Kommt ein Repository dazu, gehört es in die Installation der App **und** braucht
-ein eigenes Ruleset — beides geht in den Einstellungen oder über die API:
+**Beides gehört zusammen.** Ein Repository in der Installation ohne Ruleset ist
+eines, in das der Agent direkt auf `main` schreiben kann:
 
 ```bash
 gh api -X POST /repos/p3l1/<repo>/rulesets --input docs/github-ruleset.json
