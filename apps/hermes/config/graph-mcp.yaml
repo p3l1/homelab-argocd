@@ -41,18 +41,22 @@ spec:
             - --trust-proxy-auth
             # Ohne dieses Flag bleiben Arbeits- und Schulkonten unerreichbar.
             - --org-mode
-            # Das Image bringt 334 Tools mit; hier bleiben 17 uebrig.
+            # Das Image bringt 334 Tools mit; hier bleiben 30 uebrig.
             # Draussen mit Absicht: send-mail und delete-mail-message,
             # delete-calendar-event, Teilnehmer, sowie find-meeting-times,
-            # das Calendars.Read.Shared verlangt.
+            # das Calendars.Read.Shared verlangt. Teams nur lesend: kein
+            # send-*/reply-to-*/update-*/create-*/delete-*, keine Reaktionen,
+            # keine Mitgliederverwaltung.
             - --enabled-tools
-            - ^(list-calendars|list-calendar-events|get-calendar-event|get-calendar-view|create-calendar-event|update-calendar-event|get-schedule|list-mail-folders|list-mail-messages|list-mail-folder-messages|get-mail-message|list-mail-attachments|create-draft-email|create-reply-draft|create-reply-all-draft|move-mail-message|update-mail-message)$
+            - ^(list-calendars|list-calendar-events|get-calendar-event|get-calendar-view|create-calendar-event|update-calendar-event|get-schedule|list-mail-folders|list-mail-messages|list-mail-folder-messages|get-mail-message|list-mail-attachments|create-draft-email|create-reply-draft|create-reply-all-draft|move-mail-message|update-mail-message|list-chats|get-chat|list-chat-members|list-chat-messages|get-chat-message|list-chat-message-replies|list-joined-teams|get-team|list-team-channels|get-team-channel|list-channel-messages|get-channel-message|list-channel-message-replies)$
             # Grenze auch fuer den Login: MSAL fragt nur noch diese an.
             # Ohne Mail.Send schaltet der Server send-mail selbst ab, auch
             # wenn es jemand in die Liste oben eintraegt. User.Read nutzt
             # kein Tool, aber testLogin() ruft damit /me ab.
             - --allowed-scopes
-            - User.Read Calendars.ReadWrite Mail.ReadWrite
+            # Teams: nur Lese-Scopes. ChannelMessage.Read.All verlangt
+            # Admin-Consent, die uebrigen meist nicht.
+            - User.Read Calendars.ReadWrite Mail.ReadWrite Chat.ReadBasic ChatMember.Read ChatMessage.Read Team.ReadBasic.All Channel.ReadBasic.All ChannelMessage.Read.All
           ports:
             - containerPort: 3000
               name: http
