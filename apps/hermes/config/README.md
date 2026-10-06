@@ -177,16 +177,17 @@ kubectl -n hermes logs deploy/hermes -c github-token
 # Token erneuert, gueltig bis 2026-10-06T...Z
 ```
 
-## Kalender und M365-Postfächer
+## Kalender, M365-Postfächer und Teams
 
-Beides bedient `graph-mcp`, ein konfigurierter
+Alles bedient `graph-mcp`, ein konfigurierter
 [`ms-365-mcp-server`](https://github.com/softeria/ms-365-mcp-server). Wie beim
 Postfach hält der Server die Token selbst und Hermes spricht nur HTTP — er
 bekommt die Anmeldungen nie zu sehen. Die Posteo-Kalender und -Notizen folgen
 später über `dav-mcp`.
 
-Von 334 Tools bleiben 17 übrig, und `--allowed-scopes` begrenzt auch den
-Login: MSAL fragt nur `Calendars.ReadWrite` und `Mail.ReadWrite` an.
+Von 334 Tools bleiben 30 übrig, und `--allowed-scopes` begrenzt auch den
+Login: MSAL fragt nur `Calendars.ReadWrite`, `Mail.ReadWrite` und die
+Teams-Lese-Scopes an.
 `get-schedule` kommt damit aus, `find-meeting-times` nicht — das verlangt
 `Calendars.Read.Shared` und bleibt deshalb draußen.
 
@@ -207,6 +208,19 @@ Antwort an alle.
 
 Posteo bleibt beim IMAP-Server. Der kann dort mehr (Sterne, Massenverschieben
 nach Absender oder Domain) und hält sein eigenes Passwort.
+
+### Teams: nur lesen
+
+Chats (`list-chats`, `get-chat`, Mitglieder, Nachrichten, Antworten) und Kanäle
+(`list-joined-teams`, `get-team`, Kanäle, Nachrichten, Antworten) lassen sich
+lesen. Senden, Antworten, Bearbeiten, Reaktionen, Anlegen und Löschen stehen
+nicht in der Liste, und es gibt keinen `*.Send`-/`ReadWrite`-Scope.
+
+Angefragt werden `Chat.ReadBasic`, `ChatMember.Read`, `ChatMessage.Read`,
+`Team.ReadBasic.All`, `Channel.ReadBasic.All` und `ChannelMessage.Read.All`.
+**`ChannelMessage.Read.All` verlangt Admin-Consent**; ohne ihn bleiben die
+Kanalnachrichten leer, Chats funktionieren davon unabhängig. Nach dem Merge ist
+jedes Konto einmal neu anzumelden (`--login`), weil sich die Scopes ändern.
 
 ### Hier arbeitet er unter *deiner* Identität
 
