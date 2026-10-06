@@ -58,6 +58,16 @@ spec:
               }
               # Unter dem Namen gh steht der Wrapper; er reicht den Token nach.
               install -D -m 0755 /seed/gh-wrapper /opt/data/.local/bin/gh
+              # Fuer den Cluster-Check (nur Lesezugriff ueber den ServiceAccount).
+              # Fehlt im Image, darum aufs Volume. Version = Cluster-Version;
+              # bei anderer Version neu installieren.
+              [ "$(/opt/data/bin/kubectl version --client -o json 2>/dev/null | grep -o '\"gitVersion\": \"[^\"]*' | head -1 | cut -d'\"' -f4)" = "v${KUBECTL_VERSION}" ] || {
+                curl -fsSL -o /tmp/kubectl \
+                  "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/linux/arm64/kubectl"
+                echo "$(curl -fsSL "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/linux/arm64/kubectl.sha256")  /tmp/kubectl" |
+                  sha256sum -c -
+                install -D -m 0755 /tmp/kubectl /opt/data/bin/kubectl
+              }
               # Ohne --enable bleibt das Plugin installiert, aber inaktiv.
               # --no-allow-tool-override ueberspringt eine Rueckfrage, die
               # ohne TTY haengen wuerde.
@@ -74,6 +84,8 @@ spec:
               value: /opt/data/home/.npm-global
             - name: GH_VERSION
               value: 2.102.0
+            - name: KUBECTL_VERSION
+              value: 1.36.4
           securityContext:
             runAsUser: 10000
             runAsGroup: 10000
