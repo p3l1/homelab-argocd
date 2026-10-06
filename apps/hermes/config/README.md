@@ -185,7 +185,7 @@ Postfach hält der Server die Token selbst und Hermes spricht nur HTTP — er
 bekommt die Anmeldungen nie zu sehen. Die Posteo-Kalender und -Notizen folgen
 später über `dav-mcp`.
 
-Von 334 Tools bleiben 30 übrig, und `--allowed-scopes` begrenzt auch den
+Von 334 Tools bleiben 31 übrig, und `--allowed-scopes` begrenzt auch den
 Login: MSAL fragt nur `Calendars.ReadWrite`, `Mail.ReadWrite` und die
 Teams-Lese-Scopes an.
 `get-schedule` kommt damit aus, `find-meeting-times` nicht — das verlangt
@@ -216,10 +216,12 @@ Chats (`list-chats`, `get-chat`, Mitglieder, Nachrichten, Antworten) und Kanäle
 lesen. Senden, Antworten, Bearbeiten, Reaktionen, Anlegen und Löschen stehen
 nicht in der Liste, und es gibt keinen `*.Send`-/`ReadWrite`-Scope.
 
-Angefragt werden `Chat.ReadBasic`, `ChatMember.Read`, `ChatMessage.Read`,
+Angefragt werden `Chat.ReadBasic`, `Chat.Read`, `ChatMember.Read`, `ChatMessage.Read`,
 `Team.ReadBasic.All`, `Channel.ReadBasic.All` und `ChannelMessage.Read.All`.
 **`ChannelMessage.Read.All` verlangt Admin-Consent**; ohne ihn bleiben die
-Kanalnachrichten leer, Chats funktionieren davon unabhängig. Nach dem Merge ist
+Kanalnachrichten leer, Chats funktionieren davon unabhängig. `Chat.Read` braucht Graph für `list-chat-messages`; `ChatMessage.Read` allein
+liefert 403. Kein Lese-Tool verlangt den Scope außer `list-pinned-chat-messages`,
+das deshalb freigeschaltet ist. Nach dem Merge ist
 jedes Konto einmal neu anzumelden (`--login`), weil sich die Scopes ändern.
 
 ### Hier arbeitet er unter *deiner* Identität
