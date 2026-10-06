@@ -8,6 +8,8 @@ resources:
   - ./networkpolicy.yaml
   - ./rbac.yaml
   - ./storage.yaml
+patches:
+  - path: ./staff-sidecars.yaml
 configMapGenerator:
   # Vorlage fuer /opt/data/config.yaml und Hilfsskripte der initContainer.
   # Der initContainer legt config.yaml nur an, wenn die Datei fehlt - Hermes
@@ -23,3 +25,4 @@ configMapGenerator:
       - seed/gitconfig
       - seed/gh-wrapper
       - seed/github-token.py
+      - seed/seed-profiles.sh

@@ -1,0 +1,7 @@
+# Profil taktwerk: Taktwerk-Problemmeldungen aus Teams
+model:
+  provider: claude-subscription-directsdk-experimental
+  default: sonnet
+mcp_servers:
+  m365:
+    url: http://graph-mcp:3000/mcp

@@ -1,0 +1,7 @@
+# Profil sekretariat: E-Mail-Check Posteo, Kalender, Antwortentwuerfe
+model:
+  provider: claude-subscription-directsdk-experimental
+  default: sonnet
+mcp_servers:
+  posteo:
+    url: http://imap-posteo:3000/mcp

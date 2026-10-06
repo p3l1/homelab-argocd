@@ -1,0 +1,4 @@
+# Profil technik: Cluster-Check, Homelab-PRs
+model:
+  provider: claude-subscription-directsdk-experimental
+  default: sonnet
