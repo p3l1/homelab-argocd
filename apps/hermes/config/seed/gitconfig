@@ -1,0 +1,11 @@
+# Der Helper liest den kurzlebigen Token aus der Datei, die der Sidecar
+# fortschreibt. Diese Datei gehoert Git, nicht Hermes.
+[user]
+    name = Hermes
+    email = hermes@cloud.p3l1.de
+[credential "https://github.com"]
+    helper = "!f() { echo username=x-access-token; echo password=\"$(cat /opt/data/github/token)\"; }; f"
+[init]
+    defaultBranch = main
+[push]
+    autoSetupRemote = true
