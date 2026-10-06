@@ -8,6 +8,10 @@
 # bleibt ein vorhandener Wert aus der verschluesselten Datei bestehen, sodass
 # sich einzelne Schluessel nachtragen lassen.
 #
+# Lange oder mehrzeilige Werte kommen mit -f SCHLUESSEL=PFAD aus einer Datei:
+# eine Terminal-Eingabezeile fasst nur 1024 Zeichen, laengeres Einfuegen in die
+# Abfrage bleibt wirkungslos.
+#
 # Das Secret geht sofort in den Cluster und zusaetzlich nach
 # secrets/<name>.sops.yaml - sonst waere es nach einem Neuaufbau verloren.
 
@@ -22,9 +26,19 @@ ok() { printf '\033[92m[OK]\033[0m %s\n' "$1"; }
 # Labels muessen mitkommen: ArgoCD findet ein Secret nur dann ueber
 # $name:key, wenn es app.kubernetes.io/part-of=argocd traegt.
 LABELS=()
-while [[ ${1:-} == -l || ${1:-} == --label ]]; do
-  [[ -n "${2:-}" && "$2" == *=* ]] || die "--label erwartet SCHLUESSEL=WERT"
-  LABELS+=("$2"); shift 2
+declare -A FROM_FILE=()
+while [[ ${1:-} == -* ]]; do
+  case "$1" in
+    -l|--label)
+      [[ -n "${2:-}" && "$2" == *=* ]] || die "--label erwartet SCHLUESSEL=WERT"
+      LABELS+=("$2"); shift 2 ;;
+    -f|--from-file)
+      [[ -n "${2:-}" && "$2" == *=* ]] || die "--from-file erwartet SCHLUESSEL=PFAD"
+      path="${2#*=}"; path="${path/#\~/$HOME}"
+      [[ -r "$path" ]] || die "$path ist nicht lesbar"
+      FROM_FILE["${2%%=*}"]="$path"; shift 2 ;;
+    *) die "Unbekannte Option: $1" ;;
+  esac
 done
 
 [[ $# -ge 3 ]] || die "Aufruf: $0 [--label K=V ...] <name> <namespace> <SCHLUESSEL> [SCHLUESSEL ...]"
@@ -53,7 +67,11 @@ fi
 
 declare -A VALUES=()
 for k in "${KEYS[@]}"; do
-  if [[ -n "${CURRENT[$k]:-}" ]]; then
+  if [[ -n "${FROM_FILE[$k]:-}" ]]; then
+    VALUES["$k"]=$(<"${FROM_FILE[$k]}")
+    [[ -n "${VALUES[$k]}" ]] || die "${FROM_FILE[$k]} ist leer."
+    info "$k aus ${FROM_FILE[$k]} gelesen"
+  elif [[ -n "${CURRENT[$k]:-}" ]]; then
     read -r -s -p "  ${k} [vorhanden, Enter behaelt]: " val; echo
     VALUES["$k"]="${val:-${CURRENT[$k]}}"
   else
