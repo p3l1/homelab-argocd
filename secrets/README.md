@@ -34,5 +34,6 @@ einzugeben.
 | `paperless-secrets.sops.yaml` | Secret Key und Mail-Zugang für Paperless |
 | `umami-secrets.sops.yaml` | Admin-Passwort, `APP_SECRET` und 2FA-Schlüssel für Umami |
 | `hermes-secrets.sops.yaml` | Signal-Nummer, OIDC-Client und API-Schlüssel für Hermes |
+| `paperclip-secrets.sops.yaml` | Auth-, Secrets- und Agent-JWT-Schlüssel für Paperclip |
 
 `newt-credentials` fehlt noch — die Werte kommen aus Pangolin.
