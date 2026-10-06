@@ -67,22 +67,117 @@ werden — und eine Nummer lässt sich nicht beliebig oft neu registrieren.
 
 ## GitHub
 
-Der Agent bekommt einen Token **in seiner eigenen Umgebung** — anders als das
-Postfach-Passwort, das nur im MCP-Container liegt. Er kann ihn also lesen. Das
-ist bewusst so gewählt, weil `git` und `gh` ihn dort erwarten; die Folge ist,
-dass der Token eng gehalten gehört: fine-grained, nur die vorgesehenen Repos,
-`contents: write` und `pull_requests: write`, mit Ablaufdatum. Ein geschütztes
-`main` verhindert, dass aus „Pull Request" ein direkter Push wird.
+Der Agent arbeitet unter **eigener Identität**, nicht unter deiner: eine GitHub
+App namens `hermes`, installiert auf den Repositories, die er anfassen darf.
+Das ist dieselbe Linie wie bei Signal, wo er eine eigene Nummer hat statt eines
+verknüpften Geräts an deinem Konto.
 
-`gh` fehlt im Image und wird vom initContainer auf das Volume gelegt, nach
-`/opt/data/.local/bin` — das liegt bereits auf dem PATH. Die Identität und der
-Credential-Helper stehen in `/opt/data/home/.gitconfig`, das aus der ConfigMap
-kommt und bei jedem Start neu geschrieben wird. Der Helper reicht
-`$GITHUB_TOKEN` durch, statt ihn in eine Datei zu schreiben.
+Der Unterschied ist nicht kosmetisch. Ein Personal Access Token trägt die
+Identität seines Besitzers; GitHub unterscheidet dann nicht mehr zwischen dir
+am Rechner und dem Token im Pod. Ein Ruleset, das dich als Owner durchlässt,
+lässt damit auch den Agenten durch — der Schutz wäre keiner. Eine App ist ein
+eigener Akteur und steht in keiner Bypass-Liste.
 
-Commits tragen `Hermes <hermes@cloud.p3l1.de>` — eine eigene Identität, damit
-sie von deinen eigenen unterscheidbar bleiben. GitHub ordnet sie dadurch keinem
-Konto zu; wer das will, trägt eine verifizierte Adresse ein.
+### Der Token wird fortlaufend erneuert
+
+Apps authentifizieren sich nicht mit einem festen Token, sondern tauschen ihren
+Private Key gegen einen Installation-Token, der nach einer Stunde verfällt. Das
+erledigt der Sidecar `github-token`:
+
+```
+Secret (App-ID, Installation-ID, Private Key)
+  └─> Sidecar: JWT (RS256, 10 min) ─> POST /app/installations/<id>/access_tokens
+        └─> /opt/data/github/token   alle 45 Minuten neu, 0600
+```
+
+Er ist als **nativer Sidecar** deklariert (`initContainers` mit
+`restartPolicy: Always`), startet also vor Hermes und läuft danach weiter — der
+Token liegt bereit, bevor der Agent seinen ersten Zug macht.
+
+Der Private Key liegt **nur in diesem Container**, entpackt auf einem tmpfs,
+nie auf der Platte. Hermes sieht allein den Token auf dem geteilten Volume. Ein
+Leck aus seinem Container heraus kostet damit höchstens eine Stunde Zugriff,
+nicht den Schlüssel zur App.
+
+Im Secret steht der Key **base64-kodiert**, weil `scripts/secret.sh` je
+Schlüssel eine Zeile liest und PEM mehrzeilig ist.
+
+### Wie git und gh an den Token kommen
+
+Keiner von beiden kann mit einer App umgehen, und eine Umgebungsvariable lässt
+sich im laufenden Container nicht nachziehen. Beide lesen deshalb die Datei:
+
+| | |
+|---|---|
+| `git` | Credential-Helper in `/opt/data/home/.gitconfig`, aus der ConfigMap |
+| `gh` | Wrapper unter `/opt/data/.local/bin/gh`, Binary daneben in `libexec` |
+
+`gh` fehlt im Image und wird vom initContainer auf das Volume gelegt;
+`/opt/data/.local/bin` liegt bereits auf dem PATH.
+
+### Wo er schreiben darf
+
+Die App ist auf diese Repositories installiert — nicht auf alle, der Rest
+bleibt für ihn unerreichbar:
+
+```
+homelab-argocd   taktwerk      pangolin-gateway   imap-mini-mcp
+docker-signal-cli   nix        homelab-monitoring
+paperless-ngx-operator         homelab-newt
+```
+
+Jedes trägt ein Ruleset `protect-main`: auf dem Standard-Branch nur über Pull
+Request, kein Löschen, kein Force-Push. Als Repository-Admin hast du einen
+Bypass und pushst weiter direkt; die App hat keinen. „Pull Request" ist für sie
+also keine Konvention, sondern die einzige Möglichkeit.
+
+Kommt ein Repository dazu, gehört es in die Installation der App **und** braucht
+ein eigenes Ruleset — beides geht in den Einstellungen oder über die API:
+
+```bash
+gh api -X POST /repos/p3l1/<repo>/rulesets --input docs/github-ruleset.json
+```
+
+Commits tragen `Hermes <hermes@cloud.p3l1.de>`, damit sie von deinen eigenen
+unterscheidbar bleiben. Pull Requests erscheinen unter dem Bot-Konto der App.
+
+### Einrichtung
+
+1. App anlegen unter **Settings → Developer settings → GitHub Apps → New**:
+   Name `hermes`, Webhook aus, Berechtigungen `Contents: Read and write`,
+   `Pull requests: Read and write`, `Metadata: Read-only`.
+
+   Soll er auch CI-Dateien ändern können, kommt `Workflows: Read and write`
+   hinzu: ohne diese Berechtigung weist GitHub jeden Push zurück, der
+   `.github/workflows/` anfasst — mit einer Fehlermeldung, die nach einem
+   Rechteproblem am Repository aussieht, nicht nach einer fehlenden
+   App-Berechtigung.
+2. Private Key erzeugen und herunterladen, `App ID` notieren.
+3. App installieren („Install App"), **Only select repositories**, die Liste
+   oben.
+4. Zugangsdaten hinterlegen:
+
+```bash
+./scripts/secret.sh \
+  -f GITHUB_APP_PRIVATE_KEY="$HOME/Downloads/p3l1-hermes.2026-10-06.private-key.pem" \
+  hermes-secrets hermes GITHUB_APP_ID GITHUB_APP_PRIVATE_KEY
+```
+
+Der Schlüssel kommt aus der Datei, nicht aus der Abfrage: Eine
+Terminal-Eingabezeile fasst 1024 Zeichen, ein PEM ist länger — Einfügen bleibt
+dort wirkungslos. Base64 in einer Zeile nimmt der Sidecar aber auch an.
+
+Die Installation ID braucht es nicht: Der Sidecar fragt sie beim Start ab und
+besteht darauf, dass es genau eine gibt. Kommt je eine zweite dazu, benennt die
+Fehlermeldung beide, und `GITHUB_APP_INSTALLATION_ID` entscheidet dann — der
+Schlüssel ist im Deployment als `optional` eingetragen.
+
+Ob es trägt, zeigt der Sidecar:
+
+```bash
+kubectl -n hermes logs deploy/hermes -c github-token
+# Token erneuert, gueltig bis 2026-10-06T...Z
+```
 
 ## Pocket ID
 
@@ -110,7 +205,8 @@ nicht gesetzt.
 
 ```bash
 ./scripts/secret.sh hermes-secrets hermes \
-  SIGNAL_ACCOUNT OIDC_CLIENT_ID API_SERVER_KEY ANTHROPIC_API_KEY
+  SIGNAL_ACCOUNT OIDC_CLIENT_ID API_SERVER_KEY ANTHROPIC_API_KEY \
+  GITHUB_APP_ID GITHUB_APP_INSTALLATION_ID GITHUB_APP_PRIVATE_KEY
 ```
 
 `SIGNAL_ACCOUNT` ist die eigene Nummer in E.164 und versorgt auch

@@ -51,11 +51,13 @@ spec:
               set -eux
               npm install -g @anthropic-ai/claude-code@2.1.289
               # Fuer Pull Requests. Fehlt im Image, darum hierher aufs Volume.
-              [ -x /opt/data/.local/bin/gh ] || {
+              [ -x /opt/data/.local/libexec/gh ] || {
                 curl -fsSL "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_arm64.tar.gz" |
                   tar xz -C /tmp
-                install -D -m 0755 "/tmp/gh_${GH_VERSION}_linux_arm64/bin/gh" /opt/data/.local/bin/gh
+                install -D -m 0755 "/tmp/gh_${GH_VERSION}_linux_arm64/bin/gh" /opt/data/.local/libexec/gh
               }
+              # Unter dem Namen gh steht der Wrapper; er reicht den Token nach.
+              install -D -m 0755 /seed/gh-wrapper /opt/data/.local/bin/gh
               # Ohne --enable bleibt das Plugin installiert, aber inaktiv.
               # --no-allow-tool-override ueberspringt eine Rueckfrage, die
               # ohne TTY haengen wuerde.
@@ -78,6 +80,54 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /opt/data
+            - name: seed
+              mountPath: /seed
+        # Haelt den Installation-Token der GitHub App frisch. Als Sidecar
+        # deklariert, damit er vor Hermes steht und danach weiterlaeuft.
+        - name: github-token
+          image: python:3.13-slim
+          restartPolicy: Always
+          command: ["python3", "/seed/github-token.py"]
+          env:
+            - name: GITHUB_APP_ID
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-secrets
+                  key: GITHUB_APP_ID
+            # Optional: fehlt sie, sucht der Sidecar die Installation selbst.
+            - name: GITHUB_APP_INSTALLATION_ID
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-secrets
+                  key: GITHUB_APP_INSTALLATION_ID
+                  optional: true
+            # Base64, weil scripts/secret.sh je Schluessel eine Zeile liest.
+            - name: GITHUB_APP_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-secrets
+                  key: GITHUB_APP_PRIVATE_KEY
+          volumeMounts:
+            - name: data
+              mountPath: /opt/data
+            - name: seed
+              mountPath: /seed
+            # Der entpackte Private Key liegt auf tmpfs, nie auf der Platte.
+            - name: github-token-work
+              mountPath: /tmp
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
+          securityContext:
+            runAsUser: 10000
+            runAsGroup: 10000
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
       containers:
         - name: hermes
           image: docker.io/nousresearch/hermes-agent:v2026.9.24
@@ -174,18 +224,9 @@ spec:
               value: /opt/data/home/.npm-global/bin/claude
             - name: CLAUDE_CONFIG_DIR
               value: /opt/data/home/.claude
-            # Fuer git und gh. Anders als das Postfach-Passwort ist dieser
-            # Token fuer den Agenten lesbar - fine-grained und eng halten.
-            - name: GITHUB_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: hermes-secrets
-                  key: GITHUB_TOKEN
-            - name: GH_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: hermes-secrets
-                  key: GITHUB_TOKEN
+            # Kein GITHUB_TOKEN in der Umgebung: der Sidecar legt einen
+            # Installation-Token nach /opt/data/github/token, den der
+            # Credential-Helper und der gh-Wrapper bei jedem Aufruf lesen.
             # ANTHROPIC_API_KEY steht hier absichtlich nicht: die Claude-CLI
             # bevorzugt einen Key aus der Umgebung und kommt dann nie zur
             # Abo-Anmeldung. Der Wert liegt im Secret, falls er gebraucht wird.
@@ -263,6 +304,10 @@ spec:
           emptyDir:
             medium: Memory
             sizeLimit: 1Gi
+        - name: github-token-work
+          emptyDir:
+            medium: Memory
+            sizeLimit: 1Mi
 
 ---
 apiVersion: v1
