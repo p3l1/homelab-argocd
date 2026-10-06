@@ -1,0 +1,126 @@
+# Ein Server fuer alle M365-Konten: er haelt die Token selbst und injiziert
+# einen account-Parameter in jedes Tool, sobald mehr als eines angemeldet ist.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: graph-mcp
+  namespace: hermes
+spec:
+  replicas: 1
+  # Der Token-Cache liegt auf einem ReadWriteOnce-Volume: erst der alte Pod
+  # weg, dann der neue.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: graph-mcp
+  template:
+    metadata:
+      labels:
+        app: graph-mcp
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        # node:alpine fuehrt das Image als USER node, also UID 1000.
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: graph-mcp
+          image: ghcr.io/softeria/ms-365-mcp-server:0.158.0
+          # Der Entrypoint ist ms-365-mcp-server, darum nur args.
+          args:
+            - --http
+            - "3000"
+            # Nimmt den OAuth-Zwang vom MCP-Endpunkt: im HTTP-Modus verlangt
+            # der Server sonst einen Bearer-Token, den Hermes nicht hat.
+            # Erreichbarkeit ist die Authentisierung, siehe NetworkPolicy.
+            - --trust-proxy-auth
+            # Ohne dieses Flag bleiben Arbeits- und Schulkonten unerreichbar.
+            - --org-mode
+            # Das Image bringt 334 Tools mit; hier bleiben zehn uebrig.
+            - --enabled-tools
+            - ^(list-accounts|verify-login|list-calendars|list-calendar-events|get-calendar-event|get-calendar-view|create-calendar-event|update-calendar-event|get-schedule|find-meeting-times)$
+            # Grenze auch fuer den Login: MSAL fragt nur noch diese an.
+            - --allowed-scopes
+            - User.Read Calendars.ReadWrite
+          ports:
+            - containerPort: 3000
+              name: http
+          env:
+            - name: TZ
+              value: Europe/Berlin
+            # Arbeitskonten. Ueber 'common' ausgegebene Refresh Token weist
+            # Microsoft seit Juni 2026 bei der ersten Erneuerung ab.
+            - name: MS365_MCP_TENANT_ID
+              value: organizations
+            # Token-Cache und Schluesseldatei aufs Volume. Ein OS-Keyring ist
+            # hier nie erreichbar: keytar kommt ohne musl-Prebuild ins Image.
+            - name: XDG_CONFIG_HOME
+              value: /opt/tokens
+            # Kein Proxy davor, also die Adresse der Gegenseite direkt nehmen.
+            - name: MS365_MCP_TRUST_PROXY_HOPS
+              value: "0"
+          volumeMounts:
+            - name: tokens
+              mountPath: /opt/tokens
+            - name: tmp
+              mountPath: /tmp
+          # Ein /healthz ist nicht dokumentiert, darum der Port selbst. Ein
+          # abgelaufenes Konto darf den Pod ohnehin nicht abraeumen.
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+      volumes:
+        - name: tokens
+          persistentVolumeClaim:
+            claimName: graph-mcp-tokens
+        - name: tmp
+          emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: graph-mcp
+  namespace: hermes
+spec:
+  selector:
+    app: graph-mcp
+  ports:
+    - port: 3000
+      targetPort: http
+      name: http
+
+---
+# Die Anmeldung je Konto lebt allein hier. Ist das Volume weg, ist jedes
+# Konto neu anzumelden.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: graph-mcp-tokens
+  namespace: hermes
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 100Mi
