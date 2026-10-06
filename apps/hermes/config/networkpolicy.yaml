@@ -43,3 +43,50 @@ spec:
       ports:
         - protocol: TCP
           port: 993
+
+---
+# Unter --trust-proxy-auth liest der MCP-Endpunkt keinen Authorization-Header:
+# Erreichbarkeit ist die Authentisierung. Dieser Block ist sie.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: graph-mcp
+  namespace: hermes
+spec:
+  podSelector:
+    matchLabels:
+      app: graph-mcp
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: hermes
+      ports:
+        - protocol: TCP
+          port: 3000
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # Nur HTTPS nach draussen, fuer login.microsoftonline.com und
+    # graph.microsoft.com. Die privaten Bereiche sind ausgenommen.
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      ports:
+        - protocol: TCP
+          port: 443
