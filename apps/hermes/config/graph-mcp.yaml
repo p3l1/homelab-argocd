@@ -30,6 +30,9 @@ spec:
           image: ghcr.io/softeria/ms-365-mcp-server:0.158.0
           # Der Entrypoint ist ms-365-mcp-server, darum nur args.
           args:
+            # Ohne -v haengt der Logger nur Dateien an und stdout bleibt
+            # leer - kubectl logs zeigte dann nichts.
+            - -v
             - --http
             - "3000"
             # Nimmt den OAuth-Zwang vom MCP-Endpunkt: im HTTP-Modus verlangt
@@ -58,6 +61,11 @@ spec:
             # hier nie erreichbar: keytar kommt ohne musl-Prebuild ins Image.
             - name: XDG_CONFIG_HOME
               value: /opt/tokens
+            # Der Logger folgt nicht XDG_CONFIG_HOME, sondern HOME, und das
+            # ist hier schreibgeschuetzt. Die Dateien wachsen unbegrenzt,
+            # darum das fluechtige Volume und nicht das Token-PVC.
+            - name: MS365_MCP_LOG_DIR
+              value: /tmp/logs
             # Kein Proxy davor, also die Adresse der Gegenseite direkt nehmen.
             - name: MS365_MCP_TRUST_PROXY_HOPS
               value: "0"
@@ -94,7 +102,8 @@ spec:
           persistentVolumeClaim:
             claimName: graph-mcp-tokens
         - name: tmp
-          emptyDir: {}
+          emptyDir:
+            sizeLimit: 64Mi
 
 ---
 apiVersion: v1
