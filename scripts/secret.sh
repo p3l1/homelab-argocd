@@ -144,6 +144,17 @@ chmod 600 "$TMP"
 info "Wende das Secret im Cluster an"
 kubectl get namespace "$NS" >/dev/null 2>&1 || kubectl create namespace "$NS" >/dev/null
 kubectl apply -f "$TMP" >/dev/null
+
+# apply allein entfernt nichts: last-applied fuehrt stringData, das Objekt
+# selbst nur data - der Merge rechnet gegen ein Feld, das es nicht gibt.
+if [[ ${#REMOVE[@]} -gt 0 ]]; then
+  PATCH=$(printf '%s\n' "${REMOVE[@]}" | python3 -c "
+import sys, json
+print(json.dumps({'data': {k.strip(): None for k in sys.stdin if k.strip()}}))
+")
+  kubectl -n "$NS" patch secret "$NAME" --type=merge -p "$PATCH" >/dev/null
+fi
+
 ok "Secret $NAME in $NS angelegt"
 
 cp "$TMP" "$FILE"
