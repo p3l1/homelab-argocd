@@ -1,0 +1,9 @@
+#!/bin/sh
+# gh nimmt den Token nur aus der Umgebung, die sich im laufenden Container
+# nicht mehr aendern laesst. Der Wrapper liest ihn bei jedem Aufruf neu und
+# liegt unter dem Namen gh auf dem PATH; das echte Binary steht daneben.
+if [ -r /opt/data/github/token ]; then
+    GH_TOKEN=$(cat /opt/data/github/token)
+    export GH_TOKEN
+fi
+exec /opt/data/.local/libexec/gh "$@"

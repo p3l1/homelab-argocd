@@ -58,6 +58,8 @@ spec:
               }
               # Unter dem Namen gh steht der Wrapper; er reicht den Token nach.
               install -D -m 0755 /seed/gh-wrapper /opt/data/.local/bin/gh
+              # Fuer den Cluster-Check: kubectl aufs Volume, siehe hermes-seed.
+              sh /seed/install-kubectl.sh
               # Ohne --enable bleibt das Plugin installiert, aber inaktiv.
               # --no-allow-tool-override ueberspringt eine Rueckfrage, die
               # ohne TTY haengen wuerde.
@@ -74,6 +76,8 @@ spec:
               value: /opt/data/home/.npm-global
             - name: GH_VERSION
               value: 2.102.0
+            - name: KUBECTL_VERSION
+              value: 1.36.4
           securityContext:
             runAsUser: 10000
             runAsGroup: 10000

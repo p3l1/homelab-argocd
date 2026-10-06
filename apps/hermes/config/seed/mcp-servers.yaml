@@ -1,0 +1,4 @@
+# Diese Liste gehoert Git: der initContainer schreibt sie bei jedem Start
+# nach /opt/data/config.yaml, den Rest der Datei fuehrt Hermes selbst.
+posteo:
+  url: http://imap-posteo:3000/mcp

@@ -1,0 +1,24 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ./deployment.yaml
+  - ./httproute-pangolin.yaml
+  - ./imap-posteo.yaml
+  - ./networkpolicy.yaml
+  - ./rbac.yaml
+  - ./storage.yaml
+configMapGenerator:
+  # Vorlage fuer /opt/data/config.yaml und Hilfsskripte der initContainer.
+  # Der initContainer legt config.yaml nur an, wenn die Datei fehlt - Hermes
+  # schreibt sie selbst, eine eingehaengte ConfigMap waere schreibgeschuetzt.
+  # Der Hash im Namen rollt das Deployment bei jeder Aenderung der Dateien.
+  - name: hermes-seed
+    namespace: hermes
+    files:
+      - seed/config.yaml
+      - seed/mcp-servers.yaml
+      - seed/merge-mcp.py
+      - seed/install-kubectl.sh
+      - seed/gitconfig
+      - seed/gh-wrapper
+      - seed/github-token.py
