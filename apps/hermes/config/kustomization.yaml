@@ -26,3 +26,7 @@ configMapGenerator:
       - seed/gh-wrapper
       - seed/github-token.py
       - seed/seed-profiles.sh
+      - profile-sekretariat.yaml=seed/profiles/sekretariat.yaml
+      - profile-vereinsbuero.yaml=seed/profiles/vereinsbuero.yaml
+      - profile-taktwerk.yaml=seed/profiles/taktwerk.yaml
+      - profile-technik.yaml=seed/profiles/technik.yaml

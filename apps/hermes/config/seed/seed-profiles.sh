@@ -3,8 +3,9 @@
 # kommt nur auf ein frisches Profil; danach gehoert sie dem Profil selbst.
 # Das Claude-Plugin wird vom Hauptprofil geteilt (Symlink).
 set -eu
-for f in /seed/profiles/*.yaml; do
-  n=$(basename "$f" .yaml)
+# ConfigMap-Keys sind flach: profile-<name>.yaml
+for f in /seed/profile-*.yaml; do
+  n=$(basename "$f" .yaml); n=${n#profile-}
   d=/opt/data/profiles/$n
   install -d -m 0700 "$d"
   [ -f "$d/config.yaml" ] || install -m 0644 "$f" "$d/config.yaml"
