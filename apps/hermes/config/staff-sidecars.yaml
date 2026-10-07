@@ -2,6 +2,7 @@
 # HERMES_HOME (/opt/data/profiles/<name>) und eigenem API-Port. Paperclip
 # spricht sie ueber den Service hermes an (hermes_gateway, Port je Profil).
 # Erzeugt aus den Profil-Daten; Aenderungen bitte hier und im seed/profiles/ pflegen.
+# --force: Host-Lock des Haupt-Gateways ueberspringen (jedes Profil = eigenes Gateway).
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -14,7 +15,7 @@ spec:
         # E-Mail-Check Posteo, Kalender, Antwortentwuerfe
         - name: staff-sekretariat
           image: docker.io/nousresearch/hermes-agent:v2026.9.24
-          args: ["gateway", "run"]
+          args: ["gateway", "run", "--force"]
           ports:
             - containerPort: 8643
               name: api-sekretari
@@ -61,7 +62,7 @@ spec:
         # Plan-b-Mitgliedschaftsanfragen, Vereinsverwaltung
         - name: staff-vereinsbuero
           image: docker.io/nousresearch/hermes-agent:v2026.9.24
-          args: ["gateway", "run"]
+          args: ["gateway", "run", "--force"]
           ports:
             - containerPort: 8644
               name: api-vereinsbu
@@ -108,7 +109,7 @@ spec:
         # Taktwerk-Problemmeldungen aus Teams
         - name: staff-taktwerk
           image: docker.io/nousresearch/hermes-agent:v2026.9.24
-          args: ["gateway", "run"]
+          args: ["gateway", "run", "--force"]
           ports:
             - containerPort: 8645
               name: api-taktwerk
@@ -155,7 +156,7 @@ spec:
         # Cluster-Check, Homelab-PRs
         - name: staff-technik
           image: docker.io/nousresearch/hermes-agent:v2026.9.24
-          args: ["gateway", "run"]
+          args: ["gateway", "run", "--force"]
           ports:
             - containerPort: 8646
               name: api-technik
